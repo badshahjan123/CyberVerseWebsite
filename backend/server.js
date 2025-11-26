@@ -4,6 +4,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
+const http = require('http');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -18,6 +21,96 @@ const Room = require('./models/Room');
 const Lab = require('./models/Lab');
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.io with CORS
+const io = new Server(server, {
+  cors: {
+    origin: true,
+    credentials: true
+  },
+  transports: ['websocket', 'polling']
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
+// Socket.io JWT authentication middleware
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+
+    if (!user) {
+      return next(new Error('User not found'));
+    }
+
+    socket.user = user;
+    socket.userId = user._id.toString();
+    next();
+  } catch (error) {
+    console.error('Socket authentication error:', error);
+    next(new Error('Invalid token'));
+  }
+});
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log(`✅ User connected: ${socket.user.name} (${socket.userId})`);
+
+  // Join user-specific room for targeted broadcasts
+  socket.join(`user:${socket.userId}`);
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log(`❌ User disconnected: ${socket.user.name}`);
+  });
+
+  // Client can request manual refresh
+  socket.on('refresh:stats', async () => {
+    try {
+      const user = await User.findById(socket.userId).select('name points level completedLabs completedRooms streak');
+      const rank = await user.calculateRank();
+      const totalUsers = await User.countDocuments({ isActive: true });
+
+      socket.emit('user:stats:update', {
+        ...user.toObject(),
+        rank,
+        totalUsers
+      });
+    } catch (error) {
+      console.error('Stats refresh error:', error);
+    }
+  });
+
+  // Client can request leaderboard refresh
+  socket.on('refresh:leaderboard', async () => {
+    try {
+      const leaderboard = await User.find({ isActive: true })
+        .select('name points level completedLabs completedRooms avatar')
+        .sort({ points: -1, completedLabs: -1, completedRooms: -1 })
+        .limit(50);
+
+      const leaderboardWithRank = leaderboard.map((user, index) => ({
+        ...user.toObject(),
+        rank: index + 1
+      }));
+
+      socket.emit('leaderboard:update', leaderboardWithRank);
+    } catch (error) {
+      console.error('Leaderboard refresh error:', error);
+    }
+  });
+});
+
+// Export io for use in routes
+global.io = io;
 
 // Security middleware
 app.use(helmet({
@@ -30,6 +123,13 @@ app.use(cors({
 
 // Cookie parser middleware
 app.use(cookieParser());
+
+// Body parser middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files (avatars, etc.)
+app.use('/uploads', express.static('uploads'));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -175,7 +275,8 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     message: 'CyberVerse API is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    websocket: 'enabled'
   });
 });
 
@@ -209,7 +310,8 @@ app.use('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔌 WebSocket enabled`);
 });

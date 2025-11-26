@@ -215,7 +215,7 @@ Security Best Practices:
           id: 1,
           title: 'REST Basics',
           description_markdown: 'What does REST stand for? (First word only)',
-          hint: 'Think about the R in REST',
+          hint: 'Think about the R in REST, mentioned in the first topic.',
           points: 50,
           expected_flag: 'Representational',
           answer: 'Representational',
@@ -225,10 +225,40 @@ Security Best Practices:
           id: 2,
           title: 'HTTP Method',
           description_markdown: 'Which HTTP method is used to create new resources?',
-          hint: 'Mentioned in the HTTP methods section',
+          hint: 'Check the HTTP methods list (create new resource).',
           points: 30,
           expected_flag: 'POST',
           answer: 'POST',
+          caseSensitive: false
+        },
+        {
+          id: 3,
+          title: 'Created Status Code',
+          description_markdown: 'Which HTTP status code indicates that a resource was created successfully?',
+          hint: 'In the 2xx success section, look for “Resource created successfully”.',
+          points: 35,
+          expected_flag: '201',
+          answer: '201',
+          caseSensitive: false
+        },
+        {
+          id: 4,
+          title: 'NoSQL Database',
+          description_markdown: 'Name one NoSQL database mentioned in the Database Integration topic.',
+          hint: 'Examples include document-based and key-value databases like MongoDB.',
+          points: 40,
+          expected_flag: 'MongoDB',
+          answer: 'MongoDB',
+          caseSensitive: false
+        },
+        {
+          id: 5,
+          title: 'Auth Method',
+          description_markdown: 'Which token-based authentication method is mentioned in the Authentication and Security section?',
+          hint: 'It is commonly abbreviated as three capital letters and used in modern APIs.',
+          points: 45,
+          expected_flag: 'JWT',
+          answer: 'JWT',
           caseSensitive: false
         }
       ],
@@ -241,30 +271,30 @@ Security Best Practices:
           questions: [
             {
               id: 1,
-              question_text: 'What does REST stand for? (First word)',
+              question_text: 'What is a key principle of REST architecture regarding server state?',
               type: 'single',
-              options: ['Representational', 'Resource', 'Request', 'Response'],
-              correct_answer: 'Representational',
+              options: ['Stateful', 'Stateless', 'Session-based', 'Cookie-dependent'],
+              correct_answer: 'Stateless',
               points: 10,
-              explanation: 'REST stands for Representational State Transfer.'
+              explanation: 'REST is stateless - each request must contain all information needed to process it.'
             },
             {
               id: 2,
-              question_text: 'Which HTTP method creates new resources?',
+              question_text: 'What is the most common data format used in REST API responses?',
               type: 'single',
-              options: ['GET', 'POST', 'PUT', 'DELETE'],
-              correct_answer: 'POST',
+              options: ['XML', 'JSON', 'CSV', 'HTML'],
+              correct_answer: 'JSON',
               points: 10,
-              explanation: 'POST is used to create new resources.'
+              explanation: 'JSON (JavaScript Object Notation) is the most widely used format for REST APIs.'
             },
             {
               id: 3,
-              question_text: 'What HTTP status code means success?',
+              question_text: 'In API versioning, what is a common way to version your API endpoints?',
               type: 'single',
-              options: ['404', '500', '200', '403'],
-              correct_answer: '200',
+              options: ['/api/users/v1', '/api/v1/users', '/v1/api/users', '/users/api/v1'],
+              correct_answer: '/api/v1/users',
               points: 15,
-              explanation: '200 OK means the request was successful.'
+              explanation: 'The standard pattern is /api/version/resource, such as /api/v1/users.'
             }
           ]
         }
@@ -276,7 +306,7 @@ Security Best Practices:
     await sampleRoom.save();
     console.log('✅ Sample room created successfully!');
     console.log('Room slug:', sampleRoom.slug);
-    
+
   } catch (error) {
     console.error('❌ Error creating sample room:', error);
   } finally {

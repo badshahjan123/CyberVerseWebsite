@@ -5,15 +5,8 @@ require('dotenv').config();
 const createNetworkingRoom = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/cyberverse');
-    
-    // Check if room already exists
-    const existingRoom = await Room.findOne({ slug: 'networking-fundamentals' });
-    if (existingRoom) {
-      console.log('Room already exists, updating...');
-      await Room.deleteOne({ slug: 'networking-fundamentals' });
-    }
-    
-    const networkingRoom = new Room({
+
+    const networkingRoomData = {
       title: "Networking Fundamentals",
       slug: "networking-fundamentals",
       short_description: "Learn core networking concepts essential for cybersecurity and ethical hacking.",
@@ -121,57 +114,63 @@ const createNetworkingRoom = async () => {
           {
             id: 1,
             type: "single",
-            question_text: "What does LAN stand for?",
-            options: ["Large Area Network", "Local Area Network", "Long Area Network", "Limited Area Network"],
-            correct_answer: "Local Area Network",
+            question_text: "How many layers does the OSI model have?",
+            options: ["4 layers", "5 layers", "7 layers", "9 layers"],
+            correct_answer: "7 layers",
             points: 10,
-            explanation: "LAN stands for Local Area Network, which connects devices in a limited area."
+            explanation: "The OSI model has 7 layers: Physical, Data Link, Network, Transport, Session, Presentation, and Application."
           },
           {
             id: 2,
             type: "single",
-            question_text: "Which protocol is used for web browsing?",
-            options: ["FTP", "SMTP", "HTTP", "DNS"],
-            correct_answer: "HTTP",
+            question_text: "What is the default port number for SSH (Secure Shell)?",
+            options: ["21", "22", "80", "443"],
+            correct_answer: "22",
             points: 10,
-            explanation: "HTTP (HyperText Transfer Protocol) is used for web browsing."
+            explanation: "SSH uses port 22 by default for secure remote access to systems."
           },
           {
             id: 3,
             type: "single",
-            question_text: "What tool is commonly used for network scanning?",
-            options: ["Notepad", "Nmap", "Word", "Excel"],
-            correct_answer: "Nmap",
+            question_text: "Which Nmap scan type is known as a 'stealth scan'?",
+            options: ["UDP scan", "TCP Connect scan", "TCP SYN scan", "Ping scan"],
+            correct_answer: "TCP SYN scan",
             points: 10,
-            explanation: "Nmap (Network Mapper) is a popular network scanning tool."
+            explanation: "TCP SYN scan (-sS) is considered stealthy because it doesn't complete the TCP handshake."
           },
           {
             id: 4,
             type: "single",
-            question_text: "Which device connects different networks?",
-            options: ["Switch", "Hub", "Router", "Cable"],
-            correct_answer: "Router",
+            question_text: "Which passive reconnaissance tool provides domain registration information?",
+            options: ["nslookup", "whois", "ping", "traceroute"],
+            correct_answer: "whois",
             points: 10,
-            explanation: "A router connects different networks together."
+            explanation: "whois retrieves domain registration details including owner information, registrar, and registration dates."
           },
           {
             id: 5,
             type: "single",
-            question_text: "What does DNS stand for?",
-            options: ["Data Name System", "Domain Name System", "Digital Name Service", "Direct Network Service"],
-            correct_answer: "Domain Name System",
+            question_text: "What does SMB stand for in network services?",
+            options: ["Simple Mail Block", "Server Message Block", "Secure Mail Box", "System Memory Buffer"],
+            correct_answer: "Server Message Block",
             points: 10,
-            explanation: "DNS stands for Domain Name System, which resolves domain names to IP addresses."
+            explanation: "SMB (Server Message Block) is a protocol used for file sharing in Windows networks."
           }
         ]
       }]
-    });
+    };
 
-    await networkingRoom.save();
-    console.log('✅ Networking Fundamentals room created successfully!');
+    // Use findOneAndUpdate with upsert to ensure reliable updates
+    const networkingRoom = await Room.findOneAndUpdate(
+      { slug: 'networking-fundamentals' },
+      networkingRoomData,
+      { upsert: true, new: true, overwrite: true }
+    );
+
+    console.log('✅ Networking Fundamentals room created/updated successfully!');
     console.log(`Room ID: ${networkingRoom._id}`);
     console.log(`Slug: ${networkingRoom.slug}`);
-    
+
   } catch (error) {
     console.error('❌ Error creating networking room:', error);
   } finally {

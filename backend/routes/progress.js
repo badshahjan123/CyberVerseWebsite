@@ -21,13 +21,13 @@ router.post('/update', auth, async (req, res) => {
     if (type === 'room') {
       // Check if room already completed
       const existingProgress = user.roomProgress.find(p => p.roomId === itemId);
-      
+
       if (existingProgress) {
         // Room replay - update score but no additional points for completion count
         const oldScore = existingProgress.score;
         existingProgress.score = points;
         existingProgress.completedAt = new Date();
-        
+
         // Only add/subtract the difference in points
         pointsToAdd = points - oldScore;
       } else {
@@ -45,13 +45,13 @@ router.post('/update', auth, async (req, res) => {
     } else if (type === 'lab') {
       // Check if lab already completed
       const existingProgress = user.labProgress.find(p => p.labId === itemId);
-      
+
       if (existingProgress) {
         // Lab replay - update score but no additional points for completion count
         const oldScore = existingProgress.score;
         existingProgress.score = points;
         existingProgress.completedAt = new Date();
-        
+
         // Only add/subtract the difference in points
         pointsToAdd = points - oldScore;
       } else {
@@ -70,7 +70,7 @@ router.post('/update', auth, async (req, res) => {
 
     // Update user points and level
     user.points += pointsToAdd;
-    
+
     // Calculate new level (every 1000 points = 1 level)
     const newLevel = Math.floor(user.points / 1000) + 1;
     leveledUp = newLevel > user.level;
@@ -80,6 +80,35 @@ router.post('/update', auth, async (req, res) => {
 
     // Calculate new rank
     const rank = await user.calculateRank();
+
+    // Emit real-time updates
+    const io = global.io;
+    if (io) {
+      // Send stats update to the specific user
+      io.to(`user:${userId}`).emit('user:stats:update', {
+        points: user.points,
+        level: user.level,
+        rank,
+        completedLabs: user.completedLabs,
+        completedRooms: user.completedRooms,
+        streak: user.streak
+      });
+
+      // Broadcast leaderboard update to all users if it's a first completion
+      if (isFirstCompletion) {
+        const leaderboard = await User.find({ isActive: true })
+          .select('name points level completedLabs completedRooms avatar')
+          .sort({ points: -1, completedLabs: -1, completedRooms: -1 })
+          .limit(50);
+
+        const leaderboardWithRank = leaderboard.map((u, index) => ({
+          ...u.toObject(),
+          rank: index + 1
+        }));
+
+        io.emit('leaderboard:update', leaderboardWithRank);
+      }
+    }
 
     res.json({
       success: true,
@@ -105,7 +134,7 @@ router.post('/update', auth, async (req, res) => {
 router.get('/leaderboard', async (req, res) => {
   try {
     const { limit = 10 } = req.query;
-    
+
     const leaderboard = await User.find({ isActive: true })
       .select('name points level completedLabs completedRooms avatar')
       .sort({ points: -1, completedLabs: -1, completedRooms: -1 })
@@ -132,7 +161,7 @@ router.get('/stats', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId).select('name points level completedLabs completedRooms');
-    
+
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -159,7 +188,7 @@ router.get('/check/:type/:itemId', auth, async (req, res) => {
   try {
     const { type, itemId } = req.params;
     const userId = req.user.id;
-    
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });

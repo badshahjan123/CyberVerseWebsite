@@ -1,8 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
-export default defineConfig(({ command, mode }) => ({
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+export default defineConfig(({ mode }) => ({
   // Environment-specific optimizations
   define: {
     __DEV__: mode === 'development',
@@ -80,7 +83,7 @@ export default defineConfig(({ command, mode }) => ({
   // Performance hints
   esbuild: {
     // Remove debugger statements
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
   },
   // CSS optimization
   css: {

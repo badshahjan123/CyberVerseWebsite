@@ -154,7 +154,6 @@ const LoginPage = () => {
               onError={handleGoogleError}
               theme="filled_blue"
               size="large"
-              width="100%"
               text="continue_with"
             />
           </div>

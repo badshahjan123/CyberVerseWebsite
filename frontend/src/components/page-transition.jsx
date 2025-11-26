@@ -1,4 +1,3 @@
-"use client"
 import { AnimatePresence, motion } from "framer-motion"
 import { useLocation } from "react-router-dom"
 
@@ -27,12 +26,12 @@ const pageTransition = {
 }
 
 export default function PageTransition({ children }) {
-  const pathname = usePathname()
+  const location = useLocation()
   
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
-        key={pathname}
+        key={location.pathname}
         initial="initial"
         animate="in"
         exit="out"

@@ -194,8 +194,6 @@ const PremiumPage = () => {
             {/* Most Popular Badge */}
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-gradient-to-r from-primary to-accent rounded-full">
               <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-black" />
-                <span className="text-sm font-bold text-black">MOST POPULAR</span>
               </div>
             </div>
 

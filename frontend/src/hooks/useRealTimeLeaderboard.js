@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { getLeaderboard } from '../services/progress'
+import { useRealtime } from '../contexts/realtime-context'
 
-export const useRealTimeLeaderboard = (refreshInterval = 60000) => {
+export const useRealTimeLeaderboard = (refreshInterval = 300000) => { // 5 minutes
   const [leaderboard, setLeaderboard] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const { leaderboardData, connected, requestLeaderboardUpdate } = useRealtime()
 
   const fetchLeaderboard = async () => {
     try {
@@ -22,12 +24,28 @@ export const useRealTimeLeaderboard = (refreshInterval = 60000) => {
   useEffect(() => {
     // Initial fetch on component mount
     fetchLeaderboard()
-    
-    // Disable automatic refresh to prevent flickering when backend is down
-    // const interval = setInterval(fetchLeaderboard, refreshInterval)
-    
-    // return () => clearInterval(interval)
-  }, [])
 
-  return { leaderboard, loading, error, refresh: fetchLeaderboard }
+    // Enable automatic refresh as fallback (every 5 minutes)
+    const interval = setInterval(fetchLeaderboard, refreshInterval)
+
+    return () => clearInterval(interval)
+  }, [refreshInterval])
+
+  // Update from real-time socket data
+  useEffect(() => {
+    if (leaderboardData && leaderboardData.length > 0) {
+      setLeaderboard(leaderboardData)
+      setLoading(false)
+      setError(null)
+    }
+  }, [leaderboardData])
+
+  return {
+    leaderboard,
+    loading,
+    error,
+    refresh: fetchLeaderboard,
+    connected,
+    requestUpdate: requestLeaderboardUpdate
+  }
 }

@@ -3,8 +3,10 @@ import { AppProvider } from './contexts/app-context'
 import { RealtimeProvider } from './contexts/realtime-context'
 import { ActivityProvider } from './contexts/activity-context'
 import { ThemeProvider } from './contexts/theme-context'
+import { ToastProvider } from './contexts/toast-context'
 import Navbar from './components/navbar'
 import Footer from './components/footer'
+import { ConnectionStatus } from './components/ConnectionStatus'
 import { Suspense, lazy } from 'react'
 import './App.css'
 
@@ -51,9 +53,10 @@ const futuristicStyles = `
 }
 `
 
-// Inject styles
-if (typeof document !== 'undefined') {
+// Inject styles safely
+if (typeof document !== 'undefined' && !document.getElementById('futuristic-styles')) {
   const style = document.createElement('style')
+  style.id = 'futuristic-styles'
   style.textContent = futuristicStyles
   document.head.appendChild(style)
 }
@@ -82,8 +85,6 @@ const SecureAdminLogin = lazy(() => import('./pages/SecureAdminLogin'))
 const SecureAdminDashboard = lazy(() => import('./pages/SecureAdminDashboard'))
 const RoomEditor = lazy(() => import('./pages/RoomEditor'))
 
-
-
 // Loading component
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-950">
@@ -96,17 +97,18 @@ function AppContent() {
   const isAdminRoute = location.pathname.startsWith('/secure-admin') || location.pathname.startsWith('/admin')
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      {isAdminRoute ? (
-        <Routes>
-          <Route path="/secure-admin-login" element={<SecureAdminLogin />} />
-          <Route path="/secure-admin-dashboard" element={<SecureAdminDashboard />} />
-          <Route path="/admin/rooms/:id/edit" element={<RoomEditor />} />
-        </Routes>
-      ) : (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-          <Navbar />
-          <main className="flex-1 glass">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+      {!isAdminRoute && <Navbar />}
+
+      <main className={`flex-1 ${!isAdminRoute ? 'glass' : ''}`}>
+        <Suspense fallback={<PageLoader />}>
+          {isAdminRoute ? (
+            <Routes>
+              <Route path="/secure-admin-login" element={<SecureAdminLogin />} />
+              <Route path="/secure-admin-dashboard" element={<SecureAdminDashboard />} />
+              <Route path="/admin/rooms/:id/edit" element={<RoomEditor />} />
+            </Routes>
+          ) : (
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/labs" element={<Labs />} />
@@ -128,11 +130,13 @@ function AppContent() {
               <Route path="/badges" element={<Badges />} />
               <Route path="/saved" element={<SavedItems />} />
             </Routes>
-          </main>
-          <Footer />
-        </div>
-      )}
-    </Suspense>
+          )}
+        </Suspense>
+      </main>
+
+      {!isAdminRoute && <Footer />}
+      <ConnectionStatus />
+    </div>
   )
 }
 
@@ -141,11 +145,13 @@ function App() {
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ThemeProvider>
         <AppProvider>
-          <RealtimeProvider>
-            <ActivityProvider>
-              <AppContent />
-            </ActivityProvider>
-          </RealtimeProvider>
+          <ToastProvider>
+            <RealtimeProvider>
+              <ActivityProvider>
+                <AppContent />
+              </ActivityProvider>
+            </RealtimeProvider>
+          </ToastProvider>
         </AppProvider>
       </ThemeProvider>
     </Router>

@@ -83,27 +83,6 @@ const ProfileDropdown = ({ user, onLogout }) => {
                             <Settings size={18} />
                             <span>Manage Account</span>
                         </button>
-
-                        {/* Dark Mode Toggle */}
-                        <div className="flex items-center justify-between px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                            <div className="flex items-center gap-3">
-                                {isDarkMode ? <Moon size={18} /> : <Sun size={18} />}
-                                <span>Dark Mode</span>
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleTheme()
-                                }}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isDarkMode ? 'bg-primary' : 'bg-slate-300'
-                                    }`}
-                            >
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'
-                                        }`}
-                                />
-                            </button>
-                        </div>
                     </div>
 
                     {/* Divider */}

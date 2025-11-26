@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { User, Lock, CreditCard, Shield, Upload, Trash2, Check, Key } from 'lucide-react'
 import { useApp } from '../contexts/app-context'
-import { apiCall } from '../config/api'
+import { apiCall, API_BASE_URL } from '../config/api'
 import { useNavigate } from 'react-router-dom'
 import TwoFactorSettings from '../components/TwoFactorSettings'
 
 const Settings = () => {
-  const { user, updateUser, logout } = useApp()
+  const { user, updateUserProfile, logout } = useApp()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('profile')
   const [showToast, setShowToast] = useState(false)
@@ -72,7 +72,7 @@ const Settings = () => {
       })
 
       if (response) {
-        updateUser(response.user)
+        updateUserProfile(response.user)
         showSuccessToast('Profile updated successfully!')
       }
     } catch (error) {
@@ -130,18 +130,26 @@ const Settings = () => {
     formData.append('avatar', file)
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/avatar', {
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://localhost:5000/api/users/upload-avatar', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       })
 
       if (response.ok) {
         const data = await response.json()
-        updateUser(data.user)
+        console.log('✅ Avatar upload successful:', data)
+
+        // Update the user state with new avatar
+        updateUserProfile({ avatar: data.avatar })
         showSuccessToast('Avatar updated successfully!')
+      } else {
+        const error = await response.json()
+        console.error('❌ Avatar upload failed:', error)
+        showSuccessToast(error.message || 'Failed to upload avatar')
       }
     } catch (error) {
       console.error('Failed to upload avatar:', error)
@@ -180,10 +188,10 @@ const Settings = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${activeTab === tab.id
+                    className={`w - full flex items - center gap - 3 px - 4 py - 3 rounded - lg text - left transition - all ${activeTab === tab.id
                       ? 'bg-primary text-white'
                       : 'text-muted hover:bg-white/5 hover:text-text'
-                      }`}
+                      } `}
                   >
                     <Icon size={18} />
                     <span className="font-medium">{tab.label}</span>
@@ -217,7 +225,7 @@ const Settings = () => {
                         <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => document.getElementById('avatar-upload').click()}>
                           <Upload className="w-6 h-6 text-white" />
                         </div>
-                      </div>
+                      </div >
                       <div>
                         <input
                           type="file"
@@ -235,11 +243,11 @@ const Settings = () => {
                         </button>
                         <p className="text-xs text-muted">JPG, PNG or GIF. Max size 2MB.</p>
                       </div>
-                    </div>
-                  </div>
+                    </div >
+                  </div >
 
                   {/* Form Fields */}
-                  <div className="space-y-4">
+                  < div className="space-y-4" >
                     <div>
                       <label className="block text-sm font-medium text-text mb-2">Display Name</label>
                       <input
@@ -289,7 +297,7 @@ const Settings = () => {
                         />
                       </div>
                     </div>
-                  </div>
+                  </div >
 
                   <div className="flex justify-end pt-4">
                     <button type="submit" disabled={loading} className="btn-primary flex items-center gap-2">
@@ -306,159 +314,167 @@ const Settings = () => {
                       )}
                     </button>
                   </div>
-                </form>
+                </form >
               )}
 
               {/* Tab 2: Security & 2FA */}
-              {activeTab === 'security' && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-text mb-1">Security Settings</h2>
-                    <p className="text-sm text-muted">Manage two-factor authentication and security options</p>
-                  </div>
+              {
+                activeTab === 'security' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-text mb-1">Security Settings</h2>
+                      <p className="text-sm text-muted">Manage two-factor authentication and security options</p>
+                    </div>
 
-                  {/* Use existing TwoFactorSettings component */}
-                  <TwoFactorSettings user={user} onUpdate={() => updateUser(user)} />
-                </div>
-              )}
+                    {/* Use existing TwoFactorSettings component */}
+                    <TwoFactorSettings user={user} onUpdate={() => updateUserProfile(user)} />
+                  </div>
+                )
+              }
 
               {/* Tab 3: Account & Password */}
-              {activeTab === 'account' && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-text mb-1">Account Security</h2>
-                    <p className="text-sm text-muted">Manage your password and account security</p>
+              {
+                activeTab === 'account' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-text mb-1">Account Security</h2>
+                      <p className="text-sm text-muted">Manage your password and account security</p>
+                    </div>
+
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-text mb-2">Current Password</label>
+                        <input
+                          type="password"
+                          name="currentPassword"
+                          value={formData.currentPassword}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text mb-2">New Password</label>
+                        <input
+                          type="password"
+                          name="newPassword"
+                          value={formData.newPassword}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text mb-2">Confirm New Password</label>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
+                        />
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button type="submit" disabled={loading} className="btn-primary">
+                          {loading ? 'Updating...' : 'Update Password'}
+                        </button>
+                      </div>
+                    </form>
+
+                    {/* Danger Zone */}
+                    <div className="mt-8 pt-6 border-t border-white/10">
+                      <div className="border-2 border-danger/30 bg-danger/5 rounded-lg p-6">
+                        <h3 className="text-lg font-bold text-danger mb-2">Danger Zone</h3>
+                        <p className="text-sm text-muted mb-4">
+                          Once you delete your account, there is no going back. Please be certain.
+                        </p>
+                        <button
+                          onClick={handleDeleteAccount}
+                          className="bg-danger hover:bg-danger/80 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <Trash2 size={18} />
+                          Delete Account
+                        </button>
+                      </div>
+                    </div>
                   </div>
-
-                  <form onSubmit={handleChangePassword} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-text mb-2">Current Password</label>
-                      <input
-                        type="password"
-                        name="currentPassword"
-                        value={formData.currentPassword}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-text mb-2">New Password</label>
-                      <input
-                        type="password"
-                        name="newPassword"
-                        value={formData.newPassword}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-text mb-2">Confirm New Password</label>
-                      <input
-                        type="password"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                      />
-                    </div>
-
-                    <div className="flex justify-end pt-2">
-                      <button type="submit" disabled={loading} className="btn-primary">
-                        {loading ? 'Updating...' : 'Update Password'}
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Danger Zone */}
-                  <div className="mt-8 pt-6 border-t border-white/10">
-                    <div className="border-2 border-danger/30 bg-danger/5 rounded-lg p-6">
-                      <h3 className="text-lg font-bold text-danger mb-2">Danger Zone</h3>
-                      <p className="text-sm text-muted mb-4">
-                        Once you delete your account, there is no going back. Please be certain.
-                      </p>
-                      <button
-                        onClick={handleDeleteAccount}
-                        className="bg-danger hover:bg-danger/80 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                      >
-                        <Trash2 size={18} />
-                        Delete Account
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+                )
+              }
 
               {/* Tab 4: Subscription */}
-              {activeTab === 'subscription' && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-text mb-1">Subscription</h2>
-                    <p className="text-sm text-muted">Manage your billing details and subscription</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="p-6 bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/30 rounded-lg">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="text-xl font-bold text-text">
-                            {user.isPremium ? 'Premium Plan' : 'Free Plan'}
-                          </h3>
-                          <p className="text-sm text-muted">
-                            {user.isPremium
-                              ? 'Full access to all premium features'
-                              : 'Limited access to basic features'
-                            }
-                          </p>
-                        </div>
-                        <div className="text-3xl font-bold gradient-text">
-                          {user.isPremium ? '$9.99' : '$0'}
-                        </div>
-                      </div>
-                      {!user.isPremium && (
-                        <button onClick={() => navigate('/premium')} className="btn-primary w-full">
-                          Upgrade to Premium
-                        </button>
-                      )}
+              {
+                activeTab === 'subscription' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-text mb-1">Subscription</h2>
+                      <p className="text-sm text-muted">Manage your billing details and subscription</p>
                     </div>
 
-                    {user.isPremium && user.premiumSubscription && (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
-                          <span className="text-sm text-muted">Status</span>
-                          <span className="text-sm font-semibold text-primary capitalize">{user.premiumSubscription.status}</span>
-                        </div>
-                        <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
-                          <span className="text-sm text-muted">Plan</span>
-                          <span className="text-sm font-semibold text-text capitalize">{user.premiumSubscription.plan}</span>
-                        </div>
-                        {user.premiumSubscription.startDate && (
-                          <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
-                            <span className="text-sm text-muted">Member since</span>
-                            <span className="text-sm font-semibold text-text">
-                              {new Date(user.premiumSubscription.startDate).toLocaleDateString()}
-                            </span>
+                    <div className="space-y-4">
+                      <div className="p-6 bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-xl font-bold text-text">
+                              {user.isPremium ? 'Premium Plan' : 'Free Plan'}
+                            </h3>
+                            <p className="text-sm text-muted">
+                              {user.isPremium
+                                ? 'Full access to all premium features'
+                                : 'Limited access to basic features'
+                              }
+                            </p>
                           </div>
+                          <div className="text-3xl font-bold gradient-text">
+                            {user.isPremium ? '$9.99' : '$0'}
+                          </div>
+                        </div>
+                        {!user.isPremium && (
+                          <button onClick={() => navigate('/premium')} className="btn-primary w-full">
+                            Upgrade to Premium
+                          </button>
                         )}
                       </div>
-                    )}
+
+                      {user.isPremium && user.premiumSubscription && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
+                            <span className="text-sm text-muted">Status</span>
+                            <span className="text-sm font-semibold text-primary capitalize">{user.premiumSubscription.status}</span>
+                          </div>
+                          <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
+                            <span className="text-sm text-muted">Plan</span>
+                            <span className="text-sm font-semibold text-text capitalize">{user.premiumSubscription.plan}</span>
+                          </div>
+                          {user.premiumSubscription.startDate && (
+                            <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
+                              <span className="text-sm text-muted">Member since</span>
+                              <span className="text-sm font-semibold text-text">
+                                {new Date(user.premiumSubscription.startDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+                )
+              }
+            </div >
+          </div >
+        </div >
+      </div >
 
       {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed bottom-8 right-8 glass-effect border border-primary/30 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-up z-50">
-          <Check className="w-5 h-5 text-primary" />
-          <span className="font-medium text-text">{toastMessage}</span>
-        </div>
-      )}
-    </div>
+      {
+        showToast && (
+          <div className="fixed bottom-8 right-8 glass-effect border border-primary/30 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-up z-50">
+            <Check className="w-5 h-5 text-primary" />
+            <span className="font-medium text-text">{toastMessage}</span>
+          </div>
+        )
+      }
+    </div >
   )
 }
 

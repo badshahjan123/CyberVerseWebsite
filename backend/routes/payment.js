@@ -65,6 +65,16 @@ router.post('/upgrade-to-premium', auth, [
 
     await user.save();
 
+    // Emit real-time premium status update
+    const io = global.io;
+    if (io) {
+      io.to(`user:${user._id}`).emit('premium:status:update', {
+        isPremium: true,
+        plan: plan,
+        startDate: user.premiumSubscription.startDate
+      });
+    }
+
     res.json({
       message: 'Successfully upgraded to premium',
       user: {

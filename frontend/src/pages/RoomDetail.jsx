@@ -388,7 +388,7 @@ const RoomDetail = () => {
                 <ArrowLeft className="h-4 w-4" />
                 Back to Rooms
               </button>
-              {process.env.NODE_ENV === 'development' && (
+              {import.meta.env.DEV && (
                 <button
                   onClick={() => {
                     clearQuizCache(roomId)
