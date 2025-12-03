@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Award, Crown, Menu, X, Search, Shield, Flame, Zap, Trophy, LogOut } from 'lucide-react';
+import { Award, Crown, Menu, X, Search, Shield, Flame, Zap, Trophy, LogOut, Swords, Star, Target } from 'lucide-react';
+import NotificationDropdown from './NotificationDropdown';
 import { useApp } from '../contexts/app-context';
+import { API_BASE_URL } from '../config/api';
 import SearchModal from './SearchModal';
 import ProfileDropdown from './ProfileDropdown';
 
@@ -31,6 +33,21 @@ const Navbar = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Global keyboard shortcut for search (Ctrl+K or Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+        event.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    
+    if (isAuthenticated) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isAuthenticated]);
 
   // Fetch user streak
   useEffect(() => {
@@ -112,11 +129,15 @@ const Navbar = () => {
               <>
                 <button
                   onClick={() => setIsSearchOpen(true)}
-                  className="p-2 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                  title="Search"
+                  className="flex items-center gap-2 px-3 py-2 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all border border-white/10"
+                  title="Search (Ctrl+K)"
                 >
-                  <Search size={20} />
+                  <Search size={16} />
+                  <span className="hidden lg:inline text-sm">Search</span>
+                  <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-xs bg-white/10 rounded border border-white/20">⌘K</kbd>
                 </button>
+
+                <NotificationDropdown />
 
                 {/* Streak Counter */}
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
@@ -201,9 +222,10 @@ const Navbar = () => {
                     onClick={() => setIsOpen(false)}
                   >
                     <img
-                      src={user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
+                      src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
                       alt="avatar"
-                      className="w-10 h-10 rounded-full border-2 border-primary/50"
+                      className="w-10 h-10 rounded-full border-2 border-primary/50 object-cover"
+                      key={`${user?.avatar}-${user?.avatarTimestamp}`}
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">

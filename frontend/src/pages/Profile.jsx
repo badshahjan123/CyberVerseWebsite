@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Github, Twitter, Linkedin, MapPin, Calendar, Trophy, Target, Shield, Star, Award, Flame } from 'lucide-react'
+import { Github, Twitter, Linkedin, MapPin, Calendar, Trophy, Target, Shield, Star, Award, Flame, Crown } from 'lucide-react'
 import { useApp } from '../contexts/app-context'
 import { useRealtime } from '../contexts/realtime-context'
-import { apiCall } from '../config/api'
+import { apiCall, API_BASE_URL } from '../config/api'
 
 // Helper function to generate activity heatmap data for last 365 days
 const generateHeatmapData = (roomProgress = []) => {
@@ -126,9 +126,10 @@ const Profile = () => {
               <div className="glass-effect rounded-xl p-6 text-center border border-white/10">
                 <div className="relative inline-block mb-4">
                   <img
-                    src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
+                    src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}${user.avatar}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
                     alt={user.name}
-                    className={`w-32 h-32 rounded-full border-4 ${getRankBorder()}`}
+                    className={`w-32 h-32 rounded-full border-4 ${getRankBorder()} object-cover`}
+                    key={user.avatar}
                   />
                   {user.isPremium && (
                     <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center border-2 border-background shadow-lg">
@@ -276,9 +277,11 @@ const Profile = () => {
                           })}
                         </p>
                       </div>
-                      {activity.finalScore && (
+                      {activity.finalScore !== null && activity.finalScore !== undefined && (
                         <div className="text-right flex-shrink-0">
-                          <div className="text-lg font-bold text-primary">{activity.finalScore}</div>
+                          <div className="text-lg font-bold text-primary">
+                            {activity.finalScore > 1000000000000 ? '100' : activity.finalScore}%
+                          </div>
                           <div className="text-xs text-muted">Score</div>
                         </div>
                       )}

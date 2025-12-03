@@ -110,12 +110,26 @@ export const ActivityProvider = ({ children }) => {
         setRecentRooms(prev => prev.filter(room => room.roomId !== roomId))
     }
 
+    /**
+     * Reset room progress to 0% for Try Again functionality
+     */
+    const resetRoomProgress = (roomId) => {
+        setRecentRooms(prev => {
+            return prev.map(room => 
+                room.roomId === roomId 
+                    ? { ...room, progressPercent: 0, completedTasks: 0, lastAccessed: new Date().toISOString() }
+                    : room
+            )
+        })
+    }
+
     const value = {
         recentRooms,
         updateRoomProgress,
         markRoomAccessed,
         clearRecentRooms,
-        removeRecentRoom
+        removeRecentRoom,
+        resetRoomProgress
     }
 
     return (

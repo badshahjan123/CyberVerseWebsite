@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom"
 import { GoogleLogin } from '@react-oauth/google'
 import { useApp } from "../contexts/app-context"
 import { ModernButton } from "../components/ui/modern-button"
-import { Shield, Loader2, Check, ArrowRight } from "lucide-react"
+import { Shield, Loader2, Check, ArrowRight, Eye, EyeOff } from "lucide-react"
 import TwoFactorAuth from "../components/TwoFactorAuth"
 
 const LoginPage = () => {
@@ -17,8 +17,10 @@ const LoginPage = () => {
   const [error, setError] = useState("")
   const [showTwoFactor, setShowTwoFactor] = useState(false)
   const [twoFactorData, setTwoFactorData] = useState(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const redirectTo = searchParams.get('redirect') || '/dashboard'
+  const isTimeout = searchParams.get('timeout') === 'true'
 
   const handleGoogleSuccess = useCallback(async (credentialResponse) => {
     setError("")
@@ -144,8 +146,12 @@ const LoginPage = () => {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
               <Shield className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-white mb-1">Welcome Back</h1>
-            <p className="text-gray-300 text-sm">Sign in to continue your journey</p>
+            <h1 className="text-xl font-bold text-white mb-1">
+              {isTimeout ? 'Session Expired' : 'Welcome Back'}
+            </h1>
+            <p className="text-gray-300 text-sm">
+              {isTimeout ? 'Your session has expired due to inactivity. Please sign in again.' : 'Sign in to continue your journey'}
+            </p>
           </div>
 
           <div className="mb-4">
@@ -179,15 +185,22 @@ const LoginPage = () => {
               />
             </div>
 
-            <div>
+            <div className="relative">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full h-11 px-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full h-11 px-3 pr-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
 
             <div className="text-right mb-4">

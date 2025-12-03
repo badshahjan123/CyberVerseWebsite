@@ -153,6 +153,7 @@ const Leaderboard = memo(() => {
                           <h3 className="text-xl font-bold text-text mb-3">{champions[1].username}</h3>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-muted text-sm">Level {champions[1].level}</span>
+                            <span className="text-xs text-slate-400">• {champions[1].completedRooms || 0} rooms</span>
                           </div>
                           <div className="px-4 py-2 bg-slate-400/20 border border-slate-400/30 rounded-lg">
                             <p className="text-2xl font-bold text-slate-300">{champions[1].points.toLocaleString()}</p>
@@ -185,6 +186,7 @@ const Leaderboard = memo(() => {
                           <h3 className="text-2xl font-bold text-text mb-3">{champions[0].username}</h3>
                           <div className="flex items-center gap-2 mb-4">
                             <span className="text-muted text-sm">Level {champions[0].level}</span>
+                            <span className="text-xs text-yellow-300">• {champions[0].completedRooms || 0} rooms</span>
                           </div>
                           <div className="px-6 py-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
                             <p className="text-3xl font-bold text-yellow-400">{champions[0].points.toLocaleString()}</p>
@@ -214,6 +216,7 @@ const Leaderboard = memo(() => {
                           <h3 className="text-xl font-bold text-text mb-3">{champions[2].username}</h3>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-muted text-sm">Level {champions[2].level}</span>
+                            <span className="text-xs text-amber-400">• {champions[2].completedRooms || 0} rooms</span>
                           </div>
                           <div className="px-4 py-2 bg-amber-600/20 border border-amber-700/30 rounded-lg">
                             <p className="text-2xl font-bold text-amber-600">{champions[2].points.toLocaleString()}</p>

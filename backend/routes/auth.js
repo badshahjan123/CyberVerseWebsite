@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const NotificationService = require('../utils/notificationService');
 const { auth } = require('../middleware/auth');
 const speakeasy = require('speakeasy');
 const { OAuth2Client } = require('google-auth-library');
@@ -52,6 +53,22 @@ router.post('/register', [
     });
 
     await user.save();
+
+    // Send welcome notification
+    try {
+      await NotificationService.notifyWelcome(user._id, user.name);
+    } catch (notificationError) {
+      console.error('Welcome notification error:', notificationError);
+    }
+
+    // Broadcast admin activity
+    if (global.broadcastAdminActivity) {
+      global.broadcastAdminActivity({
+        type: 'user',
+        message: `New user registered: ${user.name}`,
+        timestamp: 'Just now'
+      })
+    }
 
     res.status(201).json({
       message: 'Account created successfully! You can now login.',
@@ -229,6 +246,13 @@ router.post('/google', async (req, res) => {
         twoFactorEnabled: false
       });
       await user.save();
+      
+      // Send welcome notification for new users
+      try {
+        await NotificationService.notifyWelcome(user._id, user.name);
+      } catch (notificationError) {
+        console.error('Welcome notification error:', notificationError);
+      }
     }
 
     // Generate JWT token

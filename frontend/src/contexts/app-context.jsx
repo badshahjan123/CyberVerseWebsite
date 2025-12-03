@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
-import { apiCall, SESSION_TIMEOUT } from "../config/api"
+import { apiCall } from "../config/api"
+import sessionManager from "../utils/sessionManager"
 
 const AppContext = createContext(undefined)
 
@@ -25,17 +26,42 @@ export function AppProvider({ children }) {
     }))
   }, [])
 
+  // Handle session timeout
+  const handleSessionTimeout = useCallback(() => {
+    setUser(null)
+    setIsAuthenticated(false)
+    localStorage.removeItem('token')
+    localStorage.removeItem('lastActivity')
+    sessionManager.cleanup()
+    navigate('/login?timeout=true', { replace: true })
+  }, [navigate])
+
   // Check authentication status on mount
   useEffect(() => {
+    // Skip user authentication for admin routes
+    const isAdminRoute = window.location.pathname.startsWith('/secure-admin') || 
+                        window.location.pathname.startsWith('/admin')
+    
+    if (isAdminRoute) {
+      setLoading(false)
+      return
+    }
+
     const token = localStorage.getItem('token')
     if (token) {
+      // Check if session is expired
+      if (sessionManager.isSessionExpired()) {
+        handleSessionTimeout()
+        return
+      }
+
       apiCall('/auth/me')
         .then(response => {
           if (response?.user) {
             setUser(response.user)
             setIsAuthenticated(true)
-            // Assume streak data is part of the user object from /auth/me
-            // setUser(prev => ({ ...prev, currentStreak: response.user.currentStreak || 0, longestStreak: response.user.longestStreak || 0 }));
+            // Initialize session manager
+            sessionManager.init(handleSessionTimeout)
           } else {
             localStorage.removeItem('token')
             setIsAuthenticated(false)
@@ -51,10 +77,10 @@ export function AppProvider({ children }) {
     } else {
       setLoading(false)
     }
-  }, [])
+  }, [handleSessionTimeout])
 
   const updateLastActivity = useCallback(() => {
-    localStorage.setItem('lastActivity', Date.now().toString())
+    sessionManager.updateActivity()
   }, [])
 
   const verify2FA = useCallback(async (userId, code) => {
@@ -102,7 +128,6 @@ export function AppProvider({ children }) {
       if (response.token || (response.data && response.data.token)) {
         const token = response.token || response.data.token
         localStorage.setItem('token', token)
-        updateLastActivity()
 
         try {
           const userData = await apiCall('/auth/me')
@@ -112,6 +137,7 @@ export function AppProvider({ children }) {
             setUser(user)
             setIsAuthenticated(true)
             setLoading(false)
+            sessionManager.init(handleSessionTimeout)
 
             // Navigate to dashboard
             navigate('/dashboard', { replace: true })
@@ -179,9 +205,9 @@ export function AppProvider({ children }) {
       if (response.token) {
         console.log('Login successful, no 2FA required')
         localStorage.setItem('token', response.token)
-        updateLastActivity()
         setUser(response.user)
         setIsAuthenticated(true)
+        sessionManager.init(handleSessionTimeout)
         navigate('/dashboard', { replace: true })
       }
 
@@ -240,9 +266,9 @@ export function AppProvider({ children }) {
 
       if (response.token) {
         localStorage.setItem('token', response.token)
-        updateLastActivity()
         setUser(response.user)
         setIsAuthenticated(true)
+        sessionManager.init(handleSessionTimeout)
         navigate('/dashboard', { replace: true })
         return { success: true, user: response.user }
       }
@@ -266,6 +292,7 @@ export function AppProvider({ children }) {
     setIsAuthenticated(false)
     localStorage.removeItem('token')
     localStorage.removeItem('lastActivity')
+    sessionManager.cleanup()
     navigate('/', { replace: true })
   }, [navigate])
 

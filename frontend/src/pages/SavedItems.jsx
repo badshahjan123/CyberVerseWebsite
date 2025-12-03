@@ -1,88 +1,65 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Bookmark, BookmarkX, Clock, Award } from 'lucide-react'
-import { useApp } from '../contexts/app-context'
+import { Bookmark, BookmarkX, Clock, Award, Play } from 'lucide-react'
+import { useBookmarks } from '../contexts/bookmark-context'
 
 const SavedItems = () => {
-    const { user } = useApp()
-    const [savedItems, setSavedItems] = useState([])
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        const fetchSavedItems = async () => {
-            try {
-                const token = localStorage.getItem('token')
-                const response = await fetch('http://localhost:5000/api/user/saved-items', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                if (response.ok) {
-                    const data = await response.json()
-                    setSavedItems(data.savedItems || [])
-                }
-            } catch (error) {
-                console.error('Failed to fetch saved items:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchSavedItems()
-    }, [])
-
-    const handleUnsave = async (itemType, itemId) => {
-        try {
-            const token = localStorage.getItem('token')
-            await fetch(`http://localhost:5000/api/user/save-item/${itemType}/${itemId}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            // Remove from list
-            setSavedItems(prev => prev.filter(item => item.itemId._id !== itemId))
-        } catch (error) {
-            console.error('Failed to unsave item:', error)
+    const { bookmarkedItems, removeBookmark } = useBookmarks()
+    
+    const handleUnsave = (id, type) => {
+        removeBookmark(id, type)
+    }
+    
+    const getDifficultyColor = (difficulty) => {
+        switch (difficulty) {
+            case 'Easy': case 'Beginner': return 'bg-success/20 text-success border-success/30'
+            case 'Medium': case 'Intermediate': return 'bg-warning/20 text-warning border-warning/30'
+            case 'Hard': case 'Insane': return 'bg-danger/20 text-danger border-danger/30'
+            default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
         }
     }
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        )
-    }
+
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="page-container bg-[rgb(8,12,16)] text-text min-h-screen py-8">
+        <div className="container mx-auto px-4 max-w-6xl">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-text mb-2">Saved Items</h1>
                 <p className="text-muted">Your bookmarked rooms and labs</p>
             </div>
 
-            {savedItems.length === 0 ? (
+            {bookmarkedItems.length === 0 ? (
                 <div className="card p-12 text-center">
                     <Bookmark className="w-16 h-16 text-muted mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-text mb-2">No Saved Items</h3>
-                    <p className="text-muted">Bookmark rooms and labs to access them quickly!</p>
+                    <p className="text-muted mb-4">Bookmark rooms and labs to access them quickly!</p>
+                    <div className="flex gap-3 justify-center">
+                        <Link to="/rooms" className="btn-primary inline-flex items-center gap-2">
+                            <Play className="w-4 h-4" />
+                            Browse Rooms
+                        </Link>
+                        <Link to="/labs" className="btn-ghost inline-flex items-center gap-2">
+                            <Award className="w-4 h-4" />
+                            Browse Labs
+                        </Link>
+                    </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {savedItems.map((item) => (
+                    {bookmarkedItems.map((item) => (
                         <div
-                            key={item._id}
+                            key={`${item.type}-${item.id}`}
                             className="card p-6 hover:border-primary/50 transition-all group"
                         >
                             <div className="flex items-start justify-between mb-4">
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.itemType === 'room'
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.type === 'room'
                                         ? 'bg-primary/20 text-primary'
                                         : 'bg-accent/20 text-accent'
                                     }`}>
-                                    {item.itemType.toUpperCase()}
+                                    {item.type.toUpperCase()}
                                 </span>
                                 <button
-                                    onClick={() => handleUnsave(item.itemType, item.itemId._id)}
+                                    onClick={() => handleUnsave(item.id, item.type)}
                                     className="p-1 hover:bg-danger/10 rounded transition-colors"
                                     title="Remove from saved"
                                 >
@@ -90,39 +67,39 @@ const SavedItems = () => {
                                 </button>
                             </div>
 
+                            <div className="text-3xl mb-3">{item.icon || (item.type === 'room' ? '🎯' : '🧪')}</div>
+
                             <h3 className="font-bold text-text mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                                {item.itemId?.title || item.itemId?.name || 'Untitled'}
+                                {item.title}
                             </h3>
 
-                            <p className="text-sm text-muted mb-4 line-clamp-2">
-                                {item.itemId?.description || 'No description'}
+                            <p className="text-sm text-muted mb-4">
+                                {item.category}
                             </p>
 
-                            <div className="flex items-center justify-between text-xs text-muted">
-                                <span className="flex items-center gap-1">
+                            <div className="flex items-center justify-between text-xs mb-4">
+                                <span className="flex items-center gap-1 text-muted">
                                     <Clock className="w-3 h-3" />
-                                    Saved {new Date(item.savedAt).toLocaleDateString()}
+                                    Saved {new Date(item.bookmarkedAt).toLocaleDateString()}
                                 </span>
-                                {item.itemId?.difficulty && (
-                                    <span className={`px-2 py-1 rounded ${item.itemId.difficulty === 'Beginner' ? 'bg-green-500/20 text-green-400' :
-                                            item.itemId.difficulty === 'Intermediate' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                'bg-red-500/20 text-red-400'
-                                        }`}>
-                                        {item.itemId.difficulty}
+                                {item.difficulty && (
+                                    <span className={`px-2 py-1 rounded text-xs font-semibold border ${getDifficultyColor(item.difficulty)}`}>
+                                        {item.difficulty}
                                     </span>
                                 )}
                             </div>
 
                             <Link
-                                to={item.itemType === 'room' ? `/rooms/${item.itemId?.slug}` : `/labs/${item.itemId?._id}`}
-                                className="mt-4 block w-full btn-primary text-center text-sm py-2"
+                                to={item.type === 'room' ? `/rooms/${item.slug || item.id}` : `/labs/${item.id}`}
+                                className="block w-full btn-primary text-center text-sm py-2"
                             >
-                                View {item.itemType === 'room' ? 'Room' : 'Lab'}
+                                View {item.type === 'room' ? 'Room' : 'Lab'}
                             </Link>
                         </div>
                     ))}
                 </div>
             )}
+        </div>
         </div>
     )
 }

@@ -640,3 +640,36 @@ li {
   contain: layout style;
   transform: translateZ(0);
 }
+
+/* ========================================
+   SMOOTH PAGE TRANSITIONS (No Flicker)
+   ======================================== */
+
+/* Smooth fade-in for all pages - replaces Framer Motion */
+main>div {
+  animation: smoothPageEntry 0.15s ease-out;
+}
+
+@keyframes smoothPageEntry {
+  from {
+    opacity: 0.92;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Prevent any flash during navigation */
+.page-container,
+main {
+  background-color: rgb(8, 12, 16);
+  min-height: 100vh;
+}
+
+/* Ensure smooth transitions without layout shift */
+.route-transition {
+  animation: smoothPageEntry 0.15s ease-out;
+  will-change: opacity;
+  transform: translateZ(0);
+}

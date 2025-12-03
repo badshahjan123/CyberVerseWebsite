@@ -126,34 +126,43 @@ const Settings = () => {
     const file = e.target.files[0]
     if (!file) return
 
-    const formData = new FormData()
-    formData.append('avatar', file)
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      showSuccessToast('Please select an image file')
+      return
+    }
+    
+    if (file.size > 2 * 1024 * 1024) {
+      showSuccessToast('File size must be less than 2MB')
+      return
+    }
 
+    setLoading(true)
+    
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:5000/api/users/upload-avatar', {
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      const response = await apiCall('/users/upload-avatar', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log('✅ Avatar upload successful:', data)
-
-        // Update the user state with new avatar
-        updateUserProfile({ avatar: data.avatar })
+      if (response?.user) {
+        // Add timestamp to force image refresh (cache busting)
+        const updatedUser = {
+          ...response.user,
+          avatarTimestamp: Date.now()
+        }
+        updateUserProfile(updatedUser)
         showSuccessToast('Avatar updated successfully!')
-      } else {
-        const error = await response.json()
-        console.error('❌ Avatar upload failed:', error)
-        showSuccessToast(error.message || 'Failed to upload avatar')
+        e.target.value = '' // Clear input
       }
     } catch (error) {
-      console.error('Failed to upload avatar:', error)
+      console.error('Avatar upload error:', error)
       showSuccessToast('Failed to upload avatar')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -218,9 +227,9 @@ const Settings = () => {
                     <div className="flex items-center gap-6">
                       <div className="relative group">
                         <img
-                          src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
+                          src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}${user.avatar}?t=${user.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
                           alt="Avatar"
-                          className="w-24 h-24 rounded-full border-2 border-primary/50"
+                          className="w-24 h-24 rounded-full border-2 border-primary/50 object-cover"
                         />
                         <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => document.getElementById('avatar-upload').click()}>
                           <Upload className="w-6 h-6 text-white" />

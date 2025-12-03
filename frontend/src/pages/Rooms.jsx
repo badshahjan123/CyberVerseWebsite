@@ -1,7 +1,8 @@
 import { useState, useMemo, memo, useCallback, useEffect } from "react"
-import { Users, Zap, Plus, Filter, Clock, Crown, Search, ChevronDown, Star, Flame, Trophy, X, Play, Award, TrendingUp } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Users, Zap, Plus, Filter, Clock, Crown, Search, ChevronDown, Star, Flame, Trophy, X, Play, Award, TrendingUp, Bookmark, BookmarkCheck } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
 import { getRooms } from "../services/rooms"
+import { useBookmarks } from "../contexts/bookmark-context"
 import { ProtectedRoute } from "../components/protected-route"
 
 // Skeleton Loader Component
@@ -54,11 +55,17 @@ const getDifficultyConfig = (difficulty) => {
 }
 
 // Professional Room Card Component
-const RoomCard = memo(({ room }) => {
+const RoomCard = memo(({ room, onBookmark, isBookmarked }) => {
   const difficultyConfig = getDifficultyConfig(room.difficulty)
   const xpReward = room.points || 500 // Use points field or default
   const isNew = room.isNew || false
   const subscriberOnly = room.subscriberOnly || room.isPremium || false
+  
+  const handleBookmark = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onBookmark(room)
+  }
 
   return (
     <Link to={`/rooms/${room.slug}`} className="block group">
@@ -90,6 +97,18 @@ const RoomCard = memo(({ room }) => {
               </div>
             )}
           </div>
+          
+          {/* Bookmark Button */}
+          <button
+            onClick={handleBookmark}
+            className={`absolute top-3 left-3 p-2 rounded-full backdrop-blur-sm transition-all ${
+              isBookmarked 
+                ? 'bg-warning/90 text-black hover:bg-warning' 
+                : 'bg-black/50 text-white hover:bg-black/70'
+            }`}
+          >
+            {isBookmarked ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+          </button>
           {/* Difficulty Bar Overlay */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
             <div
@@ -136,6 +155,7 @@ const RoomCard = memo(({ room }) => {
 })
 
 const Rooms = memo(() => {
+  const { addBookmark, removeBookmark, isBookmarked } = useBookmarks()
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedTypes, setSelectedTypes] = useState([]) // walkthrough, challenge
   const [selectedDifficulties, setSelectedDifficulties] = useState([])
@@ -143,6 +163,7 @@ const Rooms = memo(() => {
   const [searchTerm, setSearchTerm] = useState("")
   const [showSidebar, setShowSidebar] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true) // Track initial load
   const [error, setError] = useState(null)
   const [rooms, setRooms] = useState([])
 
@@ -151,18 +172,36 @@ const Rooms = memo(() => {
 
   // Advanced Filtering
   const filteredRooms = useMemo(() => {
-    return rooms.filter(room => {
+    const filtered = rooms.filter(room => {
       const matchesSearch = room.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         room.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesCategory = selectedCategory === "all" || room.category === selectedCategory
+      const matchesCategory = selectedCategory === "all" || room.category?.toLowerCase() === selectedCategory.toLowerCase()
       const matchesType = selectedTypes.length === 0 ||
         selectedTypes.includes(room.type?.toLowerCase()) ||
         selectedTypes.some(type => room.tags?.includes(type))
       const matchesDifficulty = selectedDifficulties.length === 0 ||
         selectedDifficulties.includes(room.difficulty)
 
-      return matchesSearch && matchesCategory && matchesType && matchesDifficulty
+      const passes = matchesSearch && matchesCategory && matchesType && matchesDifficulty
+      
+      if (room.title?.toLowerCase().includes('network')) {
+        console.log('🔍 Networking room filter check:', {
+          title: room.title,
+          category: room.category,
+          selectedCategory,
+          matchesSearch,
+          matchesCategory,
+          matchesType,
+          matchesDifficulty,
+          passes
+        })
+      }
+      
+      return passes
     })
+    
+    console.log('🔍 Filtered rooms count:', filtered.length)
+    return filtered
   }, [rooms, searchTerm, selectedCategory, selectedTypes, selectedDifficulties])
 
   // Sorting
@@ -173,6 +212,7 @@ const Rooms = memo(() => {
     } else if (orderBy === 'newest') {
       return sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     }
+    console.log('📊 Final sorted rooms:', sorted.length)
     return sorted
   }, [filteredRooms, orderBy])
 
@@ -189,7 +229,11 @@ const Rooms = memo(() => {
       setLoading(true)
       setError(null)
       const data = await getRooms({ category: selectedCategory })
+      console.log('🏠 Fetched rooms:', data)
+      console.log('🏠 Number of rooms:', data.length)
+      console.log('🏠 Room categories:', data.map(r => r.category))
       setRooms(data)
+      setIsInitialLoad(false) // Mark initial load as complete
     } catch (err) {
       setError('Failed to load rooms')
       console.error('Error fetching rooms:', err)
@@ -248,7 +292,22 @@ const Rooms = memo(() => {
           </div>
 
           {/* Featured Room Banner - "Room of the Day" */}
-          {featuredRoom && (
+          {loading ? (
+            <div className="relative overflow-hidden rounded-xl mb-6 border border-primary/20 bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-sm animate-pulse">
+              <div className="h-48 lg:h-64 bg-slate-700/50"></div>
+              <div className="absolute inset-0 p-8 lg:p-12 flex flex-col justify-center">
+                <div className="h-4 bg-slate-700/50 rounded w-32 mb-3"></div>
+                <div className="h-8 lg:h-10 bg-slate-700/50 rounded w-3/4 mb-3"></div>
+                <div className="h-5 bg-slate-700/50 rounded w-full max-w-2xl mb-4"></div>
+                <div className="flex gap-4 mb-6">
+                  <div className="h-4 bg-slate-700/50 rounded w-16"></div>
+                  <div className="h-4 bg-slate-700/50 rounded w-20"></div>
+                  <div className="h-6 bg-slate-700/50 rounded w-24"></div>
+                </div>
+                <div className="h-12 bg-slate-700/50 rounded w-40"></div>
+              </div>
+            </div>
+          ) : featuredRoom && (
             <div className="relative overflow-hidden rounded-xl mb-6 border border-primary/20 bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-sm">
               <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent z-10"></div>
               <img
@@ -338,7 +397,7 @@ const Rooms = memo(() => {
                 <div>
                   <label className="block text-sm font-semibold text-muted mb-2">Difficulty</label>
                   <div className="space-y-2">
-                    {['Info', 'Easy', 'Medium', 'Hard', 'Insane'].map((difficulty) => (
+                    {['Beginner', 'Easy', 'Intermediate', 'Medium', 'Hard', 'Insane'].map((difficulty) => (
                       <label key={difficulty} className="flex items-center gap-2 cursor-pointer group">
                         <input
                           type="checkbox"
@@ -440,9 +499,34 @@ const Rooms = memo(() => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-                  {sortedRooms.map(room => (
-                    <RoomCard key={room._id || room.id} room={room} />
-                  ))}
+                  {sortedRooms.map(room => {
+                    const roomBookmarked = isBookmarked(room.slug || room._id || room.id, 'room')
+                    
+                    const handleBookmark = (roomData) => {
+                      if (roomBookmarked) {
+                        removeBookmark(roomData.slug || roomData._id || roomData.id, 'room')
+                      } else {
+                        addBookmark({
+                          id: roomData.slug || roomData._id || roomData.id,
+                          slug: roomData.slug,
+                          type: 'room',
+                          title: roomData.title,
+                          category: roomData.category,
+                          difficulty: roomData.difficulty,
+                          icon: roomData.icon
+                        })
+                      }
+                    }
+                    
+                    return (
+                      <RoomCard 
+                        key={room._id || room.id} 
+                        room={room} 
+                        isBookmarked={roomBookmarked}
+                        onBookmark={handleBookmark}
+                      />
+                    )
+                  })}
                 </div>
               )}
             </div>

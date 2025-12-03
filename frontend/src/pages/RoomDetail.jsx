@@ -2,8 +2,9 @@ import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useApp } from "../contexts/app-context"
 import { getRoomBySlug } from "../services/rooms"
-import { getRoomProgress, joinRoom, submitExercise, submitQuiz, completeRoom } from "../services/roomProgress"
+import { getRoomProgress, joinRoom, submitExercise, submitQuiz, completeRoom, resetRoomProgress } from "../services/roomProgress"
 import { useToast } from "../hooks/use-toast"
+import { useActivity } from "../contexts/activity-context"
 import { Play, Lock, CheckCircle, Clock, Trophy, Users, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, Terminal, HelpCircle, Sparkles, Award, X, RefreshCw } from "lucide-react"
 import { clearQuizCache } from "../utils/clearQuizCache"
 
@@ -11,6 +12,7 @@ const RoomDetail = () => {
   const { slug: roomId } = useParams()
   const navigate = useNavigate()
   const { user } = useApp()
+  const { markRoomAccessed, resetRoomProgress: resetActivityProgress } = useActivity()
 
   // State Management
   const [room, setRoom] = useState(null)
@@ -31,6 +33,26 @@ const RoomDetail = () => {
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
   const [submissionStatus, setSubmissionStatus] = useState({}) // { [taskId]: 'idle'|'submitting'|'success'|'error' }
+
+  // Handle page exit detection for resume flow
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // If user has progress but hasn't completed, they're exiting halfway
+      if (userProgress.joined && !userProgress.roomCompleted && userProgress.completedTasks.length > 0) {
+        // Store exit state for resume flow
+        localStorage.setItem(`room_exit_${roomId}`, JSON.stringify({
+          exitedAt: new Date().toISOString(),
+          progress: userProgress.completedTasks.length,
+          total: room?.tasks?.length || 0
+        }))
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [roomId, userProgress, room])
+
+
 
   // Load room data and user progress
   useEffect(() => {
@@ -100,24 +122,32 @@ const RoomDetail = () => {
             const allTasksComplete = completedTasks.length === totalTasks && totalTasks > 0
 
             // FIX: Only mark room as complete if ALL conditions met:
-            // 1. Backend says completed
-            // 2. Quiz was completed
-            // 3. All tasks are actually done
-            const isRoomActuallyComplete = progressData.progress?.completed &&
-              progressData.progress?.quizCompleted &&
-              allTasksComplete
+            // 1. All tasks are done
+            // 2. Quiz was completed (if room has quiz)
+            // 3. Backend says completed
+            const backendCompleted = progressData.progress?.completed === true
+            const quizCompleted = progressData.progress?.quizCompleted === true
+            const hasQuiz = roomData.quizzes && roomData.quizzes.length > 0
+            
+            // Room is complete if:
+            // - All tasks done AND
+            // - (No quiz OR quiz completed)
+            const isRoomActuallyComplete = allTasksComplete && (!hasQuiz || quizCompleted)
 
             setUserProgress({
               joined: progressData.progress?.joined === true ? true : false,
               completedTasks: completedTasks,
               taskAnswers: progressData.progress?.exerciseAnswers || {},
-              roomCompleted: isRoomActuallyComplete || false,
+              roomCompleted: isRoomActuallyComplete,
               totalXP: progressData.progress?.totalXP || 0
             })
 
             console.log('🎯 Final joined state:', progressData.progress?.joined === true ? true : false)
             console.log('✅ All tasks complete:', allTasksComplete, `(${completedTasks.length}/${totalTasks})`)
-            console.log('🏆 Room completed:', isRoomActuallyComplete)
+            console.log('❓ Has quiz:', hasQuiz)
+            console.log('🧪 Quiz completed:', quizCompleted)
+            console.log('🏁 Backend completed:', backendCompleted)
+            console.log('🏆 Room actually completed:', isRoomActuallyComplete)
 
             // Auto-expand first task if user has joined
             if (progressData.progress?.joined === true) {
@@ -185,6 +215,14 @@ const RoomDetail = () => {
       await joinRoom(roomId)
       setUserProgress(prev => ({ ...prev, joined: true }))
       setExpandedTasks([1])  // Expand first task
+      
+      // Add room to recent activity so it shows in dashboard
+      markRoomAccessed(roomId, {
+        title: room.title,
+        category: room.category,
+        difficulty: room.difficulty,
+        totalTasks: room.tasks?.length || 0
+      })
     } catch (error) {
       console.error('Failed to join room:', error)
       alert('Failed to join room. Please try again.')
@@ -244,9 +282,12 @@ const RoomDetail = () => {
           }
         })
 
-        // Show points toast/animation
+        // Show points toast/animation with enhanced info
         try {
-          toast({ title: `+${pointsEarned} XP`, description: 'Correct Answer!' })
+          toast({ 
+            title: `+${pointsEarned} XP`, 
+            description: `Correct Answer! ${response.userStats?.points ? `Total: ${response.userStats.points} pts` : ''}` 
+          })
         } catch (e) {
           // toast is optional; ignore if not available
         }
@@ -265,8 +306,24 @@ const RoomDetail = () => {
             if (room.quizzes && room.quizzes.length > 0) {
               setShowQuiz(true)
             } else {
-              setUserProgress(prev => ({ ...prev, roomCompleted: true }))
-              setShowCompletionModal(true)
+              // No quiz - room completed after last task
+              const updatedProgress = {
+                ...userProgress,
+                roomCompleted: true,
+                completed: true,
+                completedAt: new Date().toISOString()
+              }
+              setUserProgress(updatedProgress)
+              
+              // Dispatch completion event for dashboard updates
+              window.dispatchEvent(new CustomEvent('roomCompleted', {
+                detail: { roomId, totalXP: userProgress.totalXP + pointsEarned }
+              }))
+              
+              // Navigate to completion screen
+              setTimeout(() => {
+                navigate(`/rooms/${roomId}/completed`)
+              }, 1500)
             }
           }
 
@@ -289,6 +346,46 @@ const RoomDetail = () => {
       try {
         toast({ title: 'Submission failed', description: 'Please try again.' })
       } catch (e) { }
+    }
+  }
+
+  // Handle Try Again - Reset all progress
+  const handleTryAgain = async () => {
+    try {
+      // Reset backend progress
+      await resetRoomProgress(roomId)
+      
+      // Reset local state
+      setUserProgress({
+        joined: true, // Keep joined status
+        completedTasks: [],
+        taskAnswers: {},
+        roomCompleted: false,
+        totalXP: 0
+      })
+      
+      // Reset UI state
+      setTaskAnswers({})
+      setQuizAnswers({})
+      setQuizResults(null)
+      setQuizSubmitted(false)
+      setShowQuiz(false)
+      setSubmissionStatus({})
+      setExpandedTasks([1]) // Expand first task
+      
+      // Clear quiz cache
+      localStorage.removeItem(`quiz_results_${roomId}`)
+      
+      // Reset activity context progress
+      resetActivityProgress(roomId)
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      
+      toast({ title: 'Progress Reset', description: 'You can now start fresh!' })
+    } catch (error) {
+      console.error('Failed to reset progress:', error)
+      toast({ title: 'Reset Failed', description: 'Please try again.' })
     }
   }
 
@@ -332,12 +429,25 @@ const RoomDetail = () => {
             // Don't block UI if backend fails, but log it
           }
 
-          setUserProgress(prev => ({
-            ...prev,
+          const updatedProgress = {
+            ...userProgress,
             roomCompleted: true,
-            totalXP: finalTotalXP
+            totalXP: finalTotalXP,
+            completed: true,
+            completedAt: new Date().toISOString()
+          }
+          
+          setUserProgress(updatedProgress)
+          
+          // Dispatch completion event for dashboard updates
+          window.dispatchEvent(new CustomEvent('roomCompleted', {
+            detail: { roomId, totalXP: finalTotalXP, score: response.percentage }
           }))
-          setShowCompletionModal(true)
+          
+          // Navigate to completion screen
+          setTimeout(() => {
+            navigate(`/rooms/${roomId}/completed`)
+          }, 1000)
         }, 2000)
       }
     } catch (error) {
@@ -458,7 +568,30 @@ const RoomDetail = () => {
                 <Play className="h-5 w-5" />
                 Join Room
               </button>
-            ) : !userProgress.roomCompleted ? (
+            ) : userProgress.roomCompleted && (!room.quizzes?.length || quizSubmitted) ? (
+              // Completed - Show Review and Try Again buttons
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    // Allow review by expanding all tasks
+                    const allTaskIds = room.tasks?.map(t => t.id) || []
+                    setExpandedTasks(allTaskIds)
+                    window.scrollTo({ top: 400, behavior: 'smooth' })
+                  }}
+                  className="btn-ghost px-6 py-4 text-lg flex items-center gap-2"
+                >
+                  <CheckCircle className="h-5 w-5" />
+                  Review Room
+                </button>
+                <button
+                  onClick={handleTryAgain}
+                  className="btn-secondary px-6 py-4 text-lg flex items-center gap-2"
+                >
+                  <RefreshCw className="h-5 w-5" />
+                  Try Again
+                </button>
+              </div>
+            ) : (
               // Joined but not completed - Show Resume button
               <button
                 onClick={() => {
@@ -478,20 +611,6 @@ const RoomDetail = () => {
               >
                 <Play className="h-5 w-5" />
                 Resume Room
-              </button>
-            ) : (
-              // Completed - Show Review button
-              <button
-                onClick={() => {
-                  // Allow review by expanding all tasks
-                  const allTaskIds = room.tasks?.map(t => t.id) || []
-                  setExpandedTasks(allTaskIds)
-                  window.scrollTo({ top: 400, behavior: 'smooth' })
-                }}
-                className="btn-ghost px-8 py-4 text-lg flex items-center gap-2"
-              >
-                <CheckCircle className="h-5 w-5" />
-                Review Room
               </button>
             )}
           </div>
@@ -797,11 +916,7 @@ const RoomDetail = () => {
                           <p className="text-slate-300">Great job! You've completed the room!</p>
                         ) : (
                           <button
-                            onClick={() => {
-                              setQuizSubmitted(false)
-                              setQuizAnswers({})
-                              setQuizResults(null)
-                            }}
+                            onClick={handleTryAgain}
                             className="btn-ghost px-6 py-2 mt-2"
                           >
                             Try Again

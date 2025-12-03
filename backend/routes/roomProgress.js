@@ -116,17 +116,43 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
       roomProgress.exerciseAnswers = {};
     }
 
-    // Only save progress if answer is correct
+    // Initialize scoring arrays if they don't exist
+    if (!roomProgress.taskScores) roomProgress.taskScores = [];
+    if (!roomProgress.totalPointsEarned) roomProgress.totalPointsEarned = 0;
+
+    // Find existing task score
+    let taskScore = roomProgress.taskScores.find(ts => ts.taskIndex === lectureIndex);
+    
     if (isCorrect) {
       roomProgress.exerciseAnswers[lectureIndex] = { answer, correct: true };
       if (!roomProgress.completedLectures.includes(lectureIndex)) {
         roomProgress.completedLectures.push(lectureIndex);
       }
 
-      // Award points for correct answer
-      user.points = (user.points || 0) + exercise.points;
+      const maxPoints = exercise.points || 100;
+      const pointsEarned = maxPoints; // 100% for correct answer
+      
+      // Update or create task score
+      if (taskScore) {
+        // Deduct previous points if this is a retry
+        user.points = Math.max(0, (user.points || 0) - taskScore.pointsEarned);
+        roomProgress.totalPointsEarned -= taskScore.pointsEarned;
+        taskScore.pointsEarned = pointsEarned;
+        taskScore.percentage = 100;
+      } else {
+        roomProgress.taskScores.push({
+          taskIndex: lectureIndex,
+          pointsEarned,
+          maxPoints,
+          percentage: 100
+        });
+      }
+      
+      // Add new points
+      user.points = (user.points || 0) + pointsEarned;
+      roomProgress.totalPointsEarned += pointsEarned;
 
-      console.log('Correct answer - progress saved, points awarded:', exercise.points);
+      console.log('Correct answer - progress saved, points awarded:', pointsEarned);
     } else {
       // Clear any existing progress for this task
       delete roomProgress.exerciseAnswers[lectureIndex];
@@ -134,6 +160,14 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
       if (completedIndex > -1) {
         roomProgress.completedLectures.splice(completedIndex, 1);
       }
+      
+      // Remove points if task was previously completed
+      if (taskScore) {
+        user.points = Math.max(0, (user.points || 0) - taskScore.pointsEarned);
+        roomProgress.totalPointsEarned -= taskScore.pointsEarned;
+        roomProgress.taskScores = roomProgress.taskScores.filter(ts => ts.taskIndex !== lectureIndex);
+      }
+      
       console.log('Incorrect answer - progress cleared');
     }
 
@@ -193,9 +227,30 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
     roomProgress.quizCompleted = true;
     roomProgress.finalScore = score;
 
-    // Award points based on score
-    const pointsEarned = Math.round((score / 100) * 500); // Max 500 points
-    user.points += pointsEarned;
+    // Initialize scoring if not exists
+    if (!roomProgress.quizScore) roomProgress.quizScore = { pointsEarned: 0, maxPoints: 0, percentage: 0 };
+    if (!roomProgress.totalPointsEarned) roomProgress.totalPointsEarned = 0;
+
+    // Calculate quiz points based on percentage
+    const maxQuizPoints = 500; // Fixed max points for quiz
+    const newQuizPoints = Math.round((score / 100) * maxQuizPoints);
+    
+    // Remove previous quiz points if this is a retry
+    if (roomProgress.quizScore.pointsEarned > 0) {
+      user.points = Math.max(0, (user.points || 0) - roomProgress.quizScore.pointsEarned);
+      roomProgress.totalPointsEarned -= roomProgress.quizScore.pointsEarned;
+    }
+    
+    // Add new quiz points
+    user.points = (user.points || 0) + newQuizPoints;
+    roomProgress.totalPointsEarned += newQuizPoints;
+    
+    // Update quiz score tracking
+    roomProgress.quizScore = {
+      pointsEarned: newQuizPoints,
+      maxPoints: maxQuizPoints,
+      percentage: score
+    };
 
     // FIX: ONLY mark as complete if ALL conditions met:
     // 1. All tasks are done
@@ -204,7 +259,32 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
     if (passed && completedTasks === totalTasks) {
       roomProgress.completed = true;
       roomProgress.completedAt = new Date();
-      console.log(`✅ Room marked complete (quiz passed with ${score}%)`);
+      
+      // Force update streak for room completion
+      user.currentStreak = (user.currentStreak || 0) + 1;
+      user.lastStreakDate = new Date();
+      if (user.currentStreak > (user.longestStreak || 0)) {
+        user.longestStreak = user.currentStreak;
+      }
+      
+      console.log(`✅ Room marked complete (quiz passed with ${score}%), streak: ${user.currentStreak}`);
+      
+      // Create notifications for achievements
+      const NotificationService = require('../utils/notificationService');
+      
+      // Check for level up
+      const oldLevel = user.level;
+      const newLevel = Math.floor(user.points / 1000) + 1;
+      if (newLevel > oldLevel) {
+        user.level = newLevel;
+        await NotificationService.notifyLevelUp(user._id, newLevel);
+      }
+      
+      // Check for streak milestones
+      if (user.currentStreak > 0 && user.currentStreak % 7 === 0) {
+        await NotificationService.notifyStreak(user._id, user.currentStreak);
+      }
+      
       // The pre-save hook will calculate unique completed rooms
     } else if (!passed) {
       console.log(`❌ Room NOT complete (quiz failed with ${score}%)`);
@@ -215,13 +295,14 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
     res.json({
       message: passed ? 'Quiz passed!' : 'Quiz failed - try again',
       passed,
-      pointsEarned,
+      pointsEarned: newQuizPoints,
       totalPoints: user.points,
       userStats: {
         points: user.points,
         level: user.level,
         completedRooms: user.completedRooms,
-        completedLabs: user.completedLabs
+        completedLabs: user.completedLabs,
+        rank: await user.calculateRank()
       }
     });
   } catch (error) {
@@ -277,11 +358,18 @@ router.post('/:roomId/complete', auth, async (req, res) => {
       roomProgress.completed = true;
       roomProgress.completedAt = new Date();
       roomProgress.finalScore = finalScore;
-
-      // The pre-save hook will automatically update completedRooms count
+      
+      // Force update streak for room completion
+      user.currentStreak = (user.currentStreak || 0) + 1;
+      user.lastStreakDate = new Date();
+      if (user.currentStreak > (user.longestStreak || 0)) {
+        user.longestStreak = user.currentStreak;
+      }
+      
+      // Save user to update streak and completion counts
       await user.save();
 
-      console.log(`✅ Room ${roomId} marked complete for user ${user._id}`);
+      console.log(`✅ Room ${roomId} marked complete for user ${user._id}, streak: ${user.currentStreak}`);
 
       res.json({
         message: 'Room completed successfully',
@@ -289,7 +377,9 @@ router.post('/:roomId/complete', auth, async (req, res) => {
           points: user.points,
           level: user.level,
           completedRooms: user.completedRooms,
-          completedLabs: user.completedLabs
+          completedLabs: user.completedLabs,
+          currentStreak: user.currentStreak,
+          longestStreak: user.longestStreak
         }
       });
     } else {
@@ -311,6 +401,56 @@ router.post('/:roomId/complete', auth, async (req, res) => {
     }
   } catch (error) {
     console.error('Complete room error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/room-progress/:roomId/reset - Reset room progress for Try Again
+router.post('/:roomId/reset', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let roomProgress = user.roomProgress.find(p => p.roomId === roomId);
+
+    if (!roomProgress) {
+      return res.status(400).json({ message: 'Room not found in progress' });
+    }
+
+    // Deduct all points earned from this room
+    if (roomProgress.totalPointsEarned) {
+      user.points = Math.max(0, (user.points || 0) - roomProgress.totalPointsEarned);
+    }
+
+    // Reset all progress but keep joined status
+    roomProgress.completedLectures = [];
+    roomProgress.exerciseAnswers = {};
+    roomProgress.quizCompleted = false;
+    roomProgress.finalScore = null;
+    roomProgress.completed = false;
+    roomProgress.completedAt = null;
+    roomProgress.totalXP = 0;
+    roomProgress.totalPointsEarned = 0;
+    roomProgress.taskScores = [];
+    roomProgress.quizScore = { pointsEarned: 0, maxPoints: 0, percentage: 0 };
+
+    await user.save();
+
+    res.json({
+      message: 'Room progress reset successfully',
+      userStats: {
+        points: user.points,
+        level: user.level,
+        completedRooms: user.completedRooms,
+        completedLabs: user.completedLabs
+      }
+    });
+  } catch (error) {
+    console.error('Reset room progress error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -30,7 +30,8 @@ const SecureAdminLogin = () => {
         throw new Error(data.message || 'Login failed')
       }
 
-      // Store user data in localStorage for UI purposes only
+      // Store token and user data
+      localStorage.setItem('token', data.token)
       localStorage.setItem('adminUser', JSON.stringify(data.user))
       
       // Redirect to admin dashboard

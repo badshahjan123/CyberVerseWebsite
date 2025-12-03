@@ -106,6 +106,20 @@ router.get('/users', cookieAuth, async (req, res) => {
   }
 });
 
+// Get single user by ID
+router.get('/users/:id', cookieAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Failed to fetch user' });
+  }
+});
+
 // Update user status/role
 router.put('/users/:id', cookieAuth, async (req, res) => {
   try {
@@ -140,10 +154,49 @@ router.delete('/users/:id', cookieAuth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+    // Broadcast admin activity
+    if (global.broadcastAdminActivity) {
+      global.broadcastAdminActivity({
+        type: 'user',
+        message: `User deleted: ${user.name}`,
+        timestamp: 'Just now'
+      })
+    }
+
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ message: 'Failed to delete user' });
+  }
+});
+
+// Bulk delete users
+router.delete('/users/bulk-delete', cookieAuth, async (req, res) => {
+  try {
+    const { userIds } = req.body;
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: 'User IDs array is required' });
+    }
+    
+    const result = await User.deleteMany({ _id: { $in: userIds } });
+
+    // Broadcast admin activity
+    if (global.broadcastAdminActivity) {
+      global.broadcastAdminActivity({
+        type: 'user',
+        message: `Bulk deleted ${result.deletedCount} users`,
+        timestamp: 'Just now'
+      })
+    }
+
+    res.json({ 
+      message: `${result.deletedCount} users deleted successfully`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Bulk delete users error:', error);
+    res.status(500).json({ message: 'Failed to delete users' });
   }
 });
 
@@ -222,6 +275,15 @@ router.post('/rooms', cookieAuth, async (req, res) => {
     await room.save();
     await room.populate('createdBy', 'name email');
 
+    // Broadcast admin activity
+    if (global.broadcastAdminActivity) {
+      global.broadcastAdminActivity({
+        type: 'room',
+        message: `New room created: ${room.title || room.name}`,
+        timestamp: 'Just now'
+      })
+    }
+
     res.status(201).json({ message: 'Room created successfully', room });
   } catch (error) {
     console.error('Create room error:', error);
@@ -268,6 +330,16 @@ router.delete('/rooms/:id', cookieAuth, async (req, res) => {
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
+
+    // Broadcast admin activity
+    if (global.broadcastAdminActivity) {
+      global.broadcastAdminActivity({
+        type: 'room',
+        message: `Room deleted: ${room.title || room.name}`,
+        timestamp: 'Just now'
+      })
+    }
+
     res.json({ message: 'Room deleted successfully' });
   } catch (error) {
     console.error('Delete room error:', error);
@@ -333,6 +405,15 @@ router.post('/labs', cookieAuth, async (req, res) => {
     await lab.save();
     await lab.populate('createdBy', 'name email');
 
+    // Broadcast admin activity
+    if (global.broadcastAdminActivity) {
+      global.broadcastAdminActivity({
+        type: 'lab',
+        message: `New lab published: ${lab.title}`,
+        timestamp: 'Just now'
+      })
+    }
+
     res.status(201).json({ message: 'Lab created successfully', lab });
   } catch (error) {
     console.error('Create lab error:', error);
@@ -379,11 +460,100 @@ router.delete('/labs/:id', cookieAuth, async (req, res) => {
     if (!lab) {
       return res.status(404).json({ message: 'Lab not found' });
     }
+
+    // Broadcast admin activity
+    if (global.broadcastAdminActivity) {
+      global.broadcastAdminActivity({
+        type: 'lab',
+        message: `Lab deleted: ${lab.title}`,
+        timestamp: 'Just now'
+      })
+    }
+
     res.json({ message: 'Lab deleted successfully' });
   } catch (error) {
     console.error('Delete lab error:', error);
     res.status(500).json({ message: 'Failed to delete lab' });
   }
 });
+
+// =============================================================================
+// ACTIVITY TRACKING
+// =============================================================================
+
+// Get recent admin activity
+router.get('/activity', cookieAuth, async (req, res) => {
+  try {
+    const activities = [];
+    
+    // Get recent user registrations
+    const recentUsers = await User.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('name createdAt');
+    
+    recentUsers.forEach(user => {
+      activities.push({
+        type: 'user',
+        message: `New user registered: ${user.name}`,
+        timestamp: getTimeAgo(user.createdAt),
+        createdAt: user.createdAt
+      });
+    });
+
+    // Get recent rooms created
+    const recentRooms = await Room.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('name title createdAt');
+    
+    recentRooms.forEach(room => {
+      activities.push({
+        type: 'room',
+        message: `New room created: ${room.name || room.title}`,
+        timestamp: getTimeAgo(room.createdAt),
+        createdAt: room.createdAt
+      });
+    });
+
+    // Get recent labs created
+    const recentLabs = await Lab.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('title createdAt');
+    
+    recentLabs.forEach(lab => {
+      activities.push({
+        type: 'lab',
+        message: `New lab published: ${lab.title}`,
+        timestamp: getTimeAgo(lab.createdAt),
+        createdAt: lab.createdAt
+      });
+    });
+
+    // Sort all activities by creation date (most recent first)
+    activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ activities: activities.slice(0, 10) });
+  } catch (error) {
+    console.error('Error fetching admin activity:', error);
+    res.status(500).json({ error: 'Failed to fetch activity' });
+  }
+});
+
+function getTimeAgo(date) {
+  const now = new Date();
+  const diffInMs = now - new Date(date);
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  
+  if (diffInMinutes < 1) return 'Just now';
+  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hours ago`;
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays} days ago`;
+}
 
 module.exports = router;

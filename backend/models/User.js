@@ -102,7 +102,19 @@ const userSchema = new mongoose.Schema({
     quizCompleted: { type: Boolean, default: false },
     finalScore: Number,
     completed: { type: Boolean, default: false },
-    completedAt: Date
+    completedAt: Date,
+    totalPointsEarned: { type: Number, default: 0 },
+    taskScores: [{
+      taskIndex: Number,
+      pointsEarned: Number,
+      maxPoints: Number,
+      percentage: Number
+    }],
+    quizScore: {
+      pointsEarned: { type: Number, default: 0 },
+      maxPoints: { type: Number, default: 0 },
+      percentage: { type: Number, default: 0 }
+    }
   }],
   avatar: {
     type: String,
@@ -166,14 +178,23 @@ const userSchema = new mongoose.Schema({
   },
 
   // Streak tracking
-  streak: {
+  currentStreak: {
     type: Number,
     default: 0
   },
-  lastActive: {
-    type: Date,
-    default: Date.now
+  longestStreak: {
+    type: Number,
+    default: 0
   },
+  lastStreakDate: {
+    type: Date,
+    default: null
+  },
+  streakActivities: [{
+    date: { type: Date, required: true },
+    activityType: { type: String, enum: ['room', 'lab'], required: true },
+    itemId: String
+  }],
 
   // Badges
   badges: [{
@@ -226,17 +247,126 @@ userSchema.methods.calculateRank = async function () {
   return rank;
 };
 
-// Update completed counts before saving
+// Calculate user level based on points
+userSchema.methods.calculateLevel = function () {
+  // Level formula: Level = floor(points / 1000) + 1
+  // Level 1: 0-999 points
+  // Level 2: 1000-1999 points
+  // Level 3: 2000-2999 points, etc.
+  return Math.floor(this.points / 1000) + 1;
+};
+
+// Get points needed for next level
+userSchema.methods.getPointsToNextLevel = function () {
+  const currentLevel = this.calculateLevel();
+  const pointsForNextLevel = currentLevel * 1000;
+  return pointsForNextLevel - this.points;
+};
+
+// Update streak based on activity
+userSchema.methods.updateStreak = function (activityType, itemId) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Initialize streak arrays if they don't exist
+  if (!this.streakActivities) {
+    this.streakActivities = [];
+  }
+  
+  // Check if already completed activity today
+  const todayActivity = this.streakActivities.find(activity => {
+    const activityDate = new Date(activity.date);
+    activityDate.setHours(0, 0, 0, 0);
+    return activityDate.getTime() === today.getTime();
+  });
+  
+  if (todayActivity) {
+    return; // Already counted for today
+  }
+  
+  // Add today's activity
+  this.streakActivities.push({
+    date: today,
+    activityType,
+    itemId
+  });
+  
+  const lastStreakDate = this.lastStreakDate ? new Date(this.lastStreakDate) : null;
+  
+  if (!lastStreakDate) {
+    // First activity ever
+    this.currentStreak = 1;
+    this.lastStreakDate = today;
+  } else {
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const lastStreakDateNormalized = new Date(lastStreakDate);
+    lastStreakDateNormalized.setHours(0, 0, 0, 0);
+    
+    if (lastStreakDateNormalized.getTime() === yesterday.getTime()) {
+      // Consecutive day
+      this.currentStreak = (this.currentStreak || 0) + 1;
+      this.lastStreakDate = today;
+    } else if (lastStreakDateNormalized.getTime() === today.getTime()) {
+      // Same day (shouldn't happen due to check above)
+      return;
+    } else {
+      // Streak broken, start new
+      this.currentStreak = 1;
+      this.lastStreakDate = today;
+    }
+  }
+  
+  // Update longest streak
+  if (this.currentStreak > (this.longestStreak || 0)) {
+    this.longestStreak = this.currentStreak;
+  }
+  
+  console.log(`Streak updated: ${this.currentStreak}, longest: ${this.longestStreak}`);
+};
+
+// Check and update streak status
+userSchema.methods.checkStreakStatus = function () {
+  if (!this.lastStreakDate) return;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const lastStreakDate = new Date(this.lastStreakDate);
+  lastStreakDate.setHours(0, 0, 0, 0);
+  
+  const daysDiff = Math.floor((today - lastStreakDate) / (1000 * 60 * 60 * 24));
+  
+  if (daysDiff > 1) {
+    // Streak broken
+    this.currentStreak = 0;
+  }
+};
+
+// Update completed counts and level before saving
 userSchema.pre('save', function (next) {
   // Only update if the progress arrays were modified
   if (this.isModified('roomProgress') && this.roomProgress) {
-    const uniqueCompletedRooms = this.roomProgress.filter(rp => rp.completed && rp.roomId).length;
+    // Only count rooms that are completed AND quiz is completed
+    const uniqueCompletedRooms = this.roomProgress.filter(rp => 
+      rp.completed && rp.quizCompleted && rp.roomId
+    ).length;
     this.completedRooms = uniqueCompletedRooms;
   }
   if (this.isModified('labProgress') && this.labProgress) {
     const uniqueCompletedLabs = this.labProgress.filter(lp => lp.completed && lp.labId).length;
     this.completedLabs = uniqueCompletedLabs;
   }
+  
+  // Auto-update level based on points
+  if (this.isModified('points')) {
+    this.level = this.calculateLevel();
+  }
+  
+  // Check streak status on any save
+  this.checkStreakStatus();
+  
   next();
 });
 

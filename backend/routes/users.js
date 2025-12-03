@@ -20,8 +20,9 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + req.user._id + '-' + uniqueSuffix + path.extname(file.originalname));
+    const ext = path.extname(file.originalname);
+    const filename = `avatar-${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
+    cb(null, filename);
   }
 });
 
@@ -31,14 +32,10 @@ const upload = multer({
     fileSize: 2 * 1024 * 1024 // 2MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
     } else {
-      cb(new Error('Only image files (JPEG, JPG, PNG, GIF) are allowed'));
+      cb(new Error('Only image files are allowed'));
     }
   }
 });
@@ -62,8 +59,8 @@ router.get('/leaderboard', async (req, res) => {
     }
 
     const users = await User.find(dateFilter)
-      .select('name points level completedLabs isPremium')
-      .sort({ points: -1 })
+      .select('name points level completedLabs completedRooms isPremium')
+      .sort({ points: -1, completedRooms: -1, completedLabs: -1 })
       .limit(parseInt(limit));
 
     const leaderboard = users.map((user, index) => ({
@@ -72,7 +69,9 @@ router.get('/leaderboard', async (req, res) => {
       points: user.points,
       level: user.level,
       completedLabs: user.completedLabs,
-      isPremium: user.isPremium
+      completedRooms: user.completedRooms,
+      isPremium: user.isPremium,
+      pointsToNextLevel: user.getPointsToNextLevel ? user.getPointsToNextLevel() : 1000 - (user.points % 1000)
     }));
 
     res.json({ leaderboard });
@@ -85,43 +84,62 @@ router.get('/leaderboard', async (req, res) => {
 // @route   POST /api/users/upload-avatar
 // @desc    Upload user avatar
 // @access  Private
-router.post('/upload-avatar', auth, upload.single('avatar'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    // Delete old avatar if exists
-    const user = await User.findById(req.user._id);
-    if (user.avatar && user.avatar.startsWith('/uploads/')) {
-      const oldAvatarPath = path.join(__dirname, '..', user.avatar);
-      if (fs.existsSync(oldAvatarPath)) {
-        fs.unlinkSync(oldAvatarPath);
+router.post('/upload-avatar', auth, (req, res) => {
+  upload.single('avatar')(req, res, async (err) => {
+    try {
+      if (err) {
+        console.error('Multer error:', err);
+        return res.status(400).json({ message: err.message });
       }
-    }
 
-    // Update user avatar path
-    const avatarPath = `/uploads/avatars/${req.file.filename}`;
-    user.avatar = avatarPath;
-    await user.save();
-
-    res.json({
-      message: 'Avatar uploaded successfully',
-      avatar: avatarPath,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar,
-        isPremium: user.isPremium,
-        level: user.level,
-        points: user.points
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
       }
-    });
-  } catch (error) {
-    console.error('Avatar upload error:', error);
-    res.status(500).json({ message: error.message || 'Server error' });
-  }
+
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Use the uploaded file directly (multer already saved it)
+      const filename = req.file.filename || `avatar-${user._id}-${Date.now()}.jpg`;
+      const avatarPath = `/uploads/avatars/${filename}`;
+      
+      // Delete old avatar if exists
+      if (user.avatar && user.avatar.startsWith('/uploads/')) {
+        try {
+          const oldPath = path.join(__dirname, '..', user.avatar);
+          if (fs.existsSync(oldPath)) {
+            fs.unlinkSync(oldPath);
+          }
+        } catch (deleteError) {
+          console.log('Could not delete old avatar:', deleteError.message);
+        }
+      }
+
+      // Update user
+      user.avatar = avatarPath;
+      await user.save();
+
+      res.json({
+        message: 'Avatar updated successfully',
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          isPremium: user.isPremium,
+          level: user.level,
+          points: user.points,
+          completedLabs: user.completedLabs,
+          completedRooms: user.completedRooms
+        }
+      });
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      res.status(500).json({ message: 'Failed to upload avatar' });
+    }
+  });
 });
 
 // @route   PUT /api/users/profile
@@ -187,6 +205,68 @@ router.put('/profile', auth, [
   }
 });
 
+// @route   GET /api/users/stats
+// @desc    Get current user stats including rank
+// @access  Private
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id || req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const rank = await user.calculateRank();
+    const level = user.calculateLevel();
+    const pointsToNextLevel = user.getPointsToNextLevel();
+
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        points: user.points,
+        level,
+        rank,
+        pointsToNextLevel,
+        completedRooms: user.completedRooms,
+        completedLabs: user.completedLabs,
+        isPremium: user.isPremium,
+        currentStreak: user.currentStreak,
+        longestStreak: user.longestStreak
+      }
+    });
+  } catch (error) {
+    console.error('Get user stats error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/users/reset-streak
+// @desc    Reset user streak (for testing/admin)
+// @access  Private
+router.post('/reset-streak', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id || req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.currentStreak = 0;
+    user.lastStreakDate = null;
+    user.streakActivities = [];
+    
+    await user.save();
+
+    res.json({
+      message: 'Streak reset successfully',
+      currentStreak: user.currentStreak,
+      longestStreak: user.longestStreak
+    });
+  } catch (error) {
+    console.error('Reset streak error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   POST /api/users/complete-lab
 // @desc    Mark lab as completed and update points
 // @access  Private
@@ -229,6 +309,9 @@ router.post('/complete-lab', auth, [
     // Update user stats
     user.completedLabs += 1;
     user.points += score;
+    
+    // Update streak for lab completion
+    user.updateStreak('lab', labId);
     
     // Level up logic (every 1000 points = 1 level)
     const newLevel = Math.floor(user.points / 1000) + 1;

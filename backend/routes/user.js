@@ -162,22 +162,36 @@ router.get('/certificates', auth, async (req, res) => {
 
         // Get all completed rooms with their details
         const completedRoomIds = user.roomProgress
-            ?.filter(rp => rp.completed)
-            .map(rp => rp.roomId) || [];
+            ?.filter(rp => rp.completed && rp.roomId)
+            .map(rp => {
+                // Convert string roomId to ObjectId
+                try {
+                    return require('mongoose').Types.ObjectId(rp.roomId);
+                } catch (err) {
+                    console.error('Invalid roomId:', rp.roomId);
+                    return null;
+                }
+            })
+            .filter(id => id !== null) || [];
+
+        // If no completed rooms, return empty array
+        if (completedRoomIds.length === 0) {
+            return res.json({ certificates: [] });
+        }
 
         const completedRooms = await Room.find({ _id: { $in: completedRoomIds } });
 
         // Generate certificates for completed rooms
         const certificates = completedRooms.map(room => {
             const progress = user.roomProgress.find(rp => rp.roomId.toString() === room._id.toString());
-            const completionScore = progress?.score || 100;
+            const completionScore = progress?.finalScore || progress?.score || 100;
 
             return {
                 _id: room._id,
                 title: room.name,
                 category: room.category || 'Cybersecurity',
                 type: 'room', // You can add 'path' type later for learning paths
-                credentialId: `UC-${room.category?.substring(0, 3).toUpperCase() || 'CYB'}-${room._id.toString().substring(0, 8).toUpperCase()}`,
+                credentialId: `UC-${(room.category?.substring(0, 3) || 'CYB').toUpperCase()}-${room._id.toString().substring(0, 8).toUpperCase()}`,
                 issueDate: progress?.completedAt || new Date(),
                 earnedDate: progress?.completedAt || new Date(),
                 expiryDate: null,
@@ -193,7 +207,11 @@ router.get('/certificates', auth, async (req, res) => {
         res.json({ certificates });
     } catch (error) {
         console.error('Get certificates error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({
+            message: 'Server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

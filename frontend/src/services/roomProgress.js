@@ -44,3 +44,9 @@ export const fixCompletionCounts = async () => {
     method: 'POST'
   })
 }
+
+export const resetRoomProgress = async (roomId) => {
+  return await apiCall(`/room-progress/${roomId}/reset`, {
+    method: 'POST'
+  })
+}

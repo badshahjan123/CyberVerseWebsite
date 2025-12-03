@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { io } from 'socket.io-client'
-import { getUserStats } from '../services/progress'
+import { getUserStats } from '../services/userStats'
 import { useToast } from './toast-context'
 import { useApp } from './app-context'
 
@@ -17,6 +17,12 @@ export const useRealtime = () => {
 export const RealtimeProvider = ({ children }) => {
   const { levelUp, achievement, success, info, premium } = useToast()
   const { isAuthenticated } = useApp()
+  
+  // Check if we're on admin routes - skip WebSocket for admin
+  const isAdminRoute = typeof window !== 'undefined' && 
+    (window.location.pathname.startsWith('/secure-admin') || 
+     window.location.pathname.startsWith('/admin') ||
+     window.DISABLE_WEBSOCKET === true)
 
   // Core state - only what needs to trigger re-renders
   const [userStats, setUserStats] = useState({
@@ -199,11 +205,25 @@ export const RealtimeProvider = ({ children }) => {
       // Show notification as toast
       if (data.type === 'achievement') {
         toastRef.current.achievement(data.title, data.message)
+      } else if (data.type === 'level_up') {
+        toastRef.current.levelUp(data.title, data.message)
       } else if (data.type === 'success') {
         toastRef.current.success(data.title, data.message)
       } else {
         toastRef.current.info(data.title, data.message)
       }
+
+      // Show browser notification if permission granted
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification(data.title, {
+          body: data.message,
+          icon: '/favicon.ico',
+          tag: data._id
+        })
+      }
+
+      // Trigger custom event for notification dropdown
+      window.dispatchEvent(new CustomEvent('notification:new', { detail: data }))
     })
 
     socket.on('settings:update', (data) => {
@@ -268,6 +288,12 @@ export const RealtimeProvider = ({ children }) => {
 
   // Initialize when authenticated
   useEffect(() => {
+    // Skip WebSocket initialization for admin routes
+    if (isAdminRoute) {
+      console.log('🔒 Admin route detected, skipping WebSocket initialization')
+      return
+    }
+    
     // If not authenticated, ensure we are disconnected and return
     if (!isAuthenticated) {
       if (isInitializedRef.current) {
@@ -296,6 +322,11 @@ export const RealtimeProvider = ({ children }) => {
     isInitializedRef.current = true
     console.log('🚀 Initializing RealtimeProvider for authenticated user...')
 
+    // Request notification permission
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
     // Make trigger function globally available
     window.triggerRealtimeUpdate = triggerUpdate
 
@@ -323,23 +354,41 @@ export const RealtimeProvider = ({ children }) => {
       }
       isInitializedRef.current = false
     }
-  }, [isAuthenticated]) // Re-run when authentication status changes
+  }, [isAuthenticated, isAdminRoute]) // Re-run when authentication status or route type changes
 
   // Memoized context value - only re-renders when these specific values change
   // Removed lastUpdate to prevent unnecessary re-renders
-  const value = useMemo(() => ({
-    userStats,
-    recentActivity,
-    weeklyStats,
-    refreshUserStats,
-    triggerUpdate,
-    connected,
-    leaderboardData,
-    requestLeaderboardUpdate,
-    // Provide a getter for lastUpdate if needed, but don't include in dependencies
-    getLastUpdate: () => lastUpdateRef.current,
-    socket: socketRef.current
-  }), [userStats, recentActivity, weeklyStats, connected, leaderboardData])
+  const value = useMemo(() => {
+    // For admin routes, provide minimal context without WebSocket functionality
+    if (isAdminRoute) {
+      return {
+        userStats: { currentStreak: 0, longestStreak: 0 },
+        recentActivity: [],
+        weeklyStats: { labsCompleted: 0, pointsEarned: 0, timeSpent: '0h', rankChange: 0 },
+        refreshUserStats: () => {},
+        triggerUpdate: () => {},
+        connected: false,
+        leaderboardData: [],
+        requestLeaderboardUpdate: () => {},
+        getLastUpdate: () => Date.now(),
+        socket: null
+      }
+    }
+    
+    return {
+      userStats,
+      recentActivity,
+      weeklyStats,
+      refreshUserStats,
+      triggerUpdate,
+      connected,
+      leaderboardData,
+      requestLeaderboardUpdate,
+      // Provide a getter for lastUpdate if needed, but don't include in dependencies
+      getLastUpdate: () => lastUpdateRef.current,
+      socket: socketRef.current
+    }
+  }, [userStats, recentActivity, weeklyStats, connected, leaderboardData, isAdminRoute])
 
   return (
     <RealtimeContext.Provider value={value}>

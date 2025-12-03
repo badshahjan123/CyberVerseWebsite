@@ -22,7 +22,7 @@ router.get('/test/connection', async (req, res) => {
   }
 });
 
-// Get all rooms
+// Get all rooms (excluding completed ones for authenticated users)
 router.get('/', async (req, res) => {
   try {
     const { category, difficulty, tags } = req.query;
@@ -38,9 +38,34 @@ router.get('/', async (req, res) => {
       filter.tags = { $in: tags.split(',') };
     }
 
-    const rooms = await Room.find(filter)
+    let rooms = await Room.find(filter)
       .select('-exercises.expected_flag -quizzes.questions.correct_answer')
       .sort({ createdAt: -1 });
+
+    // TEMPORARILY DISABLED: Filter out completed rooms for authenticated users
+    console.log('🔍 Total rooms before filtering:', rooms.length);
+    console.log('🔍 Room titles:', rooms.map(r => r.title));
+    // if (req.headers.authorization) {
+    //   try {
+    //     const jwt = require('jsonwebtoken');
+    //     const token = req.headers.authorization.split(' ')[1];
+    //     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+    //     const User = require('../models/User');
+    //     const user = await User.findById(decoded.id);
+        
+    //     if (user) {
+    //       const completedRoomIds = user.roomProgress
+    //         .filter(p => p.completed)
+    //         .map(p => p.roomId);
+          
+    //       rooms = rooms.filter(room => !completedRoomIds.includes(room.slug));
+    //     }
+    //   } catch (authError) {
+    //     // If token is invalid, just return all rooms
+    //     console.log('Auth token invalid, showing all rooms');
+    //   }
+    // }
 
     res.json({
       success: true,

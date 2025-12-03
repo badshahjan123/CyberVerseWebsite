@@ -75,7 +75,7 @@ io.on('connection', (socket) => {
   // Client can request manual refresh
   socket.on('refresh:stats', async () => {
     try {
-      const user = await User.findById(socket.userId).select('name points level completedLabs completedRooms streak');
+      const user = await User.findById(socket.userId).select('name points level completedLabs completedRooms currentStreak longestStreak');
       const rank = await user.calculateRank();
       const totalUsers = await User.countDocuments({ isActive: true });
 
@@ -111,6 +111,16 @@ io.on('connection', (socket) => {
 
 // Export io for use in routes
 global.io = io;
+
+// Admin activity broadcaster
+global.broadcastAdminActivity = (activity) => {
+  io.emit('admin_activity', { type: 'admin_activity', activity })
+}
+
+// Stats update broadcaster
+global.broadcastStatsUpdate = (stats) => {
+  io.emit('stats_update', { type: 'stats_update', stats })
+}
 
 // Security middleware
 app.use(helmet({
@@ -269,6 +279,9 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/room-progress', require('./routes/roomProgress'));
 app.use('/api/2fa', require('./routes/twoFactor')); // 2FA enabled
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/test-notifications', require('./routes/testNotifications'));
+app.use('/api/search', require('./routes/search'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -278,6 +291,79 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     websocket: 'enabled'
   });
+});
+
+// Temporary search endpoint until server restart
+app.get('/api/search', async (req, res) => {
+  try {
+    const { q, limit = 10 } = req.query;
+    
+    if (!q || q.trim().length < 2) {
+      return res.json({ results: [] });
+    }
+
+    const searchQuery = q.trim();
+    const searchLimit = Math.min(parseInt(limit), 20);
+    const results = [];
+
+    // Search rooms
+    const rooms = await Room.find({
+      $or: [
+        { name: { $regex: searchQuery, $options: 'i' } },
+        { title: { $regex: searchQuery, $options: 'i' } },
+        { description: { $regex: searchQuery, $options: 'i' } }
+      ]
+    })
+    .select('name title description difficulty category points isPremium')
+    .limit(searchLimit);
+
+    rooms.forEach(room => {
+      results.push({
+        type: 'room',
+        id: room._id,
+        title: room.name || room.title,
+        description: room.description,
+        path: `/rooms/${room._id}`,
+        difficulty: room.difficulty,
+        category: room.category,
+        points: room.points,
+        isPremium: room.isPremium
+      });
+    });
+
+    // Search labs
+    const labs = await Lab.find({
+      $or: [
+        { title: { $regex: searchQuery, $options: 'i' } },
+        { description: { $regex: searchQuery, $options: 'i' } }
+      ]
+    })
+    .select('title description difficulty category points isPremium')
+    .limit(searchLimit);
+
+    labs.forEach(lab => {
+      results.push({
+        type: 'lab',
+        id: lab._id,
+        title: lab.title,
+        description: lab.description,
+        path: `/labs/${lab._id}`,
+        difficulty: lab.difficulty,
+        category: lab.category,
+        points: lab.points,
+        isPremium: lab.isPremium
+      });
+    });
+
+    res.json({
+      results: results.slice(0, searchLimit),
+      query: searchQuery,
+      total: results.length
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ message: 'Search failed' });
+  }
 });
 
 // Error handling middleware

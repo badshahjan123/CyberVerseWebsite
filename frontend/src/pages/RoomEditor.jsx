@@ -87,6 +87,29 @@ const RoomEditor = () => {
         }
     }
 
+    const handleDelete = async () => {
+        if (!confirm('Are you sure you want to delete this room? This action cannot be undone.')) return
+        
+        try {
+            const token = localStorage.getItem('token')
+            const response = await fetch(`http://localhost:5000/api/admin/rooms/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include'
+            })
+
+            if (!response.ok) throw new Error('Failed to delete room')
+
+            alert('Room deleted successfully!')
+            navigate('/secure-admin-dashboard')
+        } catch (error) {
+            console.error('Delete error:', error)
+            alert('Failed to delete room')
+        }
+    }
+
     const addTopic = () => {
         const newTopic = {
             id: (room.topics?.length || 0) + 1,
@@ -208,14 +231,23 @@ const RoomEditor = () => {
                                 <p className="text-slate-400">{room.title || room.name}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            <Save className="w-4 h-4" />
-                            {saving ? 'Saving...' : 'Save Changes'}
-                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleDelete}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Delete Room
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <Save className="w-4 h-4" />
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

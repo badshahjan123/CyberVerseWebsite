@@ -4,9 +4,11 @@ import { RealtimeProvider } from './contexts/realtime-context'
 import { ActivityProvider } from './contexts/activity-context'
 import { ThemeProvider } from './contexts/theme-context'
 import { ToastProvider } from './contexts/toast-context'
+import { BookmarkProvider } from './contexts/bookmark-context'
 import Navbar from './components/navbar'
 import Footer from './components/footer'
 import { ConnectionStatus } from './components/ConnectionStatus'
+import SessionTimeoutWarning from './components/SessionTimeoutWarning'
 import { Suspense, lazy } from 'react'
 import './App.css'
 
@@ -76,19 +78,23 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 
 const Rooms = lazy(() => import('./pages/Rooms'))
 const RoomDetail = lazy(() => import('./pages/RoomDetail'))
+const RoomCompleted = lazy(() => import('./pages/RoomCompleted'))
+const RoomResume = lazy(() => import('./pages/RoomResume'))
 const Leaderboard = lazy(() => import('./pages/Leaderboard'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Badges = lazy(() => import('./pages/Badges'))
 const SavedItems = lazy(() => import('./pages/SavedItems'))
+const NotificationTest = lazy(() => import('./pages/NotificationTest'))
 const SecureAdminLogin = lazy(() => import('./pages/SecureAdminLogin'))
 const SecureAdminDashboard = lazy(() => import('./pages/SecureAdminDashboard'))
+const AdminUserDetail = lazy(() => import('./pages/AdminUserDetail'))
 const RoomEditor = lazy(() => import('./pages/RoomEditor'))
 
-// Loading component
+// Minimal loading component - matches app background to prevent flash
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-950">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+  <div className="min-h-screen bg-[rgb(8,12,16)]">
+    {/* Intentionally minimal - page loads fast enough with lazy loading */}
   </div>
 )
 
@@ -106,6 +112,7 @@ function AppContent() {
             <Routes>
               <Route path="/secure-admin-login" element={<SecureAdminLogin />} />
               <Route path="/secure-admin-dashboard" element={<SecureAdminDashboard />} />
+              <Route path="/admin/users/:id" element={<AdminUserDetail />} />
               <Route path="/admin/rooms/:id/edit" element={<RoomEditor />} />
             </Routes>
           ) : (
@@ -124,18 +131,22 @@ function AppContent() {
 
               <Route path="/rooms" element={<Rooms />} />
               <Route path="/rooms/:slug" element={<RoomDetail />} />
+              <Route path="/rooms/:slug/completed" element={<RoomCompleted />} />
+              <Route path="/rooms/:slug/resume" element={<RoomResume />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/badges" element={<Badges />} />
               <Route path="/saved" element={<SavedItems />} />
+              <Route path="/test-notifications" element={<NotificationTest />} />
             </Routes>
           )}
         </Suspense>
       </main>
 
       {!isAdminRoute && <Footer />}
-      <ConnectionStatus />
+      {!isAdminRoute && <ConnectionStatus />}
+      {!isAdminRoute && <SessionTimeoutWarning />}
     </div>
   )
 }
@@ -146,11 +157,13 @@ function App() {
       <ThemeProvider>
         <AppProvider>
           <ToastProvider>
-            <RealtimeProvider>
-              <ActivityProvider>
-                <AppContent />
-              </ActivityProvider>
-            </RealtimeProvider>
+            <BookmarkProvider>
+              <RealtimeProvider>
+                <ActivityProvider>
+                  <AppContent />
+                </ActivityProvider>
+              </RealtimeProvider>
+            </BookmarkProvider>
           </ToastProvider>
         </AppProvider>
       </ThemeProvider>
