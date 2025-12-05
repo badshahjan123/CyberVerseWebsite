@@ -1,0 +1,32 @@
+# Assumes: Docker Desktop installed and running on Windows
+# This docker-compose.yml manages all CyberVerse lab containers
+
+version: '3.8'
+
+services:
+  # Linux File Forensics Lab
+  linux-forensics-lab:
+    build:
+      context: ./labs/linux-forensics
+      dockerfile: Dockerfile
+    container_name: cyberverse-linux-forensics
+    ports:
+      - "8083:7681" # Map ttyd web terminal to host port 8083
+    restart: "no" # Don't auto-restart (manual control via API)
+    networks:
+      - cyberverse-labs
+    environment:
+      - TERM=xterm-256color
+    # Security: no host mounts, isolated container
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits (optional but recommended)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+networks:
+  cyberverse-labs:
+    driver: bridge

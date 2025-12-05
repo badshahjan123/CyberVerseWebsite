@@ -1,102 +1,118 @@
-import { useState, useCallback } from "react"
-import { useNavigate, useSearchParams, Link } from "react-router-dom"
-import { GoogleLogin } from '@react-oauth/google'
-import { useApp } from "../contexts/app-context"
-import { ModernButton } from "../components/ui/modern-button"
-import { Shield, Loader2, Check, ArrowRight, Eye, EyeOff } from "lucide-react"
-import TwoFactorAuth from "../components/TwoFactorAuth"
+import { useState, useCallback } from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
+import { useApp } from "../contexts/app-context";
+import { ModernButton } from "../components/ui/modern-button";
+import { Shield, Loader2, Check, ArrowRight, Eye, EyeOff } from "lucide-react";
+import TwoFactorAuth from "../components/TwoFactorAuth";
 
 const LoginPage = () => {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const { login, loginWithGoogle, verify2FA, isAuthenticated, user, loading: authLoading } = useApp()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState("")
-  const [showTwoFactor, setShowTwoFactor] = useState(false)
-  const [twoFactorData, setTwoFactorData] = useState(null)
-  const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const {
+    login,
+    loginWithGoogle,
+    verify2FA,
+    isAuthenticated,
+    user,
+    loading: authLoading,
+  } = useApp();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [twoFactorData, setTwoFactorData] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const redirectTo = searchParams.get('redirect') || '/dashboard'
-  const isTimeout = searchParams.get('timeout') === 'true'
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const isTimeout = searchParams.get("timeout") === "true";
 
-  const handleGoogleSuccess = useCallback(async (credentialResponse) => {
-    setError("")
-    const result = await loginWithGoogle(credentialResponse)
-    if (!result.success) {
-      setError(result.message || "Google authentication failed")
-    }
-  }, [loginWithGoogle])
+  const handleGoogleSuccess = useCallback(
+    async (credentialResponse) => {
+      setError("");
+      const result = await loginWithGoogle(credentialResponse);
+      if (!result.success) {
+        setError(result.message || "Google authentication failed");
+      }
+    },
+    [loginWithGoogle]
+  );
 
   const handleGoogleError = useCallback(() => {
-    setError("Google authentication failed. Please try again.")
-  }, [])
+    setError("Google authentication failed. Please try again.");
+  }, []);
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      setError("");
 
-    const deviceInfo = {
-      userAgent: navigator.userAgent,
-      ipAddress: 'client-ip', // This would be set by backend
-      deviceName: navigator.platform,
-      location: 'Unknown'
-    }
+      const deviceInfo = {
+        userAgent: navigator.userAgent,
+        ipAddress: "client-ip", // This would be set by backend
+        deviceName: navigator.platform,
+        location: "Unknown",
+      };
 
-    const result = await login(email, password, deviceInfo)
+      const result = await login(email, password, deviceInfo);
 
-    if (result.success) {
-      if (result.requiresTwoFactor) {
-        // Show 2FA screen
-        setTwoFactorData({
-          email: result.email,
-          userId: result.userId
-        })
-        setShowTwoFactor(true)
+      if (result.success) {
+        if (result.requiresTwoFactor) {
+          // Show 2FA screen
+          setTwoFactorData({
+            email: result.email,
+            userId: result.userId,
+          });
+          setShowTwoFactor(true);
+        } else {
+          // Complete login
+          setSuccess(true);
+          // Always navigate to dashboard
+          navigate("/dashboard", { replace: true });
+        }
       } else {
-        // Complete login
-        setSuccess(true)
-        // Always navigate to dashboard
-        navigate('/dashboard', { replace: true })
+        setError(result.message || "Invalid credentials. Please try again.");
       }
-    } else {
-      setError(result.message || "Invalid credentials. Please try again.")
-    }
-    setLoading(false)
-  }, [email, password, login, navigate, redirectTo])
+      setLoading(false);
+    },
+    [email, password, login, navigate, redirectTo]
+  );
 
-  const handle2FAVerify = useCallback(async (userId, code) => {
-    try {
-      console.log('Starting 2FA verification in Login page...')
-      const response = await verify2FA(userId, code)
-      console.log('2FA Verification response:', response)
+  const handle2FAVerify = useCallback(
+    async (userId, code) => {
+      try {
+        console.log("Starting 2FA verification in Login page...");
+        const response = await verify2FA(userId, code);
+        console.log("2FA Verification response:", response);
 
-      if (response.success) {
-        console.log('Verification successful, preparing navigation...')
-        setSuccess(true)
-        setShowTwoFactor(false)
+        if (response.success) {
+          console.log("Verification successful, preparing navigation...");
+          setSuccess(true);
+          setShowTwoFactor(false);
 
-        // Force immediate navigation to dashboard
-        console.log('Navigating to dashboard...')
-        window.location.href = '/dashboard'
+          // Force immediate navigation to dashboard
+          console.log("Navigating to dashboard...");
+          window.location.href = "/dashboard";
+        }
+        return response;
+      } catch (error) {
+        console.error("2FA verification error:", error);
+        return {
+          success: false,
+          message: error.message || "Verification failed",
+        };
       }
-      return response
-    } catch (error) {
-      console.error('2FA verification error:', error)
-      return {
-        success: false,
-        message: error.message || 'Verification failed'
-      }
-    }
-  }, [verify2FA, twoFactorData, navigate, redirectTo])
+    },
+    [verify2FA, twoFactorData, navigate, redirectTo]
+  );
 
   const handle2FACancel = useCallback(() => {
-    setShowTwoFactor(false)
-    setTwoFactorData(null)
-  }, [])
+    setShowTwoFactor(false);
+    setTwoFactorData(null);
+  }, []);
 
   if (authLoading) {
     return (
@@ -106,7 +122,7 @@ const LoginPage = () => {
           <p className="text-slate-400">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (showTwoFactor && twoFactorData) {
@@ -117,7 +133,7 @@ const LoginPage = () => {
         onVerify={handle2FAVerify}
         onCancel={handle2FACancel}
       />
-    )
+    );
   }
 
   if (isAuthenticated && user) {
@@ -125,17 +141,23 @@ const LoginPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
         <div className="text-center">
           <Check className="h-12 w-12 text-green-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Already Logged In</h2>
-          <p className="text-slate-400 mb-4">You are already signed in as {user.name}</p>
+          <h2 className="text-xl font-bold text-white mb-2">
+            Already Logged In
+          </h2>
+          <p className="text-slate-400 mb-4">
+            You are already signed in as {user.name}
+          </p>
           <Link
-            to={user.role === 'admin' ? '/secure-admin-dashboard' : '/dashboard'}
+            to={
+              user.role === "admin" ? "/secure-admin-dashboard" : "/dashboard"
+            }
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
           >
             Go to Dashboard <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -147,10 +169,12 @@ const LoginPage = () => {
               <Shield className="h-6 w-6 text-white" />
             </div>
             <h1 className="text-xl font-bold text-white mb-1">
-              {isTimeout ? 'Session Expired' : 'Welcome Back'}
+              {isTimeout ? "Session Expired" : "Welcome Back"}
             </h1>
             <p className="text-gray-300 text-sm">
-              {isTimeout ? 'Your session has expired due to inactivity. Please sign in again.' : 'Sign in to continue your journey'}
+              {isTimeout
+                ? "Your session has expired due to inactivity. Please sign in again."
+                : "Sign in to continue your journey"}
             </p>
           </div>
 
@@ -169,7 +193,9 @@ const LoginPage = () => {
               <div className="w-full border-t border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-slate-800 px-2 text-gray-400">or continue with email</span>
+              <span className="bg-slate-800 px-2 text-gray-400">
+                or continue with email
+              </span>
             </div>
           </div>
 
@@ -199,7 +225,11 @@ const LoginPage = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
 
@@ -255,7 +285,7 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LoginPage
+export default LoginPage;

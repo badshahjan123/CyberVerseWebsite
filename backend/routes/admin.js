@@ -2,7 +2,7 @@ const express = require('express');
 const User = require('../models/User');
 const Room = require('../models/Room');
 const Lab = require('../models/Lab');
-const { cookieAuth } = require('../middleware/cookieAuth');
+const { cookieAuth, adminAuth } = require('../middleware/cookieAuth');
 const router = express.Router();
 
 // =============================================================================
@@ -10,7 +10,7 @@ const router = express.Router();
 // =============================================================================
 
 // Get admin dashboard stats
-router.get('/dashboard/stats', cookieAuth, async (req, res) => {
+router.get('/dashboard/stats', adminAuth, async (req, res) => {
   try {
     const [totalUsers, activeUsers, premiumUsers, totalRooms, totalLabs, newUsersToday] = await Promise.all([
       User.countDocuments(),
@@ -63,7 +63,7 @@ router.get('/dashboard/stats', cookieAuth, async (req, res) => {
 // =============================================================================
 
 // Get all users with pagination and search
-router.get('/users', cookieAuth, async (req, res) => {
+router.get('/users', adminAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;

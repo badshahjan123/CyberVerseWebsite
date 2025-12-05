@@ -122,7 +122,7 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
 
     // Find existing task score
     let taskScore = roomProgress.taskScores.find(ts => ts.taskIndex === lectureIndex);
-    
+
     if (isCorrect) {
       roomProgress.exerciseAnswers[lectureIndex] = { answer, correct: true };
       if (!roomProgress.completedLectures.includes(lectureIndex)) {
@@ -131,7 +131,7 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
 
       const maxPoints = exercise.points || 100;
       const pointsEarned = maxPoints; // 100% for correct answer
-      
+
       // Update or create task score
       if (taskScore) {
         // Deduct previous points if this is a retry
@@ -147,7 +147,7 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
           percentage: 100
         });
       }
-      
+
       // Add new points
       user.points = (user.points || 0) + pointsEarned;
       roomProgress.totalPointsEarned += pointsEarned;
@@ -160,14 +160,14 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
       if (completedIndex > -1) {
         roomProgress.completedLectures.splice(completedIndex, 1);
       }
-      
+
       // Remove points if task was previously completed
       if (taskScore) {
         user.points = Math.max(0, (user.points || 0) - taskScore.pointsEarned);
         roomProgress.totalPointsEarned -= taskScore.pointsEarned;
         roomProgress.taskScores = roomProgress.taskScores.filter(ts => ts.taskIndex !== lectureIndex);
       }
-      
+
       console.log('Incorrect answer - progress cleared');
     }
 
@@ -234,17 +234,17 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
     // Calculate quiz points based on percentage
     const maxQuizPoints = 500; // Fixed max points for quiz
     const newQuizPoints = Math.round((score / 100) * maxQuizPoints);
-    
+
     // Remove previous quiz points if this is a retry
     if (roomProgress.quizScore.pointsEarned > 0) {
       user.points = Math.max(0, (user.points || 0) - roomProgress.quizScore.pointsEarned);
       roomProgress.totalPointsEarned -= roomProgress.quizScore.pointsEarned;
     }
-    
+
     // Add new quiz points
     user.points = (user.points || 0) + newQuizPoints;
     roomProgress.totalPointsEarned += newQuizPoints;
-    
+
     // Update quiz score tracking
     roomProgress.quizScore = {
       pointsEarned: newQuizPoints,
@@ -259,19 +259,15 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
     if (passed && completedTasks === totalTasks) {
       roomProgress.completed = true;
       roomProgress.completedAt = new Date();
-      
-      // Force update streak for room completion
-      user.currentStreak = (user.currentStreak || 0) + 1;
-      user.lastStreakDate = new Date();
-      if (user.currentStreak > (user.longestStreak || 0)) {
-        user.longestStreak = user.currentStreak;
-      }
-      
+
+      // Update streak using the proper method (handles duplicate checks and consecutive day validation)
+      user.updateStreak('room', roomId);
+
       console.log(`✅ Room marked complete (quiz passed with ${score}%), streak: ${user.currentStreak}`);
-      
+
       // Create notifications for achievements
       const NotificationService = require('../utils/notificationService');
-      
+
       // Check for level up
       const oldLevel = user.level;
       const newLevel = Math.floor(user.points / 1000) + 1;
@@ -279,12 +275,12 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
         user.level = newLevel;
         await NotificationService.notifyLevelUp(user._id, newLevel);
       }
-      
+
       // Check for streak milestones
       if (user.currentStreak > 0 && user.currentStreak % 7 === 0) {
         await NotificationService.notifyStreak(user._id, user.currentStreak);
       }
-      
+
       // The pre-save hook will calculate unique completed rooms
     } else if (!passed) {
       console.log(`❌ Room NOT complete (quiz failed with ${score}%)`);
@@ -358,14 +354,10 @@ router.post('/:roomId/complete', auth, async (req, res) => {
       roomProgress.completed = true;
       roomProgress.completedAt = new Date();
       roomProgress.finalScore = finalScore;
-      
-      // Force update streak for room completion
-      user.currentStreak = (user.currentStreak || 0) + 1;
-      user.lastStreakDate = new Date();
-      if (user.currentStreak > (user.longestStreak || 0)) {
-        user.longestStreak = user.currentStreak;
-      }
-      
+
+      // Update streak using the proper method (handles duplicate checks and consecutive day validation)
+      user.updateStreak('room', roomId);
+
       // Save user to update streak and completion counts
       await user.save();
 

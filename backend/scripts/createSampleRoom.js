@@ -215,7 +215,7 @@ Security Best Practices:
           id: 1,
           title: 'REST Basics',
           description_markdown: 'What does REST stand for? (First word only)',
-          hint: 'Think about the R in REST, mentioned in the first topic.',
+          hint: 'Think about the R in REST',
           points: 50,
           expected_flag: 'Representational',
           answer: 'Representational',
@@ -225,40 +225,10 @@ Security Best Practices:
           id: 2,
           title: 'HTTP Method',
           description_markdown: 'Which HTTP method is used to create new resources?',
-          hint: 'Check the HTTP methods list (create new resource).',
+          hint: 'Mentioned in the HTTP methods section',
           points: 30,
           expected_flag: 'POST',
           answer: 'POST',
-          caseSensitive: false
-        },
-        {
-          id: 3,
-          title: 'Created Status Code',
-          description_markdown: 'Which HTTP status code indicates that a resource was created successfully?',
-          hint: 'In the 2xx success section, look for “Resource created successfully”.',
-          points: 35,
-          expected_flag: '201',
-          answer: '201',
-          caseSensitive: false
-        },
-        {
-          id: 4,
-          title: 'NoSQL Database',
-          description_markdown: 'Name one NoSQL database mentioned in the Database Integration topic.',
-          hint: 'Examples include document-based and key-value databases like MongoDB.',
-          points: 40,
-          expected_flag: 'MongoDB',
-          answer: 'MongoDB',
-          caseSensitive: false
-        },
-        {
-          id: 5,
-          title: 'Auth Method',
-          description_markdown: 'Which token-based authentication method is mentioned in the Authentication and Security section?',
-          hint: 'It is commonly abbreviated as three capital letters and used in modern APIs.',
-          points: 45,
-          expected_flag: 'JWT',
-          answer: 'JWT',
           caseSensitive: false
         }
       ],

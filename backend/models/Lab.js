@@ -7,6 +7,11 @@ const labSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Title cannot exceed 100 characters']
   },
+  slug: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   description: {
     type: String,
     required: [true, 'Lab description is required'],
@@ -78,5 +83,6 @@ const labSchema = new mongoose.Schema({
 // Index for better performance
 labSchema.index({ category: 1, difficulty: 1 });
 labSchema.index({ isActive: 1, isPremium: 1 });
+labSchema.index({ slug: 1 });
 
 module.exports = mongoose.model('Lab', labSchema);

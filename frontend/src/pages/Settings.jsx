@@ -131,14 +131,14 @@ const Settings = () => {
       showSuccessToast('Please select an image file')
       return
     }
-    
+
     if (file.size > 2 * 1024 * 1024) {
       showSuccessToast('File size must be less than 2MB')
       return
     }
 
     setLoading(true)
-    
+
     try {
       const formData = new FormData()
       formData.append('avatar', file)
@@ -227,7 +227,7 @@ const Settings = () => {
                     <div className="flex items-center gap-6">
                       <div className="relative group">
                         <img
-                          src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}${user.avatar}?t=${user.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
+                          src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
                           alt="Avatar"
                           className="w-24 h-24 rounded-full border-2 border-primary/50 object-cover"
                         />

@@ -1,4 +1,4 @@
-import NotificationTester from '../components/NotificationTester'
+import NotificationTester from "../components/NotificationTester";
 
 const NotificationTest = () => {
   return (
@@ -12,11 +12,11 @@ const NotificationTest = () => {
             Test the real-time notification system functionality
           </p>
         </div>
-        
+
         <NotificationTester />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default NotificationTest
+export default NotificationTest;

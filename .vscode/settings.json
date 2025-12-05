@@ -1,3 +1,27 @@
 {
-    "liveServer.settings.port": 5501
+  "extensions.ignoreRecommendations": false,
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "javascript.preferences.includePackageJsonAutoImports": "off",
+  "eslint.enable": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true
+  },
+  "terminal.integrated.env.windows": {
+    "NODE_OPTIONS": "--no-deprecation"
+  },
+  "python.defaultInterpreterPath": "python",
+  "security.workspace.trust.untrustedFiles": "open",
+  "workbench.startupEditor": "none",
+  "extensions.autoUpdate": false
 }

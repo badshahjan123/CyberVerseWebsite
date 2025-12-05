@@ -1,88 +1,103 @@
-import { useState, memo, useCallback, useEffect } from "react"
-import { useNavigate, Link } from "react-router-dom"
-import { GoogleLogin } from '@react-oauth/google'
-import { useApp } from "../contexts/app-context"
-import { ModernButton } from "../components/ui/modern-button"
-import { Shield, Loader2, Check, ArrowRight, Mail, Eye, EyeOff } from "lucide-react"
+import { useState, memo, useCallback, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
+import { useApp } from "../contexts/app-context";
+import { ModernButton } from "../components/ui/modern-button";
+import {
+  Shield,
+  Loader2,
+  Check,
+  ArrowRight,
+  Mail,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 const RegisterPage = memo(() => {
-  const navigate = useNavigate()
-  const { register, loginWithGoogle } = useApp()
-  const [username, setUsername] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const navigate = useNavigate();
+  const { register, loginWithGoogle } = useApp();
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleGoogleSuccess = useCallback(async (credentialResponse) => {
-    setError("")
-    const result = await loginWithGoogle(credentialResponse)
-    if (!result.success) {
-      setError(result.message || "Google authentication failed")
-    }
-  }, [loginWithGoogle])
+  const handleGoogleSuccess = useCallback(
+    async (credentialResponse) => {
+      setError("");
+      const result = await loginWithGoogle(credentialResponse);
+      if (!result.success) {
+        setError(result.message || "Google authentication failed");
+      }
+    },
+    [loginWithGoogle]
+  );
 
   const handleGoogleError = useCallback(() => {
-    setError("Google authentication failed. Please try again.")
-  }, [])
+    setError("Google authentication failed. Please try again.");
+  }, []);
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      setError("");
 
-    if (!username || username.trim().length < 2) {
-      setError("Username must be at least 2 characters long")
-      setLoading(false)
-      return
-    }
+      if (!username || username.trim().length < 2) {
+        setError("Username must be at least 2 characters long");
+        setLoading(false);
+        return;
+      }
 
-    // Validate username
-    if (!username || username.trim().length < 2) {
-      setError("Username must be at least 2 characters long")
-      setLoading(false)
-      return
-    }
+      // Validate username
+      if (!username || username.trim().length < 2) {
+        setError("Username must be at least 2 characters long");
+        setLoading(false);
+        return;
+      }
 
-    // Validate email
-    if (!email || !email.includes('@')) {
-      setError("Please enter a valid email address")
-      setLoading(false)
-      return
-    }
+      // Validate email
+      if (!email || !email.includes("@")) {
+        setError("Please enter a valid email address");
+        setLoading(false);
+        return;
+      }
 
-    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{6,}$/
+      const strongRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{6,}$/;
 
-    if (!strongRegex.test(password)) {
-      setError("Password must be at least 6 characters long and include uppercase, lowercase, number, and special character")
-      setLoading(false)
-      return
-    }
+      if (!strongRegex.test(password)) {
+        setError(
+          "Password must be at least 6 characters long and include uppercase, lowercase, number, and special character"
+        );
+        setLoading(false);
+        return;
+      }
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      setLoading(false)
-      return
-    }
+      if (password !== confirmPassword) {
+        setError("Passwords do not match");
+        setLoading(false);
+        return;
+      }
 
-    const result = await register(username, email, password)
+      const result = await register(username, email, password);
 
-    if (result.success) {
-      setSuccess(true)
-      setTimeout(() => {
-        navigate("/login")
-      }, 2000)
-    } else {
-      setError(result.message || "Registration failed. Please try again.")
-    }
-    setLoading(false)
-  }, [username, email, password, confirmPassword, register, navigate])
-
-
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else {
+        setError(result.message || "Registration failed. Please try again.");
+      }
+      setLoading(false);
+    },
+    [username, email, password, confirmPassword, register, navigate]
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -92,7 +107,9 @@ const RegisterPage = memo(() => {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
               <Shield className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-white mb-1">Join CyberVerse</h1>
+            <h1 className="text-xl font-bold text-white mb-1">
+              Join CyberVerse
+            </h1>
             <p className="text-gray-300 text-sm">Only Gmail accounts allowed</p>
           </div>
 
@@ -113,7 +130,9 @@ const RegisterPage = memo(() => {
               <div className="w-full border-t border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-slate-800 px-2 text-gray-400">or continue with email</span>
+              <span className="bg-slate-800 px-2 text-gray-400">
+                or continue with email
+              </span>
             </div>
           </div>
 
@@ -154,7 +173,11 @@ const RegisterPage = memo(() => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
 
@@ -172,7 +195,11 @@ const RegisterPage = memo(() => {
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
               >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
 
@@ -214,15 +241,18 @@ const RegisterPage = memo(() => {
 
           <div className="mt-4 text-center text-sm">
             <span className="text-gray-400">Already have an account? </span>
-            <Link to="/login" className="font-medium text-blue-400 hover:text-blue-300">
+            <Link
+              to="/login"
+              className="font-medium text-blue-400 hover:text-blue-300"
+            >
               Sign in
             </Link>
           </div>
         </div>
       </div>
     </div>
-  )
-})
+  );
+});
 
-RegisterPage.displayName = 'RegisterPage'
-export default RegisterPage
+RegisterPage.displayName = "RegisterPage";
+export default RegisterPage;

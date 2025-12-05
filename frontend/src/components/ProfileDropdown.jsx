@@ -45,7 +45,7 @@ const ProfileDropdown = ({ user, onLogout }) => {
                 className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 transition-all group"
             >
                 <img
-                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
+                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
                     alt={user?.name}
                     className="w-9 h-9 rounded-full border-2 border-primary/50 group-hover:border-primary transition-all object-cover"
                     key={`${user?.avatar}-${user?.avatarTimestamp}`}

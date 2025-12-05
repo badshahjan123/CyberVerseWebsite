@@ -15,18 +15,15 @@ router.get('/streak', auth, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Calculate if streak should continue
-        const now = new Date();
-        const lastActive = new Date(user.lastActive);
-        const hoursSinceActive = (now - lastActive) / (1000 * 60 * 60);
+        // Check and update streak status (handles automatic reset if broken)
+        user.checkStreakStatus();
+        await user.save();
 
-        // If more than 48 hours, reset streak
-        if (hoursSinceActive > 48) {
-            user.streak = 0;
-            await user.save();
-        }
-
-        res.json({ streak: user.streak });
+        res.json({
+            currentStreak: user.currentStreak || 0,
+            longestStreak: user.longestStreak || 0,
+            lastStreakDate: user.lastStreakDate
+        });
     } catch (error) {
         console.error('Get streak error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -38,32 +35,22 @@ router.get('/streak', auth, async (req, res) => {
 // @access  Private
 router.post('/update-streak', auth, async (req, res) => {
     try {
+        const { activityType, itemId } = req.body; // 'room' or 'lab'
+
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const now = new Date();
-        const lastActive = new Date(user.lastActive);
-        const hoursSinceActive = (now - lastActive) / (1000 * 60 * 60);
-
-        // If less than 24 hours, maintain streak
-        // If 24-48 hours, increment streak
-        // If more than 48 hours, reset to 1
-        if (hoursSinceActive < 24) {
-            // Same day, don't change streak
-        } else if (hoursSinceActive <= 48) {
-            // Next day, increment streak
-            user.streak += 1;
-        } else {
-            // Missed a day, reset
-            user.streak = 1;
-        }
-
-        user.lastActive = now;
+        // Use the proper updateStreak method which handles all the logic
+        user.updateStreak(activityType || 'room', itemId);
         await user.save();
 
-        res.json({ streak: user.streak, message: 'Streak updated' });
+        res.json({
+            currentStreak: user.currentStreak || 0,
+            longestStreak: user.longestStreak || 0,
+            message: 'Streak updated'
+        });
     } catch (error) {
         console.error('Update streak error:', error);
         res.status(500).json({ message: 'Server error' });

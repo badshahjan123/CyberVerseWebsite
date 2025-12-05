@@ -114,7 +114,7 @@ router.post('/update', auth, async (req, res) => {
 
         // Check and notify achievements
         const newAchievements = await NotificationService.checkAndNotifyAchievements(userId, user);
-        
+
         // Add new badges to user
         for (const achievement of newAchievements) {
           const existingBadge = user.badges.find(b => b.name === achievement);
@@ -126,7 +126,7 @@ router.post('/update', auth, async (req, res) => {
             });
           }
         }
-        
+
         if (newAchievements.length > 0) {
           await user.save();
         }
@@ -149,7 +149,8 @@ router.post('/update', auth, async (req, res) => {
         rank,
         completedLabs: user.completedLabs,
         completedRooms: user.completedRooms,
-        streak: user.streak
+        currentStreak: user.currentStreak,
+        longestStreak: user.longestStreak
       });
 
       // Broadcast leaderboard update to all users if it's a first completion
@@ -248,7 +249,7 @@ router.get('/completed-rooms', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const Room = require('../models/Room');
-    
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -264,18 +265,18 @@ router.get('/completed-rooms', auth, async (req, res) => {
     }
 
     // Fetch room details
-    const completedRooms = await Room.find({ 
+    const completedRooms = await Room.find({
       slug: { $in: completedRoomIds },
-      isActive: true 
+      isActive: true
     }).select('title slug category difficulty points coverImage short_description');
 
     // Merge with completion data - only show truly completed rooms
     const roomsWithProgress = completedRooms.map(room => {
       const progress = user.roomProgress.find(p => p.roomId === room.slug);
       // Only show score if room is actually completed (quiz passed)
-      const actualScore = progress && progress.completed && progress.quizCompleted ? 
+      const actualScore = progress && progress.completed && progress.quizCompleted ?
         (progress.finalScore || progress.quizScore?.percentage || 100) : null;
-      
+
       return {
         ...room.toObject(),
         completedAt: progress.completedAt,
@@ -344,7 +345,7 @@ router.get('/completed-room-ids', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.json({ success: true, data: [] });
     }

@@ -1,71 +1,88 @@
-import { useEffect, useState, memo, useMemo, useCallback } from "react"
-import { useNavigate } from "react-router-dom"
-import { useApp } from "../contexts/app-context"
-import { useRealTimeLeaderboard } from "../hooks/useRealTimeLeaderboard"
-import { useRealtime } from "../contexts/realtime-context"
-import { Trophy, Medal, Award, TrendingUp, Crown, Star, Zap, Target, Search, ChevronUp, Globe } from "lucide-react"
-
+import { useEffect, useState, memo, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "../contexts/app-context";
+import { useRealTimeLeaderboard } from "../hooks/useRealTimeLeaderboard";
+import { useRealtime } from "../contexts/realtime-context";
+import {
+  Trophy,
+  Medal,
+  Award,
+  TrendingUp,
+  Crown,
+  Star,
+  Zap,
+  Target,
+  Search,
+  ChevronUp,
+  Globe,
+} from "lucide-react";
 
 const Leaderboard = memo(() => {
-  const { isAuthenticated, loading, user } = useApp()
-  const { lastUpdate } = useRealtime()
-  const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState("global")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [showLoadingSkeleton, setShowLoadingSkeleton] = useState(false)
-  const { leaderboard, loading: leaderboardLoading, error: leaderboardError } = useRealTimeLeaderboard()
-  const [userRank, setUserRank] = useState(null)
+  const { isAuthenticated, loading, user } = useApp();
+  const { lastUpdate } = useRealtime();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("global");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showLoadingSkeleton, setShowLoadingSkeleton] = useState(false);
+  const {
+    leaderboard,
+    loading: leaderboardLoading,
+    error: leaderboardError,
+  } = useRealTimeLeaderboard();
+  const [userRank, setUserRank] = useState(null);
 
   // Process leaderboard data
   const leaderboardData = useMemo(() => {
-    return leaderboard.map(player => ({
+    return leaderboard.map((player) => ({
       ...player,
       username: player.name,
-      trend: 'up'
-    }))
-  }, [leaderboard])
+      trend: "up",
+    }));
+  }, [leaderboard]);
 
   // Filter leaderboard by search query
   const filteredLeaderboard = useMemo(() => {
-    if (!searchQuery) return leaderboardData
-    return leaderboardData.filter(player =>
+    if (!searchQuery) return leaderboardData;
+    return leaderboardData.filter((player) =>
       player.username.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [leaderboardData, searchQuery])
+    );
+  }, [leaderboardData, searchQuery]);
 
   // Split into top 3 (champions) and rest (challengers)
-  const champions = filteredLeaderboard.slice(0, 3)
-  const challengers = filteredLeaderboard.slice(3)
+  const champions = filteredLeaderboard.slice(0, 3);
+  const challengers = filteredLeaderboard.slice(3);
 
   useEffect(() => {
     if (user && leaderboardData.length > 0) {
-      const userPosition = leaderboardData.findIndex(player => player.name === user.name)
-      setUserRank(userPosition !== -1 ? userPosition + 1 : 999)
+      const userPosition = leaderboardData.findIndex(
+        (player) => player.name === user.name
+      );
+      setUserRank(userPosition !== -1 ? userPosition + 1 : 999);
     }
-  }, [user, leaderboardData])
+  }, [user, leaderboardData]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate("/login")
+      navigate("/login");
     }
-  }, [isAuthenticated, loading, navigate])
+  }, [isAuthenticated, loading, navigate]);
 
   const handleTabSwitch = (tab) => {
-    setActiveTab(tab)
-    setShowLoadingSkeleton(true)
-    setTimeout(() => setShowLoadingSkeleton(false), 400)
-  }
+    setActiveTab(tab);
+    setShowLoadingSkeleton(true);
+    setTimeout(() => setShowLoadingSkeleton(false), 400);
+  };
 
   // Calculate points to next rank
   const pointsToNextRank = useMemo(() => {
-    if (!user || !userRank || userRank === 1) return null
-    const nextPlayer = leaderboardData[userRank - 2]
-    if (!nextPlayer) return null
-    return nextPlayer.points - (user.points || 0)
-  }, [user, userRank, leaderboardData])
+    if (!user || !userRank || userRank === 1) return null;
+    const nextPlayer = leaderboardData[userRank - 2];
+    if (!nextPlayer) return null;
+    return nextPlayer.points - (user.points || 0);
+  }, [user, userRank, leaderboardData]);
 
   if (loading) {
-    return null
+    return null;
   }
 
   return (
@@ -76,21 +93,28 @@ const Leaderboard = memo(() => {
           <h1 className="text-4xl font-bold mb-2">
             <span className="gradient-text">Global Leaderboard</span>
           </h1>
-          <p className="text-text-secondary text-lg">Compete with the best cybersecurity learners worldwide</p>
+          <p className="text-text-secondary text-lg">
+            Compete with the best cybersecurity learners worldwide
+          </p>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-3 mb-8">
-          {["global", "weekly", "monthly"].map(tab => (
+          {["global", "weekly", "monthly"].map((tab) => (
             <button
               key={tab}
               onClick={() => handleTabSwitch(tab)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === tab
-                ? "bg-primary/10 text-primary border border-primary/20"
-                : "bg-white/5 text-muted hover:text-text hover:bg-white/10 border border-white/10"
-                }`}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                activeTab === tab
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "bg-white/5 text-muted hover:text-text hover:bg-white/10 border border-white/10"
+              }`}
             >
-              {tab === "global" ? "🌍 Global" : tab === "weekly" ? "📅 This Week" : "📆 This Month"}
+              {tab === "global"
+                ? "🌍 Global"
+                : tab === "weekly"
+                ? "📅 This Week"
+                : "📆 This Month"}
             </button>
           ))}
         </div>
@@ -120,7 +144,9 @@ const Leaderboard = memo(() => {
           </div>
         ) : filteredLeaderboard.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-muted text-lg">No players found matching "{searchQuery}"</p>
+            <p className="text-muted text-lg">
+              No players found matching "{searchQuery}"
+            </p>
           </div>
         ) : (
           <>
@@ -140,23 +166,35 @@ const Leaderboard = memo(() => {
                       <div className="card p-6 bg-gradient-to-br from-slate-700/30 to-slate-800/30 border-2 border-slate-400/50 hover:border-slate-400 transition-all">
                         <div className="text-center mb-4">
                           <Medal className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-                          <div className="text-5xl font-bold text-slate-300">2</div>
+                          <div className="text-5xl font-bold text-slate-300">
+                            2
+                          </div>
                         </div>
                         <div className="flex flex-col items-center">
                           <div className="relative mb-3">
                             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center border-4 border-slate-400/50">
                               <span className="text-white font-bold text-2xl">
-                                {champions[1].username.slice(0, 2).toUpperCase()}
+                                {champions[1].username
+                                  .slice(0, 2)
+                                  .toUpperCase()}
                               </span>
                             </div>
                           </div>
-                          <h3 className="text-xl font-bold text-text mb-3">{champions[1].username}</h3>
+                          <h3 className="text-xl font-bold text-text mb-3">
+                            {champions[1].username}
+                          </h3>
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="text-muted text-sm">Level {champions[1].level}</span>
-                            <span className="text-xs text-slate-400">• {champions[1].completedRooms || 0} rooms</span>
+                            <span className="text-muted text-sm">
+                              Level {champions[1].level}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              • {champions[1].completedRooms || 0} rooms
+                            </span>
                           </div>
                           <div className="px-4 py-2 bg-slate-400/20 border border-slate-400/30 rounded-lg">
-                            <p className="text-2xl font-bold text-slate-300">{champions[1].points.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-slate-300">
+                              {champions[1].points.toLocaleString()}
+                            </p>
                             <p className="text-xs text-muted">points</p>
                           </div>
                         </div>
@@ -170,7 +208,9 @@ const Leaderboard = memo(() => {
                       <div className="card p-8 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/50 hover:border-yellow-500 transition-all shadow-[0_0_20px_rgba(234,179,8,0.3)]">
                         <div className="text-center mb-4">
                           <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-2" />
-                          <div className="text-6xl font-bold text-yellow-400">1</div>
+                          <div className="text-6xl font-bold text-yellow-400">
+                            1
+                          </div>
                           <span className="inline-block px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold rounded-full mt-2">
                             👑 KING OF THE HILL
                           </span>
@@ -179,17 +219,27 @@ const Leaderboard = memo(() => {
                           <div className="relative mb-4">
                             <div className="w-28 h-28 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center border-4 border-yellow-500/50 shadow-[0_0_20px_rgba(234,179,8,0.5)]">
                               <span className="text-white font-bold text-3xl">
-                                {champions[0].username.slice(0, 2).toUpperCase()}
+                                {champions[0].username
+                                  .slice(0, 2)
+                                  .toUpperCase()}
                               </span>
                             </div>
                           </div>
-                          <h3 className="text-2xl font-bold text-text mb-3">{champions[0].username}</h3>
+                          <h3 className="text-2xl font-bold text-text mb-3">
+                            {champions[0].username}
+                          </h3>
                           <div className="flex items-center gap-2 mb-4">
-                            <span className="text-muted text-sm">Level {champions[0].level}</span>
-                            <span className="text-xs text-yellow-300">• {champions[0].completedRooms || 0} rooms</span>
+                            <span className="text-muted text-sm">
+                              Level {champions[0].level}
+                            </span>
+                            <span className="text-xs text-yellow-300">
+                              • {champions[0].completedRooms || 0} rooms
+                            </span>
                           </div>
                           <div className="px-6 py-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-                            <p className="text-3xl font-bold text-yellow-400">{champions[0].points.toLocaleString()}</p>
+                            <p className="text-3xl font-bold text-yellow-400">
+                              {champions[0].points.toLocaleString()}
+                            </p>
                             <p className="text-xs text-muted">points</p>
                           </div>
                         </div>
@@ -203,23 +253,35 @@ const Leaderboard = memo(() => {
                       <div className="card p-6 bg-gradient-to-br from-amber-700/30 to-amber-900/30 border-2 border-amber-700/50 hover:border-amber-700 transition-all">
                         <div className="text-center mb-4">
                           <Award className="w-12 h-12 text-amber-600 mx-auto mb-2" />
-                          <div className="text-5xl font-bold text-amber-600">3</div>
+                          <div className="text-5xl font-bold text-amber-600">
+                            3
+                          </div>
                         </div>
                         <div className="flex flex-col items-center">
                           <div className="relative mb-3">
                             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center border-4 border-amber-700/50">
                               <span className="text-white font-bold text-2xl">
-                                {champions[2].username.slice(0, 2).toUpperCase()}
+                                {champions[2].username
+                                  .slice(0, 2)
+                                  .toUpperCase()}
                               </span>
                             </div>
                           </div>
-                          <h3 className="text-xl font-bold text-text mb-3">{champions[2].username}</h3>
+                          <h3 className="text-xl font-bold text-text mb-3">
+                            {champions[2].username}
+                          </h3>
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="text-muted text-sm">Level {champions[2].level}</span>
-                            <span className="text-xs text-amber-400">• {champions[2].completedRooms || 0} rooms</span>
+                            <span className="text-muted text-sm">
+                              Level {champions[2].level}
+                            </span>
+                            <span className="text-xs text-amber-400">
+                              • {champions[2].completedRooms || 0} rooms
+                            </span>
                           </div>
                           <div className="px-4 py-2 bg-amber-600/20 border border-amber-700/30 rounded-lg">
-                            <p className="text-2xl font-bold text-amber-600">{champions[2].points.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-amber-600">
+                              {champions[2].points.toLocaleString()}
+                            </p>
                             <p className="text-xs text-muted">points</p>
                           </div>
                         </div>
@@ -234,34 +296,66 @@ const Leaderboard = memo(() => {
                     const borderColors = [
                       "border-yellow-500/50 hover:border-yellow-500 from-yellow-500/20 to-orange-500/20",
                       "border-slate-400/50 hover:border-slate-400 from-slate-700/30 to-slate-800/30",
-                      "border-amber-700/50 hover:border-amber-700 from-amber-700/30 to-amber-900/30"
-                    ]
-                    const textColors = ["text-yellow-400", "text-slate-300", "text-amber-600"]
+                      "border-amber-700/50 hover:border-amber-700 from-amber-700/30 to-amber-900/30",
+                    ];
+                    const textColors = [
+                      "text-yellow-400",
+                      "text-slate-300",
+                      "text-amber-600",
+                    ];
                     const icons = [
-                      <Crown key="crown" className="w-12 h-12 text-yellow-400" />,
-                      <Medal key="medal" className="w-10 h-10 text-slate-300" />,
-                      <Award key="award" className="w-10 h-10 text-amber-600" />
-                    ]
+                      <Crown
+                        key="crown"
+                        className="w-12 h-12 text-yellow-400"
+                      />,
+                      <Medal
+                        key="medal"
+                        className="w-10 h-10 text-slate-300"
+                      />,
+                      <Award
+                        key="award"
+                        className="w-10 h-10 text-amber-600"
+                      />,
+                    ];
 
                     return (
-                      <div key={champion.rank} className={`card p-6 bg-gradient-to-br ${borderColors[idx]} border-2 transition-all`}>
+                      <div
+                        key={champion.rank}
+                        className={`card p-6 bg-gradient-to-br ${borderColors[idx]} border-2 transition-all`}
+                      >
                         <div className="flex items-center gap-4">
                           <div className="text-center">
                             {icons[idx]}
-                            <div className={`text-4xl font-bold ${textColors[idx]} mt-1`}>{champion.rank}</div>
+                            <div
+                              className={`text-4xl font-bold ${textColors[idx]} mt-1`}
+                            >
+                              {champion.rank}
+                            </div>
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-xl font-bold text-text mb-2">{champion.username}</h3>
+                            <h3 className="text-xl font-bold text-text mb-2">
+                              {champion.username}
+                            </h3>
                             <div className="flex items-center gap-3">
-                              <span className="text-muted text-sm">Level {champion.level}</span>
-                              <div className={`px-3 py-1 bg-white/10 border ${borderColors[idx].split(' ')[0]} rounded`}>
-                                <p className={`text-lg font-bold ${textColors[idx]}`}>{champion.points.toLocaleString()}</p>
+                              <span className="text-muted text-sm">
+                                Level {champion.level}
+                              </span>
+                              <div
+                                className={`px-3 py-1 bg-white/10 border ${
+                                  borderColors[idx].split(" ")[0]
+                                } rounded`}
+                              >
+                                <p
+                                  className={`text-lg font-bold ${textColors[idx]}`}
+                                >
+                                  {champion.points.toLocaleString()}
+                                </p>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -289,15 +383,20 @@ const Leaderboard = memo(() => {
                     {challengers.map((player, idx) => (
                       <div
                         key={player.rank}
-                        className={`grid grid-cols-1 md:grid-cols-10 gap-4 p-4 transition-all hover:bg-white/5 hover:border-l-4 hover:border-primary ${idx % 2 === 0 ? 'bg-slate-800/20' : 'bg-slate-800/10'
-                          } ${(player.username === user?.username || player.name === user?.name)
+                        className={`grid grid-cols-1 md:grid-cols-10 gap-4 p-4 transition-all hover:bg-white/5 hover:border-l-4 hover:border-primary ${
+                          idx % 2 === 0 ? "bg-slate-800/20" : "bg-slate-800/10"
+                        } ${
+                          player.username === user?.username ||
+                          player.name === user?.name
                             ? "border-l-4 border-primary bg-primary/10"
                             : ""
-                          }`}
+                        }`}
                       >
                         {/* Rank */}
                         <div className="col-span-1 flex items-center">
-                          <span className="text-2xl font-bold text-primary">#{player.rank}</span>
+                          <span className="text-2xl font-bold text-primary">
+                            #{player.rank}
+                          </span>
                         </div>
 
                         {/* Player Info */}
@@ -308,19 +407,27 @@ const Leaderboard = memo(() => {
                             </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h4 className="font-bold text-text truncate">{player.username}</h4>
-                            <p className="text-sm text-muted truncate">Level {player.level}</p>
+                            <h4 className="font-bold text-text truncate">
+                              {player.username}
+                            </h4>
+                            <p className="text-sm text-muted truncate">
+                              Level {player.level}
+                            </p>
                           </div>
                         </div>
 
                         {/* Level Progress */}
                         <div className="col-span-12 md:col-span-3 flex items-center">
                           <div className="w-full">
-                            <div className="text-sm text-muted mb-2">Level {player.level}</div>
+                            <div className="text-sm text-muted mb-2">
+                              Level {player.level}
+                            </div>
                             <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
-                                style={{ width: `${(player.level % 1) * 100}%` }}
+                                style={{
+                                  width: `${(player.level % 1) * 100}%`,
+                                }}
                               />
                             </div>
                           </div>
@@ -334,7 +441,9 @@ const Leaderboard = memo(() => {
                             </p>
                             <p className="text-xs text-muted">points</p>
                           </div>
-                          {player.trend === "up" && <TrendingUp className="h-5 w-5 text-success flex-shrink-0" />}
+                          {player.trend === "up" && (
+                            <TrendingUp className="h-5 w-5 text-success flex-shrink-0" />
+                          )}
                         </div>
                       </div>
                     ))}
@@ -354,7 +463,7 @@ const Leaderboard = memo(() => {
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                   <span className="text-white font-bold">
-                    {user.name?.slice(0, 2).toUpperCase() || 'ME'}
+                    {user.name?.slice(0, 2).toUpperCase() || "ME"}
                   </span>
                 </div>
                 <div>
@@ -373,7 +482,9 @@ const Leaderboard = memo(() => {
 
                 <div className="text-center">
                   <p className="text-sm text-muted mb-1">Total Points</p>
-                  <p className="text-2xl font-bold text-accent">{(user.points || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-accent">
+                    {(user.points || 0).toLocaleString()}
+                  </p>
                 </div>
 
                 {pointsToNextRank && pointsToNextRank > 0 && (
@@ -381,7 +492,9 @@ const Leaderboard = memo(() => {
                     <div className="hidden sm:block w-px h-12 bg-white/20"></div>
 
                     <div className="text-center">
-                      <p className="text-sm text-muted mb-1">To Rank #{userRank - 1}</p>
+                      <p className="text-sm text-muted mb-1">
+                        To Rank #{userRank - 1}
+                      </p>
                       <p className="text-lg font-bold text-warning flex items-center gap-1">
                         <ChevronUp className="w-4 h-4" />
                         {pointsToNextRank.toLocaleString()} pts
@@ -395,8 +508,8 @@ const Leaderboard = memo(() => {
         </div>
       )}
     </div>
-  )
-})
+  );
+});
 
-Leaderboard.displayName = 'Leaderboard'
-export default Leaderboard
+Leaderboard.displayName = "Leaderboard";
+export default Leaderboard;

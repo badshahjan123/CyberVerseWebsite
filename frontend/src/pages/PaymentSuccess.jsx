@@ -1,31 +1,31 @@
-import { memo, useEffect } from "react"
-import { useNavigate, useLocation, Link } from "react-router-dom"
-import { ModernButton } from "../components/ui/modern-button"
-import { 
-  CheckCircle, 
-  Download, 
-  Mail, 
+import { memo, useEffect } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { ModernButton } from "../components/ui/modern-button";
+import {
+  CheckCircle,
+  Download,
+  Mail,
   ArrowRight,
   Award,
-  Sparkles
-} from "lucide-react"
+  Sparkles,
+} from "lucide-react";
 
 const PaymentSuccessPage = memo(() => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const paymentData = location.state || {}
+  const navigate = useNavigate();
+  const location = useLocation();
+  const paymentData = location.state || {};
 
   useEffect(() => {
     // If no payment data, redirect to premium page
     if (!paymentData.plan) {
-      navigate('/premium')
+      navigate("/premium");
     }
-  }, [paymentData, navigate])
+  }, [paymentData, navigate]);
 
   const handleDownloadReceipt = () => {
     // In a real app, this would generate and download a PDF receipt
-    alert('Receipt download started!')
-  }
+    alert("Receipt download started!");
+  };
 
   return (
     <div className="bg-slate-950 min-h-screen py-12">
@@ -62,19 +62,31 @@ const PaymentSuccessPage = memo(() => {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-sm font-semibold text-slate-400 mb-2">Transaction ID</h3>
-              <p className="text-slate-100 font-mono">{paymentData.transactionId}</p>
+              <h3 className="text-sm font-semibold text-slate-400 mb-2">
+                Transaction ID
+              </h3>
+              <p className="text-slate-100 font-mono">
+                {paymentData.transactionId}
+              </p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-400 mb-2">Payment Method</h3>
-              <p className="text-slate-100">{paymentData.paymentMethod?.name}</p>
+              <h3 className="text-sm font-semibold text-slate-400 mb-2">
+                Payment Method
+              </h3>
+              <p className="text-slate-100">
+                {paymentData.paymentMethod?.name}
+              </p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-400 mb-2">Date</h3>
+              <h3 className="text-sm font-semibold text-slate-400 mb-2">
+                Date
+              </h3>
               <p className="text-slate-100">{paymentData.date}</p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-400 mb-2">Status</h3>
+              <h3 className="text-sm font-semibold text-slate-400 mb-2">
+                Status
+              </h3>
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-sm font-medium">
                 <CheckCircle className="h-4 w-4" />
                 Completed
@@ -89,7 +101,7 @@ const PaymentSuccessPage = memo(() => {
             <Sparkles className="h-6 w-6 text-primary-400" />
             <h2 className="text-2xl font-bold text-slate-100">What's Next?</h2>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-6">
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
@@ -100,7 +112,8 @@ const PaymentSuccessPage = memo(() => {
                   Check Your Email
                 </h3>
                 <p className="text-slate-400 text-sm">
-                  We've sent a confirmation email with your receipt and subscription details
+                  We've sent a confirmation email with your receipt and
+                  subscription details
                 </p>
               </div>
             </div>
@@ -114,7 +127,8 @@ const PaymentSuccessPage = memo(() => {
                   Explore Premium Labs
                 </h3>
                 <p className="text-slate-400 text-sm">
-                  Access exclusive cybersecurity challenges and advanced scenarios
+                  Access exclusive cybersecurity challenges and advanced
+                  scenarios
                 </p>
               </div>
             </div>
@@ -142,7 +156,8 @@ const PaymentSuccessPage = memo(() => {
                   Earn Certificates
                 </h3>
                 <p className="text-slate-400 text-sm">
-                  Complete labs and earn professional certificates to showcase your skills
+                  Complete labs and earn professional certificates to showcase
+                  your skills
                 </p>
               </div>
             </div>
@@ -181,15 +196,15 @@ const PaymentSuccessPage = memo(() => {
           <Mail className="h-5 w-5 text-primary-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-slate-300">
-              A confirmation email has been sent to your registered email address. 
-              If you don't see it, please check your spam folder.
+              A confirmation email has been sent to your registered email
+              address. If you don't see it, please check your spam folder.
             </p>
           </div>
         </div>
       </div>
     </div>
-  )
-})
+  );
+});
 
-PaymentSuccessPage.displayName = 'PaymentSuccessPage'
-export default PaymentSuccessPage
+PaymentSuccessPage.displayName = "PaymentSuccessPage";
+export default PaymentSuccessPage;

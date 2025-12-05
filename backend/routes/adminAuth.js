@@ -1,18 +1,21 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { cookieAuth } = require('../middleware/cookieAuth');
+const { adminAuth } = require('../middleware/cookieAuth');
 const router = express.Router();
 
 // Admin login
 router.post('/login', async (req, res) => {
   try {
-    console.log('Admin login attempt:', req.body);
     const { email, password } = req.body;
 
-    // Find user and include password for comparison
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Find admin user
     const user = await User.findOne({ email }).select('+password');
-    console.log('User found:', user ? 'Yes' : 'No');
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -22,30 +25,30 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
-    // Verify password
-    const isMatch = await user.comparePassword(password);
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Generate JWT
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
 
-    // Set httpOnly cookie
+    // Set cookie
     res.cookie('adminToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     res.json({
+      success: true,
       message: 'Login successful',
-      token: token,
       user: {
         id: user._id,
         name: user.name,
@@ -55,32 +58,66 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin login error:', error);
-    return res.status(500).json({ message: 'Server error during login' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-});
-
-// Check admin authentication status
-router.get('/verify', cookieAuth, (req, res) => {
-  res.json({
-    authenticated: true,
-    user: {
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role
-    }
-  });
 });
 
 // Admin logout
 router.post('/logout', (req, res) => {
   res.clearCookie('adminToken');
-  res.json({ message: 'Logged out successfully' });
+  res.json({ success: true, message: 'Logged out successfully' });
 });
 
-// Test route
-router.get('/test', (req, res) => {
-  res.json({ message: 'Admin auth routes working' });
+// Check admin auth status
+router.get('/verify', async (req, res) => {
+  try {
+    const token = req.cookies.adminToken;
+    if (!token) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user || user.role !== 'admin') {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+
+    res.json({ 
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Admin verify error:', error);
+    res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
+// Get current admin user
+router.get('/me', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Get admin user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 module.exports = router;

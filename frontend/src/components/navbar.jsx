@@ -42,7 +42,7 @@ const Navbar = () => {
         setIsSearchOpen(true);
       }
     };
-    
+
     if (isAuthenticated) {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
@@ -62,7 +62,7 @@ const Navbar = () => {
           })
           if (response.ok) {
             const data = await response.json()
-            setStreak(data.streak || 0)
+            setStreak(data.currentStreak || 0)
           }
         } catch (error) {
           console.error('Failed to fetch streak:', error)
@@ -222,7 +222,7 @@ const Navbar = () => {
                     onClick={() => setIsOpen(false)}
                   >
                     <img
-                      src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
+                      src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
                       alt="avatar"
                       className="w-10 h-10 rounded-full border-2 border-primary/50 object-cover"
                       key={`${user?.avatar}-${user?.avatarTimestamp}`}

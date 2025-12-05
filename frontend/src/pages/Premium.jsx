@@ -1,112 +1,142 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Shield, Zap, Crown, Check, X, ArrowRight, Star, Sparkles, ChevronDown, ChevronUp, Award, Target, Flame, Lock, Unlock, Clock, Download, Trophy, Users } from 'lucide-react'
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Shield,
+  Zap,
+  Crown,
+  Check,
+  X,
+  ArrowRight,
+  Star,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Award,
+  Target,
+  Flame,
+  Lock,
+  Unlock,
+  Clock,
+  Download,
+  Trophy,
+  Users,
+} from "lucide-react";
 
 const PremiumPage = () => {
-  const navigate = useNavigate()
-  const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' or 'annual'
-  const [isLoading, setIsLoading] = useState(false)
-  const [openFaq, setOpenFaq] = useState(null)
+  const navigate = useNavigate();
+  const [billingCycle, setBillingCycle] = useState("monthly"); // 'monthly' or 'annual'
+  const [isLoading, setIsLoading] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
 
   // Pricing data
   const pricing = {
-    monthly: { price: 10, display: '$10', period: '/month' },
-    annual: { price: 90, display: '$90', period: '/year', monthlyEquiv: '$7.50/mo' }
-  }
+    monthly: { price: 10, display: "$10", period: "/month" },
+    annual: {
+      price: 90,
+      display: "$90",
+      period: "/year",
+      monthlyEquiv: "$7.50/mo",
+    },
+  };
 
-  const currentPrice = pricing[billingCycle]
-  const savings = billingCycle === 'annual' ? '20% OFF' : null
+  const currentPrice = pricing[billingCycle];
+  const savings = billingCycle === "annual" ? "20% OFF" : null;
 
   // Feature comparison data
   const features = [
     {
-      name: 'Access to Rooms',
-      free: 'Limited (10/month)',
-      premium: 'Unlimited',
-      icon: Target
+      name: "Access to Rooms",
+      free: "Limited (10/month)",
+      premium: "Unlimited",
+      icon: Target,
     },
     {
-      name: 'AttackBox Access',
-      free: '1 hour/day',
-      premium: 'Unlimited',
-      icon: Lock
+      name: "AttackBox Access",
+      free: "1 hour/day",
+      premium: "Unlimited",
+      icon: Lock,
     },
     {
-      name: 'Private VPN Access',
+      name: "Private VPN Access",
       free: false,
       premium: true,
-      icon: Shield
+      icon: Shield,
     },
     {
-      name: 'Certificate of Completion',
+      name: "Certificate of Completion",
       free: false,
       premium: true,
-      icon: Award
+      icon: Award,
     },
     {
-      name: 'Exclusive Content',
+      name: "Exclusive Content",
       free: false,
       premium: true,
-      icon: Crown
+      icon: Crown,
     },
     {
-      name: 'Priority Support',
+      name: "Priority Support",
       free: false,
       premium: true,
-      icon: Zap
+      icon: Zap,
     },
     {
-      name: 'Downloadable Resources',
-      free: 'Limited',
-      premium: 'Full Access',
-      icon: Download
+      name: "Downloadable Resources",
+      free: "Limited",
+      premium: "Full Access",
+      icon: Download,
     },
     {
-      name: 'Leaderboard Badges',
-      free: 'Basic',
-      premium: 'Premium + Exclusive',
-      icon: Trophy
-    }
-  ]
+      name: "Leaderboard Badges",
+      free: "Basic",
+      premium: "Premium + Exclusive",
+      icon: Trophy,
+    },
+  ];
 
   // FAQ data
   const faqs = [
     {
-      question: 'Can I cancel anytime?',
-      answer: 'Yes! You can cancel your subscription at any time. You\'ll continue to have access until the end of your billing period.'
+      question: "Can I cancel anytime?",
+      answer:
+        "Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.",
     },
     {
-      question: 'Do you offer student discounts?',
-      answer: 'Yes, we offer a 50% discount for students with a valid .edu email address. Contact our support team to get your discount code.'
+      question: "Do you offer student discounts?",
+      answer:
+        "Yes, we offer a 50% discount for students with a valid .edu email address. Contact our support team to get your discount code.",
     },
     {
-      question: 'What payment methods do you accept?',
-      answer: 'We accept all major credit cards, debit cards, and PayPal through our secure Stripe payment gateway.'
+      question: "What payment methods do you accept?",
+      answer:
+        "We accept all major credit cards, debit cards, and PayPal through our secure Stripe payment gateway.",
     },
     {
-      question: 'Is there a free trial?',
-      answer: 'While we don\'t offer a traditional free trial, our Free plan gives you access to limited features so you can experience the platform before upgrading.'
+      question: "Is there a free trial?",
+      answer:
+        "While we don't offer a traditional free trial, our Free plan gives you access to limited features so you can experience the platform before upgrading.",
     },
     {
-      question: 'What happens to my progress if I cancel?',
-      answer: 'Your progress and achievements are saved permanently. If you resubscribe later, you\'ll pick up right where you left off.'
-    }
-  ]
+      question: "What happens to my progress if I cancel?",
+      answer:
+        "Your progress and achievements are saved permanently. If you resubscribe later, you'll pick up right where you left off.",
+    },
+  ];
 
   // Navigate to checkout page
   const handleSubscribe = (planId) => {
-    navigate('/checkout', {
+    navigate("/checkout", {
       state: {
         plan: {
-          name: 'Premium',
-          price: billingCycle === 'monthly' ? '$10' : '$90',
-          period: billingCycle === 'monthly' ? 'month' : 'year'
+          name: "Premium",
+          price: billingCycle === "monthly" ? "$10" : "$90",
+          period: billingCycle === "monthly" ? "month" : "year",
         },
         planId,
-        billingCycle
-      }
-    })
-  }
+        billingCycle,
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen page-container bg-[rgb(8,12,16)] text-text py-16 px-4">
@@ -115,34 +145,39 @@ const PremiumPage = () => {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-effect border border-primary/30 mb-6">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold text-primary">Unlock Your Full Potential</span>
+            <span className="text-sm font-semibold text-primary">
+              Unlock Your Full Potential
+            </span>
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             Choose Your <span className="gradient-text">Plan</span>
           </h1>
           <p className="text-xl text-muted max-w-2xl mx-auto mb-8">
-            Level up your cybersecurity skills with unlimited access to premium content, exclusive resources, and advanced features.
+            Level up your cybersecurity skills with unlimited access to premium
+            content, exclusive resources, and advanced features.
           </p>
 
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-12">
             <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${billingCycle === 'monthly'
-                ? 'bg-primary text-white'
-                : 'bg-white/5 text-muted hover:bg-white/10'
-                }`}
+              onClick={() => setBillingCycle("monthly")}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                billingCycle === "monthly"
+                  ? "bg-primary text-white"
+                  : "bg-white/5 text-muted hover:bg-white/10"
+              }`}
             >
               Monthly
             </button>
 
             <button
-              onClick={() => setBillingCycle('annual')}
-              className={`relative px-6 py-3 rounded-lg font-semibold transition-all ${billingCycle === 'annual'
-                ? 'bg-primary text-white'
-                : 'bg-white/5 text-muted hover:bg-white/10'
-                }`}
+              onClick={() => setBillingCycle("annual")}
+              className={`relative px-6 py-3 rounded-lg font-semibold transition-all ${
+                billingCycle === "annual"
+                  ? "bg-primary text-white"
+                  : "bg-white/5 text-muted hover:bg-white/10"
+              }`}
             >
               Annually
               {savings && (
@@ -184,7 +219,10 @@ const PremiumPage = () => {
                 <span className="text-muted">No certificates</span>
               </li>
             </ul>
-            <Link to="/rooms" className="btn-ghost w-full inline-flex items-center justify-center gap-2">
+            <Link
+              to="/rooms"
+              className="btn-ghost w-full inline-flex items-center justify-center gap-2"
+            >
               Current Plan
             </Link>
           </div>
@@ -193,8 +231,7 @@ const PremiumPage = () => {
           <div className="relative glass-effect rounded-2xl p-8 border-2 border-primary shadow-[0_0_30px_rgba(155,255,0,0.2)] transform scale-105">
             {/* Most Popular Badge */}
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-gradient-to-r from-primary to-accent rounded-full">
-              <div className="flex items-center gap-2">
-              </div>
+              <div className="flex items-center gap-2"></div>
             </div>
 
             <div className="flex items-center gap-2 mb-4 mt-4">
@@ -204,8 +241,10 @@ const PremiumPage = () => {
             <div className="mb-6">
               <div className="text-4xl font-bold text-text mb-2">
                 {currentPrice.display}
-                {billingCycle === 'annual' && (
-                  <span className="text-lg text-muted ml-2">{currentPrice.monthlyEquiv}</span>
+                {billingCycle === "annual" && (
+                  <span className="text-lg text-muted ml-2">
+                    {currentPrice.monthlyEquiv}
+                  </span>
                 )}
               </div>
               <p className="text-muted text-sm">{currentPrice.period}</p>
@@ -213,31 +252,43 @@ const PremiumPage = () => {
             <ul className="space-y-3 mb-8">
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-text font-semibold">Unlimited room access</span>
+                <span className="text-text font-semibold">
+                  Unlimited room access
+                </span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-text font-semibold">Unlimited AttackBox</span>
+                <span className="text-text font-semibold">
+                  Unlimited AttackBox
+                </span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-text font-semibold">Private VPN access</span>
+                <span className="text-text font-semibold">
+                  Private VPN access
+                </span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-text font-semibold">Completion certificates</span>
+                <span className="text-text font-semibold">
+                  Completion certificates
+                </span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-text font-semibold">Exclusive content</span>
+                <span className="text-text font-semibold">
+                  Exclusive content
+                </span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-text font-semibold">Priority support</span>
+                <span className="text-text font-semibold">
+                  Priority support
+                </span>
               </li>
             </ul>
             <button
-              onClick={() => handleSubscribe('premium')}
+              onClick={() => handleSubscribe("premium")}
               disabled={isLoading}
               className="btn-primary w-full flex items-center justify-center gap-2"
             >
@@ -283,7 +334,10 @@ const PremiumPage = () => {
                 <span className="text-muted">Dedicated support</span>
               </li>
             </ul>
-            <a href="mailto:contact@cyberverse.com" className="btn-ghost w-full inline-flex items-center justify-center gap-2">
+            <a
+              href="mailto:contact@cyberverse.com"
+              className="btn-ghost w-full inline-flex items-center justify-center gap-2"
+            >
               Contact Sales
             </a>
           </div>
@@ -299,46 +353,61 @@ const PremiumPage = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="text-left p-6 text-text font-semibold">Feature</th>
-                  <th className="text-center p-6 text-muted font-semibold">Free</th>
-                  <th className="text-center p-6 text-primary font-semibold">Premium</th>
+                  <th className="text-left p-6 text-text font-semibold">
+                    Feature
+                  </th>
+                  <th className="text-center p-6 text-muted font-semibold">
+                    Free
+                  </th>
+                  <th className="text-center p-6 text-primary font-semibold">
+                    Premium
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {features.map((feature, index) => {
-                  const Icon = feature.icon
+                  const Icon = feature.icon;
                   return (
-                    <tr key={index} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                    <tr
+                      key={index}
+                      className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                    >
                       <td className="p-6">
                         <div className="flex items-center gap-3">
                           <Icon className="w-5 h-5 text-primary" />
-                          <span className="text-text font-medium">{feature.name}</span>
+                          <span className="text-text font-medium">
+                            {feature.name}
+                          </span>
                         </div>
                       </td>
                       <td className="p-6 text-center">
-                        {typeof feature.free === 'boolean' ? (
+                        {typeof feature.free === "boolean" ? (
                           feature.free ? (
                             <Check className="w-5 h-5 text-green-400 mx-auto" />
                           ) : (
                             <X className="w-5 h-5 text-danger mx-auto" />
                           )
                         ) : (
-                          <span className="text-muted text-sm">{feature.free}</span>
+                          <span className="text-muted text-sm">
+                            {feature.free}
+                          </span>
                         )}
                       </td>
                       <td className="p-6 text-center">
-                        {typeof feature.premium === 'boolean' ? (
+                        {typeof feature.premium === "boolean" ? (
                           feature.premium ? (
                             <Check className="w-5 h-5 text-primary mx-auto" />
                           ) : (
                             <X className="w-5 h-5 text-danger mx-auto" />
                           )
                         ) : (
-                          <span className="text-primary text-sm font-semibold">{feature.premium}</span>
+                          <span className="text-primary text-sm font-semibold">
+                            {feature.premium}
+                          </span>
                         )}
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -353,12 +422,17 @@ const PremiumPage = () => {
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="glass-effect rounded-xl border border-white/10 overflow-hidden">
+              <div
+                key={index}
+                className="glass-effect rounded-xl border border-white/10 overflow-hidden"
+              >
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
                   className="w-full p-6 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
                 >
-                  <span className="text-text font-semibold pr-4">{faq.question}</span>
+                  <span className="text-text font-semibold pr-4">
+                    {faq.question}
+                  </span>
                   {openFaq === index ? (
                     <ChevronUp className="w-5 h-5 text-primary flex-shrink-0" />
                   ) : (
@@ -367,9 +441,7 @@ const PremiumPage = () => {
                 </button>
 
                 {openFaq === index && (
-                  <div className="px-6 pb-6 text-muted">
-                    {faq.answer}
-                  </div>
+                  <div className="px-6 pb-6 text-muted">{faq.answer}</div>
                 )}
               </div>
             ))}
@@ -381,10 +453,11 @@ const PremiumPage = () => {
           <Crown className="w-16 h-16 text-primary mx-auto mb-6" />
           <h2 className="text-3xl font-bold mb-4">Ready to Level Up?</h2>
           <p className="text-muted text-lg mb-8 max-w-2xl mx-auto">
-            Join thousands of cybersecurity professionals mastering their skills on CyberVerse
+            Join thousands of cybersecurity professionals mastering their skills
+            on CyberVerse
           </p>
           <button
-            onClick={() => handleSubscribe('premium')}
+            onClick={() => handleSubscribe("premium")}
             disabled={isLoading}
             className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-4"
           >
@@ -403,7 +476,7 @@ const PremiumPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default PremiumPage
+export default PremiumPage;

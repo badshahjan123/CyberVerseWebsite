@@ -66,6 +66,7 @@ if (typeof document !== 'undefined' && !document.getElementById('futuristic-styl
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'))
 const Labs = lazy(() => import('./pages/Labs'))
+const LinuxForensicsLab = lazy(() => import('./pages/labs/LinuxForensicsLab'))
 const LabDetail = lazy(() => import('./pages/LabDetail'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Premium = lazy(() => import('./pages/Premium'))
@@ -119,6 +120,7 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/labs" element={<Labs />} />
+              <Route path="/labs/linux-forensics" element={<LinuxForensicsLab />} />
               <Route path="/labs/:id" element={<LabDetail />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/premium" element={<Premium />} />

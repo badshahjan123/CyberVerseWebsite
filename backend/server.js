@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -138,9 +139,6 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files (avatars, etc.)
-app.use('/uploads', express.static('uploads'));
-
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -155,16 +153,32 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files for avatars
-app.use('/uploads', express.static('uploads'));
+// Serve static files for avatars with absolute path
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('✅ MongoDB Connected');
-    createDefaultAdmin();
-  })
-  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+// Connect to MongoDB with fallback
+const connectDB = async () => {
+  try {
+    // Try cloud MongoDB first
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('✅ MongoDB Connected (Cloud)');
+  } catch (error) {
+    console.log('⚠️  Cloud MongoDB failed, trying local...');
+    try {
+      // Fallback to local MongoDB
+      await mongoose.connect('mongodb://127.0.0.1:27017/cyberverse_local');
+      console.log('✅ MongoDB Connected (Local)');
+    } catch (localError) {
+      console.error('❌ Both cloud and local MongoDB failed:');
+      console.error('Cloud:', error.message);
+      console.error('Local:', localError.message);
+      process.exit(1);
+    }
+  }
+  createDefaultAdmin();
+};
+
+connectDB();
 
 // Create default admin user and sample data
 const createDefaultAdmin = async () => {
@@ -282,6 +296,8 @@ app.use('/api/2fa', require('./routes/twoFactor')); // 2FA enabled
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/test-notifications', require('./routes/testNotifications'));
 app.use('/api/search', require('./routes/search'));
+app.use('/api/labs', require('./routes/labs')); // Lab container management
+app.use('/api/admin/streaks', require('./routes/adminStreaks')); // Admin streak recalculation
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -297,7 +313,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/search', async (req, res) => {
   try {
     const { q, limit = 10 } = req.query;
-    
+
     if (!q || q.trim().length < 2) {
       return res.json({ results: [] });
     }
@@ -314,8 +330,8 @@ app.get('/api/search', async (req, res) => {
         { description: { $regex: searchQuery, $options: 'i' } }
       ]
     })
-    .select('name title description difficulty category points isPremium')
-    .limit(searchLimit);
+      .select('name title description difficulty category points isPremium')
+      .limit(searchLimit);
 
     rooms.forEach(room => {
       results.push({
@@ -338,8 +354,8 @@ app.get('/api/search', async (req, res) => {
         { description: { $regex: searchQuery, $options: 'i' } }
       ]
     })
-    .select('title description difficulty category points isPremium')
-    .limit(searchLimit);
+      .select('title description difficulty category points isPremium')
+      .limit(searchLimit);
 
     labs.forEach(lab => {
       results.push({
