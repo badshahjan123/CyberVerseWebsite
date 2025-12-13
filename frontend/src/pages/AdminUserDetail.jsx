@@ -14,16 +14,16 @@ function AdminUserDetail() {
 
   const fetchUser = async () => {
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
+        method: 'GET',
+        credentials: 'include',
+        headers: {
           'Content-Type': 'application/json'
         }
       })
-      
+
       console.log('Response status:', response.status)
-      
+
       if (response.ok) {
         const userData = await response.json()
         setUser(userData)

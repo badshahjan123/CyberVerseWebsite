@@ -263,7 +263,7 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
       // Update streak using the proper method (handles duplicate checks and consecutive day validation)
       user.updateStreak('room', roomId);
 
-      console.log(`✅ Room marked complete (quiz passed with ${score}%), streak: ${user.currentStreak}`);
+      console.log(` Room marked complete (quiz passed with ${score}%), streak: ${user.currentStreak}`);
 
       // Create notifications for achievements
       const NotificationService = require('../utils/notificationService');

@@ -4,11 +4,7 @@ const User = require('../models/User');
 const Lab = require('../models/Lab');
 const { auth } = require('../middleware/auth');
 
-/**
- * @route   POST /api/admin/recalculate-streaks
- * @desc    Recalculate streaks for all users based on completion history
- * @access  Admin only
- */
+
 router.post('/recalculate-streaks', auth, async (req, res) => {
     try {
         // Check if user is admin
@@ -147,6 +143,120 @@ router.post('/recalculate-streaks', auth, async (req, res) => {
             message: 'Failed to recalculate streaks',
             error: error.message
         });
+    }
+});
+
+// User-specific streak recalculation (no admin required)
+router.post('/fix-my-streak', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Collect all completion activities
+        const activities = [];
+
+        // Add room completions
+        if (user.roomProgress && user.roomProgress.length > 0) {
+            for (const progress of user.roomProgress) {
+                if (progress.completed && progress.completedAt) {
+                    activities.push({
+                        date: new Date(progress.completedAt),
+                        type: 'room',
+                        id: progress.roomId
+                    });
+                }
+            }
+        }
+
+        if (activities.length === 0) {
+            return res.json({
+                message: 'No completed activities found',
+                currentStreak: 0,
+                longestStreak: 0
+            });
+        }
+
+        // Sort by date
+        activities.sort((a, b) => a.date - b.date);
+
+        // Group by date
+        const activityDates = new Map();
+        for (const activity of activities) {
+            const dateKey = activity.date.toISOString().split('T')[0];
+            if (!activityDates.has(dateKey)) {
+                activityDates.set(dateKey, []);
+            }
+            activityDates.get(dateKey).push(activity);
+        }
+
+        const uniqueDates = Array.from(activityDates.keys()).sort();
+
+        let currentStreak = 0;
+        let longestStreak = 0;
+        let lastDate = null;
+
+        for (const dateStr of uniqueDates) {
+            const currentDate = new Date(dateStr);
+
+            if (!lastDate) {
+                currentStreak = 1;
+            } else {
+                const daysDiff = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+
+                if (daysDiff === 1) {
+                    currentStreak++;
+                } else {
+                    currentStreak = 1;
+                }
+            }
+
+            if (currentStreak > longestStreak) {
+                longestStreak = currentStreak;
+            }
+
+            lastDate = currentDate;
+        }
+
+        // Check if streak is still active
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lastActivityDate = new Date(uniqueDates[uniqueDates.length - 1]);
+        const daysSinceLastActivity = Math.floor((today - lastActivityDate) / (1000 * 60 * 60 * 24));
+
+        let finalCurrentStreak = currentStreak;
+        if (daysSinceLastActivity > 1) {
+            finalCurrentStreak = 0;
+        }
+
+        // Update user
+        user.currentStreak = finalCurrentStreak;
+        user.longestStreak = longestStreak;
+        user.lastStreakDate = lastActivityDate;
+
+        user.streakActivities = activities.map(a => ({
+            date: a.date,
+            activityType: a.type,
+            itemId: a.id
+        }));
+
+        await user.save();
+
+        console.log(`✅ Streak fixed for ${user.name}: current=${finalCurrentStreak}, longest=${longestStreak}`);
+
+        res.json({
+            message: 'Streak recalculated successfully!',
+            currentStreak: user.currentStreak,
+            longestStreak: user.longestStreak,
+            totalActivities: activities.length,
+            lastStreakDate: user.lastStreakDate
+        });
+
+    } catch (error) {
+        console.error('Fix my streak error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 

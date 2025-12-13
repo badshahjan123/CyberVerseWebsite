@@ -18,9 +18,7 @@ try {
   console.error('Failed to initialize Stripe:', error);
 }
 
-// @route   POST /api/payment/upgrade-to-premium
-// @desc    Upgrade user to premium after successful payment
-// @access  Private
+
 router.post('/upgrade-to-premium', auth, [
   body('transactionId').notEmpty().withMessage('Transaction ID is required'),
   body('paymentMethod').notEmpty().withMessage('Payment method is required'),
@@ -40,11 +38,11 @@ router.post('/upgrade-to-premium', auth, [
     const user = req.user;
 
     // Temporarily disabled for testing - allows upgrading multiple times
-    // if (user.isPremium) {
-    //   return res.status(400).json({ 
-    //     message: 'User is already a premium member' 
-    //   });
-    // }
+    if (user.isPremium) {
+      return res.status(400).json({
+        message: 'User is already a premium member'
+      });
+    }
 
     // Update user to premium
     user.isPremium = true;

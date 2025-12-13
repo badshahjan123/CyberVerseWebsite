@@ -7,13 +7,21 @@ const { auth } = require('../middleware/auth');
 const speakeasy = require('speakeasy');
 const { OAuth2Client } = require('google-auth-library');
 
+// Import utilities and constants
+const logger = require('../utils/logger');
+const { HTTP_STATUS, MESSAGES, AUTH } = require('../config/constants');
+
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Generate JWT Token
+/**
+ * Generate JWT authentication token
+ * @param {String} id - User ID
+ * @returns {String} JWT token
+ */
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE
+    expiresIn: AUTH.JWT_EXPIRY
   });
 };
 
@@ -30,7 +38,7 @@ router.post('/register', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         message: 'Validation failed',
         errors: errors.array()
       });
@@ -41,7 +49,9 @@ router.post('/register', [
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        message: 'User already exists with this email'
+      });
     }
 
     // Create new user with 2FA disabled by default
@@ -58,7 +68,7 @@ router.post('/register', [
     try {
       await NotificationService.notifyWelcome(user._id, user.name);
     } catch (notificationError) {
-      console.error('Welcome notification error:', notificationError);
+      logger.error('Welcome notification error:', notificationError);
     }
 
     // Broadcast admin activity
@@ -70,8 +80,10 @@ router.post('/register', [
       })
     }
 
-    res.status(201).json({
-      message: 'Account created successfully! You can now login.',
+    logger.info('New user registered', { email: user.email, name: user.name });
+
+    res.status(HTTP_STATUS.CREATED).json({
+      message: MESSAGES.REGISTER_SUCCESS,
       user: {
         id: user._id,
         name: user.name,
@@ -80,8 +92,10 @@ router.post('/register', [
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration' });
+    logger.error('Registration error:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      message: MESSAGES.SERVER_ERROR
+    });
   }
 });
 
@@ -95,18 +109,22 @@ router.post('/login', async (req, res) => {
     // Find user
     const user = await User.findOne({ email }).select('+password +twoFactorSecret');
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        message: MESSAGES.INVALID_CREDENTIALS
+      });
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        message: MESSAGES.INVALID_CREDENTIALS
+      });
     }
 
     // If 2FA is enabled, require verification
     if (user.twoFactorEnabled && user.twoFactorSecret) {
-      console.log('2FA is enabled for user, requiring verification');
+      logger.debug('2FA is enabled for user, requiring verification', { email });
       return res.json({
         requiresTwoFactor: true,
         message: 'Two-factor authentication required',
@@ -122,7 +140,7 @@ router.post('/login', async (req, res) => {
     }
 
     // No 2FA required, generate token and send response
-    console.log('2FA not enabled, proceeding with login');
+    logger.info('User logged in successfully', { email, has2FA: false });
     const token = generateToken(user._id);
 
     res.json({
@@ -135,8 +153,10 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
+    logger.error('Login error:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      message: MESSAGES.SERVER_ERROR
+    });
   }
 });
 
@@ -246,7 +266,7 @@ router.post('/google', async (req, res) => {
         twoFactorEnabled: false
       });
       await user.save();
-      
+
       // Send welcome notification for new users
       try {
         await NotificationService.notifyWelcome(user._id, user.name);

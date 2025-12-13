@@ -6,6 +6,12 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
+// Import new middleware utilities
+const asyncHandler = require('../middleware/asyncHandler');
+const { attachUser } = require('../middleware/userMiddleware');
+const { ApiError } = require('../middleware/errorHandler');
+const { HTTP_STATUS, MESSAGES } = require('../config/constants');
+
 const router = express.Router();
 
 // Create uploads directory if it doesn't exist
@@ -40,13 +46,11 @@ const upload = multer({
   }
 });
 
-// @route   GET /api/users/leaderboard
-// @desc    Get leaderboard
-// @access  Public
+
 router.get('/leaderboard', async (req, res) => {
   try {
     const { limit = 10, type = 'global' } = req.query;
-    
+
     let dateFilter = {};
     if (type === 'weekly') {
       const weekAgo = new Date();
@@ -81,9 +85,6 @@ router.get('/leaderboard', async (req, res) => {
   }
 });
 
-// @route   POST /api/users/upload-avatar
-// @desc    Upload user avatar
-// @access  Private
 router.post('/upload-avatar', auth, (req, res) => {
   upload.single('avatar')(req, res, async (err) => {
     try {
@@ -104,7 +105,7 @@ router.post('/upload-avatar', auth, (req, res) => {
       // Use the uploaded file directly (multer already saved it)
       const filename = req.file.filename || `avatar-${user._id}-${Date.now()}.jpg`;
       const avatarPath = `/uploads/avatars/${filename}`;
-      
+
       // Delete old avatar if exists
       if (user.avatar && user.avatar.startsWith('/uploads/')) {
         try {
@@ -142,9 +143,7 @@ router.post('/upload-avatar', auth, (req, res) => {
   });
 });
 
-// @route   PUT /api/users/profile
-// @desc    Update user profile
-// @access  Private
+
 router.put('/profile', auth, [
   body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').optional().isEmail().withMessage('Please enter a valid email')
@@ -152,21 +151,21 @@ router.put('/profile', auth, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: errors.array()
       });
     }
 
     const { name, email, avatar } = req.body;
     const updateData = {};
-    
+
     if (name && name.trim()) updateData.name = name.trim();
     if (email && email.trim()) {
       // Check if email is already taken by another user
-      const existingUser = await User.findOne({ 
-        email: email.trim().toLowerCase(), 
-        _id: { $ne: req.user._id } 
+      const existingUser = await User.findOne({
+        email: email.trim().toLowerCase(),
+        _id: { $ne: req.user._id }
       });
       if (existingUser) {
         return res.status(400).json({ message: 'Email already in use' });
@@ -205,9 +204,7 @@ router.put('/profile', auth, [
   }
 });
 
-// @route   GET /api/users/stats
-// @desc    Get current user stats including rank
-// @access  Private
+
 router.get('/stats', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id || req.user._id);
@@ -240,9 +237,7 @@ router.get('/stats', auth, async (req, res) => {
   }
 });
 
-// @route   POST /api/users/reset-streak
-// @desc    Reset user streak (for testing/admin)
-// @access  Private
+
 router.post('/reset-streak', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id || req.user._id);
@@ -253,7 +248,7 @@ router.post('/reset-streak', auth, async (req, res) => {
     user.currentStreak = 0;
     user.lastStreakDate = null;
     user.streakActivities = [];
-    
+
     await user.save();
 
     res.json({
@@ -268,8 +263,7 @@ router.post('/reset-streak', auth, async (req, res) => {
 });
 
 // @route   POST /api/users/complete-lab
-// @desc    Mark lab as completed and update points
-// @access  Private
+
 router.post('/complete-lab', auth, [
   body('labId').notEmpty().withMessage('Lab ID is required'),
   body('score').isNumeric().withMessage('Score must be a number')
@@ -277,9 +271,9 @@ router.post('/complete-lab', auth, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: errors.array()
       });
     }
 
@@ -309,10 +303,10 @@ router.post('/complete-lab', auth, [
     // Update user stats
     user.completedLabs += 1;
     user.points += score;
-    
+
     // Update streak for lab completion
     user.updateStreak('lab', labId);
-    
+
     // Level up logic (every 1000 points = 1 level)
     const newLevel = Math.floor(user.points / 1000) + 1;
     if (newLevel > user.level) {

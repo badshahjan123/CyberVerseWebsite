@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useApp } from "../contexts/app-context";
 import {
   Shield,
   Zap,
@@ -24,6 +25,7 @@ import {
 
 const PremiumPage = () => {
   const navigate = useNavigate();
+  const { user } = useApp();
   const [billingCycle, setBillingCycle] = useState("monthly"); // 'monthly' or 'annual'
   const [isLoading, setIsLoading] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
@@ -162,22 +164,20 @@ const PremiumPage = () => {
           <div className="flex items-center justify-center gap-4 mb-12">
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                billingCycle === "monthly"
-                  ? "bg-primary text-white"
-                  : "bg-white/5 text-muted hover:bg-white/10"
-              }`}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all ${billingCycle === "monthly"
+                ? "bg-primary text-white"
+                : "bg-white/5 text-muted hover:bg-white/10"
+                }`}
             >
               Monthly
             </button>
 
             <button
               onClick={() => setBillingCycle("annual")}
-              className={`relative px-6 py-3 rounded-lg font-semibold transition-all ${
-                billingCycle === "annual"
-                  ? "bg-primary text-white"
-                  : "bg-white/5 text-muted hover:bg-white/10"
-              }`}
+              className={`relative px-6 py-3 rounded-lg font-semibold transition-all ${billingCycle === "annual"
+                ? "bg-primary text-white"
+                : "bg-white/5 text-muted hover:bg-white/10"
+                }`}
             >
               Annually
               {savings && (
@@ -223,7 +223,7 @@ const PremiumPage = () => {
               to="/rooms"
               className="btn-ghost w-full inline-flex items-center justify-center gap-2"
             >
-              Current Plan
+              {!user?.isPremium ? 'Current Plan' : 'Free Plan'}
             </Link>
           </div>
 
@@ -287,23 +287,32 @@ const PremiumPage = () => {
                 </span>
               </li>
             </ul>
-            <button
-              onClick={() => handleSubscribe("premium")}
-              disabled={isLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Subscribe Now
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
+            {user?.isPremium ? (
+              <Link
+                to="/checkout"
+                className="btn-primary w-full flex items-center justify-center gap-2"
+              >
+                Current Plan
+              </Link>
+            ) : (
+              <button
+                onClick={() => handleSubscribe("premium")}
+                disabled={isLoading}
+                className="btn-primary w-full flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Subscribe Now
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Business Plan */}

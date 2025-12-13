@@ -52,7 +52,7 @@ PaymentMethodCard.displayName = 'PaymentMethodCard'
 const CheckoutPage = memo(() => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, setUser } = useApp()
+  const { user, updateUserProfile } = useApp()
   const selectedPlan = location.state?.plan || {
     name: "Pro",
     price: "$19",
@@ -150,26 +150,26 @@ const CheckoutPage = memo(() => {
       const paymentMethodName = paymentMethods.find(m => m.id === selectedPaymentMethod)?.name
 
       // Call backend API to upgrade user to premium
-      const response = await apiCall('/payment/upgrade-to-premium', {
+      const response = await apiCall('/payments/upgrade-to-premium', {
         method: 'POST',
         body: JSON.stringify({
           transactionId,
           paymentMethod: paymentMethodName,
           plan: selectedPlan.name,
-          amount: selectedPlan.price
+          amount: parseFloat(selectedPlan.price.replace('$', ''))
         })
       })
 
       // Update user context with premium status
       if (response.user) {
-        setUser(response.user)
+        updateUserProfile(response.user)
       }
 
       // Navigate to success page
       navigate('/payment-success', {
         state: {
           plan: selectedPlan,
-          paymentMethod: paymentMethods.find(m => m.id === selectedPaymentMethod),
+          paymentMethod: { name: paymentMethods.find(m => m.id === selectedPaymentMethod)?.name },
           transactionId,
           date: new Date().toLocaleDateString()
         }
@@ -179,6 +179,98 @@ const CheckoutPage = memo(() => {
       setError(err.message || 'Payment failed. Please try again.')
       setProcessing(false)
     }
+  }
+
+  // Show subscription management for existing premium users
+  if (user?.isPremium) {
+    const subscription = user.premiumSubscription || {}
+    const startDate = subscription.startDate
+      ? new Date(subscription.startDate).toLocaleDateString()
+      : 'N/A'
+
+    return (
+      <div className="bg-slate-950 min-h-screen py-12">
+        <div className="container mx-auto px-6 max-w-4xl">
+          {/* Header */}
+          <div className="mb-8">
+            <button onClick={() => navigate('/premium')} className="flex items-center gap-2 text-slate-400 hover:text-primary-400 transition-colors mb-4">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Plans
+            </button>
+            <h1 className="text-4xl font-bold text-white mb-2">Subscription Management</h1>
+            <p className="text-slate-400">Manage your premium subscription</p>
+          </div>
+
+          {/* Active Subscription Card */}
+          <div className="bg-gradient-to-br from-primary-500/10 to-purple-500/10 border-2 border-primary-500/30 rounded-xl p-8 mb-6">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <Shield className="h-8 w-8 text-primary-400" />
+                  <h2 className="text-3xl font-bold text-white">Active Premium Subscription</h2>
+                </div>
+                <p className="text-slate-300">You're currently enjoying all premium benefits</p>
+              </div>
+              <Badge className="bg-green-500/20 text-green-300 border-green-500/50">✓ Active</Badge>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <p className="text-slate-400 text-sm mb-1">Plan</p>
+                <p className="text-white text-xl font-semibold">{subscription.plan || 'Premium'}</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <p className="text-slate-400 text-sm mb-1">Status</p>
+                <p className="text-green-400 text-xl font-semibold">Active</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <p className="text-slate-400 text-sm mb-1">Start Date</p>
+                <p className="text-white text-xl font-semibold">{startDate}</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <p className="text-slate-400 text-sm mb-1">Payment Method</p>
+                <p className="text-white text-xl font-semibold">{subscription.paymentMethod || 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="bg-primary-500/10 border border-primary-500/20 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-primary-400 flex-shrink-0 mt-0.5" />
+              <div><p className="text-slate-200 text-sm">You already have an active premium subscription. You're enjoying all premium features!</p></div>
+            </div>
+          </div>
+
+          <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-8 mb-6">
+            <h3 className="text-2xl font-bold text-white mb-6">Your Premium Benefits</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              {['Unlimited access to all labs', 'Advanced analytics dashboard', 'Priority customer support', 'Certificate generation', 'Exclusive premium labs', 'Ad-free experience', 'Early access to new features', 'Community forum access'].map((benefit, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <span className="text-slate-300">{benefit}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <ModernButton variant="primary" size="lg" onClick={() => navigate('/dashboard')} className="flex-1">
+              Go to Dashboard
+            </ModernButton>
+            <ModernButton variant="outline" size="lg" onClick={() => navigate('/labs')} className="flex-1">
+              Explore Premium Labs
+            </ModernButton>
+          </div>
+
+          <div className="mt-6 flex items-start gap-3 p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg">
+            <Lock className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-slate-300">
+                Need help? Contact our support team at <span className="text-primary-400">support@cyberverse.com</span> or visit the Settings page to manage your subscription.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -1,73 +1,67 @@
-// Use environment variable for API URL, fallback to localhost for development
+// Use localhost for development (PC only)
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // API helper function
 export const apiCall = async (endpoint, options = {}) => {
   // Skip API calls for admin routes
-  if (typeof window !== 'undefined' && 
-      (window.location.pathname.startsWith('/secure-admin') || 
-       window.location.pathname.startsWith('/admin'))) {
+  if (typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/secure-admin') ||
+      window.location.pathname.startsWith('/admin'))) {
     throw new Error('API calls disabled for admin routes');
   }
-  
+
   const token = localStorage.getItem('token');
-  
+
   // Update activity on API calls (indicates user interaction)
   if (token && typeof window !== 'undefined') {
     import('../utils/sessionManager').then(({ default: sessionManager }) => {
       sessionManager.updateActivity();
     });
   }
-  
-  // Build headers properly for FormData vs JSON
-  const headers = {
-    ...options.headers,
-    ...(token && { Authorization: `Bearer ${token}` }),
+
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
   };
-  
-  // Only add Content-Type for non-FormData requests
-  if (!(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
+
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const config = {
-    headers,
     ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
   };
+
+  if (config.body && typeof config.body === 'object') {
+    config.body = JSON.stringify(config.body);
+  }
 
   try {
-    console.log(`🌐 API Request: ${endpoint}`, {
-      method: config.method || 'GET',
-      headers: config.headers,
-      body: config.body instanceof FormData ? 'FormData' : (config.body ? JSON.parse(config.body) : undefined)
-    });
+    console.log('🌐 API Request:', endpoint, config);
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    const data = await response.json();
-    
-    console.log(`📥 API Response: ${endpoint}`, {
+    const response = await fetch(url, config);
+
+    console.log('📥 API Response:', endpoint, {
       status: response.status,
       ok: response.ok,
-      data
+      data: await response.clone().json().catch(() => null)
     });
-    
+
     if (!response.ok) {
-      // For validation errors, include the detailed errors
-      if (data.errors && Array.isArray(data.errors)) {
-        const errorMessages = data.errors.map(err => err.msg || err.message).join(', ');
-        throw new Error(errorMessages);
-      }
-      throw new Error(data.message || `Server returned ${response.status}: ${data.error || 'Unknown error'}`);
+      const error = await response.json().catch(() => ({ message: 'Request failed' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
     }
-    
-    // If data is just a string, wrap it in an object
-    if (typeof data === 'string') {
-      return { data };
-    }
-    
-    return data;
+
+    return response.json();
   } catch (error) {
-    console.error(`❌ API Error (${endpoint}):`, error);
+    console.error('❌ API Error:', endpoint, error);
     throw error;
   }
 };
+
+export default apiCall;
