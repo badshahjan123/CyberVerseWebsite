@@ -2,7 +2,7 @@ const express = require('express');
 const User = require('../models/User');
 const Room = require('../models/Room');
 const Lab = require('../models/Lab');
-const NotificationService = require('../utils/notificationService');
+const NotificationService = require('../utils/notificationHelper');
 const { auth } = require('../middleware/auth');
 const router = express.Router();
 

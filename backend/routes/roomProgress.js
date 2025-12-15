@@ -235,10 +235,14 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
     const maxQuizPoints = 500; // Fixed max points for quiz
     const newQuizPoints = Math.round((score / 100) * maxQuizPoints);
 
+    // Check if this is a retake (quiz was already completed)
+    const isRetake = roomProgress.quizCompleted === true;
+
     // Remove previous quiz points if this is a retry
-    if (roomProgress.quizScore.pointsEarned > 0) {
+    if (roomProgress.quizScore && roomProgress.quizScore.pointsEarned > 0) {
       user.points = Math.max(0, (user.points || 0) - roomProgress.quizScore.pointsEarned);
       roomProgress.totalPointsEarned -= roomProgress.quizScore.pointsEarned;
+      console.log(`🔄 Retake detected - removed previous quiz points: ${roomProgress.quizScore.pointsEarned}`);
     }
 
     // Add new quiz points
@@ -252,21 +256,25 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
       percentage: score
     };
 
-    // FIX: ONLY mark as complete if ALL conditions met:
+    // FIX: ONLY mark as complete FIRST TIME if ALL conditions met:
     // 1. All tasks are done
     // 2. Quiz is passed (score >= 70)
+    // 3. Room was never completed before
     const passed = score >= 70;
-    if (passed && completedTasks === totalTasks) {
+    const wasNeverCompleted = !roomProgress.completed;
+
+    if (passed && completedTasks === totalTasks && wasNeverCompleted) {
       roomProgress.completed = true;
       roomProgress.completedAt = new Date();
+      roomProgress.quizCompleted = true;
 
       // Update streak using the proper method (handles duplicate checks and consecutive day validation)
       user.updateStreak('room', roomId);
 
-      console.log(` Room marked complete (quiz passed with ${score}%), streak: ${user.currentStreak}`);
+      console.log(`✅ Room marked complete for FIRST TIME (quiz passed with ${score}%), streak: ${user.currentStreak}`);
 
       // Create notifications for achievements
-      const NotificationService = require('../utils/notificationService');
+      const NotificationService = require('../utils/notificationHelper');
 
       // Check for level up
       const oldLevel = user.level;
@@ -282,9 +290,15 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
       }
 
       // The pre-save hook will calculate unique completed rooms
+    } else if (passed && isRetake) {
+      // Room was already completed, just update the quiz score
+      roomProgress.quizCompleted = true;
+      roomProgress.finalScore = score;
+      console.log(`🔄 Room RETAKE (previous completion kept) - quiz passed with ${score}%, previous score updated`);
     } else if (!passed) {
-      console.log(`❌ Room NOT complete (quiz failed with ${score}%)`);
+      console.log(`❌ Quiz failed with ${score}% - try again`);
       // Don't mark as complete if quiz failed
+      roomProgress.quizCompleted = false;
     }
 
     await user.save();
@@ -413,9 +427,42 @@ router.post('/:roomId/reset', auth, async (req, res) => {
       return res.status(400).json({ message: 'Room not found in progress' });
     }
 
+    // Calculate total points to deduct (handle old completions)
+    let pointsToDeduct = 0;
+
+    // Try totalPointsEarned first (new completions)
+    if (roomProgress.totalPointsEarned && roomProgress.totalPointsEarned > 0) {
+      pointsToDeduct = roomProgress.totalPointsEarned;
+      console.log(`📊 Found totalPointsEarned: ${pointsToDeduct}`);
+    } else {
+      // Fallback: Calculate from individual scores (old completions)
+      let taskPoints = 0;
+      let quizPoints = 0;
+
+      // Calculate task points
+      if (roomProgress.taskScores && roomProgress.taskScores.length > 0) {
+        taskPoints = roomProgress.taskScores.reduce((sum, ts) => sum + (ts.pointsEarned || 0), 0);
+      }
+
+      // Calculate quiz points from quizScore or finalScore
+      if (roomProgress.quizScore && roomProgress.quizScore.pointsEarned > 0) {
+        quizPoints = roomProgress.quizScore.pointsEarned;
+      } else if (roomProgress.finalScore) {
+        quizPoints = Math.round((roomProgress.finalScore / 100) * 500);
+        console.log(`📊 Calculated quiz points from finalScore: ${roomProgress.finalScore}% = ${quizPoints}`);
+      }
+
+      pointsToDeduct = taskPoints + quizPoints;
+      console.log(`📊 OLD COMPLETION - Calculated points to deduct: ${taskPoints} (tasks) + ${quizPoints} (quiz) = ${pointsToDeduct}`);
+    }
+
     // Deduct all points earned from this room
-    if (roomProgress.totalPointsEarned) {
-      user.points = Math.max(0, (user.points || 0) - roomProgress.totalPointsEarned);
+    if (pointsToDeduct > 0) {
+      const pointsBefore = user.points;
+      user.points = Math.max(0, (user.points || 0) - pointsToDeduct);
+      console.log(`🔄 RESET - Removed ${pointsToDeduct} points: ${pointsBefore} → ${user.points}`);
+    } else {
+      console.log(`⚠️ No points to deduct (room not completed or no points earned)`);
     }
 
     // Reset all progress but keep joined status

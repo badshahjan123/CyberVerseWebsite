@@ -50,15 +50,15 @@ router.get('/', async (req, res) => {
     //     const jwt = require('jsonwebtoken');
     //     const token = req.headers.authorization.split(' ')[1];
     //     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
+
     //     const User = require('../models/User');
     //     const user = await User.findById(decoded.id);
-        
+
     //     if (user) {
     //       const completedRoomIds = user.roomProgress
     //         .filter(p => p.completed)
     //         .map(p => p.roomId);
-          
+
     //       rooms = rooms.filter(room => !completedRoomIds.includes(room.slug));
     //     }
     //   } catch (authError) {
@@ -288,13 +288,67 @@ router.post('/:slug/quizzes/:quizId/submit', auth, async (req, res) => {
           completedLectures: [],
           exerciseAnswers: {},
           quizCompleted: false,
-          completed: false
+          completed: false,
+          quizScore: { pointsEarned: 0, maxPoints: 0, percentage: 0 }
         });
         roomProgress = user.roomProgress[user.roomProgress.length - 1];
       }
 
-      // Award points
+      // Initialize quizScore if not exists
+      if (!roomProgress.quizScore) {
+        roomProgress.quizScore = { pointsEarned: 0, maxPoints: 0, percentage: 0 };
+      }
+
+      // FIX: Check if this is a retake and calculate/remove previous points
+      const isRetake = roomProgress.quizCompleted === true;
+      let previousQuizPoints = 0;
+
+      if (isRetake) {
+        // Try to get previous points from quiz Score first
+        if (roomProgress.quizScore && roomProgress.quizScore.pointsEarned > 0) {
+          previousQuizPoints = roomProgress.quizScore.pointsEarned;
+        }
+        // Fallback: Calculate from finalScore if quizScore doesn't exist (old completions)
+        else if (roomProgress.finalScore) {
+          const maxQuizPoints = 500;
+          previousQuizPoints = Math.round((roomProgress.finalScore / 100) * maxQuizPoints);
+          console.log(`📊 OLD COMPLETION - Calculating previous quiz points from finalScore: ${roomProgress.finalScore}% = ${previousQuizPoints} points`);
+        }
+
+        // Deduct previous quiz points
+        if (previousQuizPoints > 0) {
+          user.points = Math.max(0, (user.points || 0) - previousQuizPoints);
+          console.log(`🔄 Quiz RETAKE - removed previous ${previousQuizPoints} points (user total now: ${user.points})`);
+        } else {
+          console.log(`⚠️ RETAKE detected but no previous points found to deduct`);
+        }
+      }
+
+      // Award NEW quiz points
+      const pointsBeforeQuiz = user.points;
       user.points = (user.points || 0) + earnedPoints;
+      console.log(`➕ Adding ${earnedPoints} NEW quiz points: ${pointsBeforeQuiz} → ${user.points}`);
+
+      // Initialize totalPointsEarned if not exists
+      if (!roomProgress.totalPointsEarned) {
+        roomProgress.totalPointsEarned = 0;
+      }
+
+      // FIX: Update totalPointsEarned to include quiz points
+      // If retake, first subtract previous quiz points from total
+      if (isRetake && previousQuizPoints > 0) {
+        roomProgress.totalPointsEarned -= previousQuizPoints;
+      }
+      // Then add new quiz points
+      roomProgress.totalPointsEarned += earnedPoints;
+      console.log(`📊 Updated totalPointsEarned: ${roomProgress.totalPointsEarned} (includes ${earnedPoints} quiz pts)`);
+
+      // Update quiz score tracking
+      roomProgress.quizScore = {
+        pointsEarned: earnedPoints,
+        maxPoints: totalPoints,
+        percentage: Math.round(percentage)
+      };
 
       // FIX: Set quizCompleted flag
       roomProgress.quizCompleted = true;
@@ -303,13 +357,22 @@ router.post('/:slug/quizzes/:quizId/submit', auth, async (req, res) => {
       // FIX: Only mark room complete if quiz passed AND all tasks done
       const totalTasks = room.topics?.length || room.lectures?.length || 0;
       const completedTasks = roomProgress.completedLectures?.length || 0;
+      const wasNeverCompleted = !roomProgress.completed;
 
-      if (passed && completedTasks === totalTasks && totalTasks > 0) {
+      if (passed && completedTasks === totalTasks && totalTasks > 0 && wasNeverCompleted) {
         roomProgress.completed = true;
         roomProgress.completedAt = new Date();
-        console.log(`✅ Room ${req.params.slug} marked complete (quiz passed ${percentage}%)`);
+
+        // Update streak only on first completion
+        user.updateStreak('room', req.params.slug);
+
+        console.log(`✅ Room ${req.params.slug} marked complete for FIRST TIME (quiz: ${percentage}%)`);
+      } else if (passed && isRetake) {
+        console.log(`🔄 Room RETAKE (quiz: ${percentage}%) - removed ${previousQuizPoints}pts, added ${earnedPoints}pts`);
       } else if (!passed) {
         console.log(`❌ Quiz failed (${percentage}%) - room not complete`);
+        roomProgress.quizCompleted = false;
+        roomProgress.completed = false;
       } else {
         console.log(`⚠️ Quiz passed but not all tasks complete (${completedTasks}/${totalTasks})`);
       }

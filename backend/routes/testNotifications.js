@@ -1,5 +1,5 @@
 const express = require('express');
-const NotificationService = require('../utils/notificationService');
+const NotificationService = require('../utils/notificationHelper');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -10,7 +10,7 @@ const router = express.Router();
 router.post('/create-samples', auth, async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     // Create various types of notifications
     await NotificationService.createNotification(
       userId,
@@ -66,7 +66,7 @@ router.post('/real-time', auth, async (req, res) => {
   try {
     const userId = req.user._id;
     const { type = 'system', title, message } = req.body;
-    
+
     const notification = await NotificationService.createNotification(
       userId,
       type,
@@ -75,7 +75,7 @@ router.post('/real-time', auth, async (req, res) => {
       { data: { test: true, timestamp: new Date().toISOString() } }
     );
 
-    res.json({ 
+    res.json({
       message: 'Real-time notification sent successfully',
       notification: {
         id: notification._id,
@@ -97,7 +97,7 @@ router.post('/achievement', auth, async (req, res) => {
   try {
     const userId = req.user._id;
     const { achievement = 'Test Achievement' } = req.body;
-    
+
     await NotificationService.notifyAchievement(userId, achievement);
 
     res.json({ message: `Achievement notification sent: ${achievement}` });
@@ -114,7 +114,7 @@ router.post('/level-up', auth, async (req, res) => {
   try {
     const userId = req.user._id;
     const { level = 5 } = req.body;
-    
+
     await NotificationService.notifyLevelUp(userId, level);
 
     res.json({ message: `Level up notification sent: Level ${level}` });
@@ -131,7 +131,7 @@ router.post('/streak', auth, async (req, res) => {
   try {
     const userId = req.user._id;
     const { streak = 7 } = req.body;
-    
+
     await NotificationService.notifyStreak(userId, streak);
 
     res.json({ message: `Streak notification sent: ${streak} days` });

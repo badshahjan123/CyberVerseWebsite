@@ -3,7 +3,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { startLab, stopLab, getLabStatus, listAvailableLabs } = require('../utils/dockerManager');
+const { startLab, stopLab, getLabStatus, listAvailableLabs } = require('../utils/docker/dockerManager');
 const { auth } = require('../middleware/auth'); // Assuming you have auth middleware
 
 /**

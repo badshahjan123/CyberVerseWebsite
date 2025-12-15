@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import { useApp } from "../contexts/app-context"
-import { ModernButton } from "../components/ui/modern-button"
+import { ModernButton } from "../components/ui-components"
 import { Shield, Zap, Users, Trophy, Lock, Terminal, Network, Code, ArrowRight, Star, Sparkles, Play, CheckCircle } from "lucide-react"
 import { memo, useMemo, useCallback } from "react"
 
@@ -94,24 +94,24 @@ const Home = memo(() => {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-12">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        
+
         <div className="container relative mx-auto px-6 max-w-6xl">
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-2 text-sm">
               <Sparkles className="h-3 w-3 text-primary" />
               <span className="text-primary">Next-gen security training</span>
             </div>
-            
+
             <h1 className="mb-4 text-3xl font-bold leading-tight md:text-5xl">
               Master{" "}
               <span className="gradient-text">technical </span>
               {" "}Skills
             </h1>
-            
+
             <p className="mb-8 text-lg text-muted max-w-2xl mx-auto">
               Learn through hands-on labs, compete in live challenges, and advance your career
             </p>
-            
+
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center mb-12">
               <Link to={isAuthenticated ? "/dashboard" : "/signup"} onClick={handleGetStarted} className="btn-primary group flex items-center justify-center text-base px-6 py-3">
                 <span>{isAuthenticated ? "Go to Dashboard" : "Start Free Trial"}</span>
@@ -148,7 +148,7 @@ const Home = memo(() => {
             <h2 className="mb-3 text-2xl font-bold text-text">Why Choose CyberVerse?</h2>
             <p className="text-muted max-w-2xl mx-auto">Professional training with real-world scenarios</p>
           </div>
-          
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, index) => (
               <FeatureCard key={index} feature={feature} index={index} />
@@ -164,7 +164,7 @@ const Home = memo(() => {
             <h2 className="mb-3 text-2xl font-bold text-text">Learning Paths</h2>
             <p className="text-muted max-w-2xl mx-auto">Choose your specialization and advance your skills</p>
           </div>
-          
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {categories.map((category, index) => (
               <CategoryCard key={index} category={category} index={index} />
@@ -186,7 +186,7 @@ const Home = memo(() => {
             <p className="mb-8 text-muted max-w-2xl mx-auto">
               Start your cybersecurity journey today with hands-on training and real-world scenarios
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
               {!isAuthenticated ? (
                 <>
@@ -203,7 +203,7 @@ const Home = memo(() => {
                 </Link>
               )}
             </div>
-            
+
             <p className="text-xs text-slate-500">
               No credit card required • Free trial • Join in seconds
             </p>

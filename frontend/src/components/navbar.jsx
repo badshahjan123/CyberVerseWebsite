@@ -180,7 +180,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden glass-effect border-t border-white/10 absolute top-16 left-0 w-full shadow-xl">
+          <div className="md:hidden border-t border-white/10 absolute top-16 left-0 w-full shadow-xl bg-[rgb(8,12,16)] backdrop-blur-xl">
             <div className="flex flex-col p-4 space-y-2">
               {navLinks.map((link) => (
                 <NavLink

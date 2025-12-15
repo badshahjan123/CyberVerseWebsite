@@ -23,7 +23,7 @@ export const BookmarkProvider = ({ children }) => {
       setBookmarkedItems([])
       return
     }
-    
+
     const userBookmarkKey = `cyberverse_bookmarks_${user.id}`
     const stored = localStorage.getItem(userBookmarkKey)
     if (stored) {
@@ -47,37 +47,43 @@ export const BookmarkProvider = ({ children }) => {
   }, [bookmarkedItems, user?.id])
 
   const addBookmark = (item) => {
-    setBookmarkedItems(prev => {
-      const exists = prev.find(bookmark => bookmark.id === item.id && bookmark.type === item.type)
-      if (exists) return prev
-      
+    const exists = bookmarkedItems.find(bookmark => bookmark.id === item.id && bookmark.type === item.type)
+    if (exists) return
+
+    setBookmarkedItems(prev => [...prev, {
+      ...item,
+      bookmarkedAt: new Date().toISOString()
+    }])
+
+    // Toast after state update to avoid React warning
+    setTimeout(() => {
       addToast({
         type: 'success',
         title: '🔖 Saved!',
         message: `${item.title} added to your collection`,
         duration: 3000
       })
-      
-      return [...prev, {
-        ...item,
-        bookmarkedAt: new Date().toISOString()
-      }]
-    })
+    }, 0)
   }
 
   const removeBookmark = (id, type) => {
-    setBookmarkedItems(prev => {
-      const item = prev.find(bookmark => bookmark.id === id && bookmark.type === type)
-      if (item) {
+    const item = bookmarkedItems.find(bookmark => bookmark.id === id && bookmark.type === type)
+
+    setBookmarkedItems(prev =>
+      prev.filter(bookmark => !(bookmark.id === id && bookmark.type === type))
+    )
+
+    // Toast after state update to avoid React warning
+    if (item) {
+      setTimeout(() => {
         addToast({
           type: 'info',
           title: '🗑️ Removed',
           message: `${item.title} removed from saved items`,
           duration: 2500
         })
-      }
-      return prev.filter(bookmark => !(bookmark.id === id && bookmark.type === type))
-    })
+      }, 0)
+    }
   }
 
   const isBookmarked = (id, type) => {

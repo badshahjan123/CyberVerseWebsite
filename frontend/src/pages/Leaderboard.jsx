@@ -104,17 +104,16 @@ const Leaderboard = memo(() => {
             <button
               key={tab}
               onClick={() => handleTabSwitch(tab)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === tab
+              className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === tab
                   ? "bg-primary/10 text-primary border border-primary/20"
                   : "bg-white/5 text-muted hover:text-text hover:bg-white/10 border border-white/10"
-              }`}
+                }`}
             >
               {tab === "global"
                 ? "🌍 Global"
                 : tab === "weekly"
-                ? "📅 This Week"
-                : "📆 This Month"}
+                  ? "📅 This Week"
+                  : "📆 This Month"}
             </button>
           ))}
         </div>
@@ -341,9 +340,8 @@ const Leaderboard = memo(() => {
                                 Level {champion.level}
                               </span>
                               <div
-                                className={`px-3 py-1 bg-white/10 border ${
-                                  borderColors[idx].split(" ")[0]
-                                } rounded`}
+                                className={`px-3 py-1 bg-white/10 border ${borderColors[idx].split(" ")[0]
+                                  } rounded`}
                               >
                                 <p
                                   className={`text-lg font-bold ${textColors[idx]}`}
@@ -383,14 +381,12 @@ const Leaderboard = memo(() => {
                     {challengers.map((player, idx) => (
                       <div
                         key={player.rank}
-                        className={`grid grid-cols-1 md:grid-cols-10 gap-4 p-4 transition-all hover:bg-white/5 hover:border-l-4 hover:border-primary ${
-                          idx % 2 === 0 ? "bg-slate-800/20" : "bg-slate-800/10"
-                        } ${
-                          player.username === user?.username ||
-                          player.name === user?.name
+                        className={`grid grid-cols-1 md:grid-cols-10 gap-4 p-4 transition-all hover:bg-white/5 hover:border-l-4 hover:border-primary ${idx % 2 === 0 ? "bg-slate-800/20" : "bg-slate-800/10"
+                          } ${player.username === user?.username ||
+                            player.name === user?.name
                             ? "border-l-4 border-primary bg-primary/10"
                             : ""
-                        }`}
+                          }`}
                       >
                         {/* Rank */}
                         <div className="col-span-1 flex items-center">

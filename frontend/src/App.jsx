@@ -65,32 +65,42 @@ if (typeof document !== 'undefined' && !document.getElementById('futuristic-styl
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'))
-const Labs = lazy(() => import('./pages/Labs'))
-const LinuxForensicsLab = lazy(() => import('./pages/labs/LinuxForensicsLab'))
-const LabDetail = lazy(() => import('./pages/LabDetail'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Premium = lazy(() => import('./pages/Premium'))
-const Checkout = lazy(() => import('./pages/Checkout'))
-const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'))
-const Certificates = lazy(() => import('./pages/Certificates'))
-const Login = lazy(() => import('./pages/Login'))
-const Register = lazy(() => import('./pages/Register'))
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
-
-const Rooms = lazy(() => import('./pages/Rooms'))
-const RoomDetail = lazy(() => import('./pages/RoomDetail'))
-const RoomCompleted = lazy(() => import('./pages/RoomCompleted'))
-const RoomResume = lazy(() => import('./pages/RoomResume'))
 const Leaderboard = lazy(() => import('./pages/Leaderboard'))
-const Profile = lazy(() => import('./pages/Profile'))
-const Settings = lazy(() => import('./pages/Settings'))
-const Badges = lazy(() => import('./pages/Badges'))
-const SavedItems = lazy(() => import('./pages/SavedItems'))
-const NotificationTest = lazy(() => import('./pages/NotificationTest'))
-const SecureAdminLogin = lazy(() => import('./pages/SecureAdminLogin'))
-const SecureAdminDashboard = lazy(() => import('./pages/SecureAdminDashboard'))
-const AdminUserDetail = lazy(() => import('./pages/AdminUserDetail'))
-const RoomEditor = lazy(() => import('./pages/RoomEditor'))
+
+// Auth pages
+const Login = lazy(() => import('./pages/auth/Login'))
+const Register = lazy(() => import('./pages/auth/Register'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+
+// Admin pages
+const SecureAdminLogin = lazy(() => import('./pages/admin/SecureAdminLogin'))
+const SecureAdminDashboard = lazy(() => import('./pages/admin/SecureAdminDashboard'))
+const AdminUserDetail = lazy(() => import('./pages/admin/AdminUserDetail'))
+const RoomEditor = lazy(() => import('./pages/admin/RoomEditor'))
+
+// Labs pages
+const Labs = lazy(() => import('./pages/labs/Labs'))
+const LabDetail = lazy(() => import('./pages/labs/LabDetail'))
+const LinuxForensicsLab = lazy(() => import('./pages/labs/LinuxForensicsLab'))
+
+// Rooms pages
+const Rooms = lazy(() => import('./pages/rooms/Rooms'))
+const RoomDetail = lazy(() => import('./pages/rooms/RoomDetail'))
+const RoomCompleted = lazy(() => import('./pages/rooms/RoomCompleted'))
+const RoomResume = lazy(() => import('./pages/rooms/RoomResume'))
+
+// User pages
+const Profile = lazy(() => import('./pages/user/Profile'))
+const Settings = lazy(() => import('./pages/user/Settings'))
+const Badges = lazy(() => import('./pages/user/Badges'))
+const Certificates = lazy(() => import('./pages/user/Certificates'))
+const SavedItems = lazy(() => import('./pages/user/SavedItems'))
+
+// Payment pages
+const Premium = lazy(() => import('./pages/payments/Premium'))
+const Checkout = lazy(() => import('./pages/payments/Checkout'))
+const PaymentSuccess = lazy(() => import('./pages/payments/PaymentSuccess'))
 
 // Minimal loading component - matches app background to prevent flash
 const PageLoader = () => (
@@ -140,7 +150,6 @@ function AppContent() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/badges" element={<Badges />} />
               <Route path="/saved" element={<SavedItems />} />
-              <Route path="/test-notifications" element={<NotificationTest />} />
             </Routes>
           )}
         </Suspense>

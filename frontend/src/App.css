@@ -190,6 +190,30 @@ body {
     background-color: rgb(var(--surface));
     color: rgb(var(--text));
   }
+
+  /* Enhanced Form Input Styles for Login/Signup */
+  input[type="email"],
+  input[type="password"],
+  input[type="text"] {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: rgb(var(--text)) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="text"]:focus {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgb(var(--primary)) !important;
+    box-shadow: 0 0 0 3px var(--glow-primary) !important;
+  }
+
+  input[type="email"]::placeholder,
+  input[type="password"]::placeholder,
+  input[type="text"]::placeholder {
+    color: rgba(148, 163, 184, 0.8) !important;
+  }
 }
 
 /* Ultra-smooth scrolling optimizations */

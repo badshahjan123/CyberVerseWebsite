@@ -10,12 +10,12 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 require('dotenv').config();
 
+// Routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const userApiRoutes = require('./routes/user'); // New user API routes
-const adminRoutes = require('./routes/admin');
-const adminAuthRoutes = require('./routes/adminAuth');
-const paymentRoutes = require('./routes/payment');
+const userApiRoutes = require('./routes/user');
+const adminRoutes = require('./routes/admin'); // Admin index router
+const paymentRoutes = require('./routes/payments');
 const roomRoutes = require('./routes/rooms');
 const User = require('./models/User');
 const Room = require('./models/Room');
@@ -282,22 +282,21 @@ const createSampleData = async (adminId) => {
   }
 };
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/user', userApiRoutes); // User profile features (streak, badges, saved)
-app.use('/api/admin/auth', adminAuthRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/user', userApiRoutes);
+app.use('/api/admin', adminRoutes); // All admin routes consolidated
 app.use('/api/payments', paymentRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/room-progress', require('./routes/roomProgress'));
-app.use('/api/2fa', require('./routes/twoFactor')); // 2FA enabled
+app.use('/api/2fa', require('./routes/twoFactor'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/test-notifications', require('./routes/testNotifications'));
 app.use('/api/search', require('./routes/search'));
-app.use('/api/labs', require('./routes/labs')); // Lab container management
-app.use('/api/admin/streaks', require('./routes/adminStreaks')); // Admin streak recalculation
+app.use('/api/labs', require('./routes/labs'));
+app.use('/api/streak-fix', require('./routes/streakFix'));
 
 // Health check
 app.get('/api/health', (req, res) => {
