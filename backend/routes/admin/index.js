@@ -9,7 +9,7 @@ const streaksRoutes = require('./streaks');
 
 // Mount admin sub-routes
 router.use('/auth', authRoutes);
-router.use('/users', usersRoutes);
+router.use('/', usersRoutes); // Mount at root so /dashboard/stats, /users, /rooms, /labs all work
 router.use('/activity', activityRoutes);
 router.use('/streaks', streaksRoutes);
 
