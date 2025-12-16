@@ -162,15 +162,15 @@ router.put('/profile', auth, [
 
     if (name && name.trim()) updateData.name = name.trim();
     if (email && email.trim()) {
-      // Check if email is already taken by another user
+      // Check if email is already taken by another user (case-sensitive)
       const existingUser = await User.findOne({
-        email: email.trim().toLowerCase(),
+        email: email.trim(),
         _id: { $ne: req.user._id }
       });
       if (existingUser) {
         return res.status(400).json({ message: 'Email already in use' });
       }
-      updateData.email = email.trim().toLowerCase();
+      updateData.email = email.trim();
     }
     if (avatar) updateData.avatar = avatar;
 
