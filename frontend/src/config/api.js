@@ -21,9 +21,15 @@ export const apiCall = async (endpoint, options = {}) => {
 
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
+  // Check if body is FormData (for file uploads)
+  const isFormData = options.body instanceof FormData;
+
+  const defaultHeaders = {};
+
+  // Only set Content-Type if not FormData (browser will set it automatically for FormData with boundary)
+  if (!isFormData) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
@@ -37,7 +43,8 @@ export const apiCall = async (endpoint, options = {}) => {
     },
   };
 
-  if (config.body && typeof config.body === 'object') {
+  // Only stringify body if it's not FormData and is an object
+  if (config.body && typeof config.body === 'object' && !isFormData) {
     config.body = JSON.stringify(config.body);
   }
 

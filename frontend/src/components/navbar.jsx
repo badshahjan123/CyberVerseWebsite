@@ -145,11 +145,16 @@ const Navbar = () => {
                   <span className="text-sm font-bold text-text">{streak}</span>
                 </div>
 
-                {/* Go Premium Button */}
-                {!user?.isPremium && (
+                {/* Premium Badge or Go Premium Button */}
+                {user?.isPremium ? (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-600/40 rounded-lg shadow-lg shadow-yellow-600/10">
+                    <Crown size={18} className="text-yellow-400" />
+                    <span className="hidden lg:inline font-bold text-yellow-400">Premium</span>
+                  </div>
+                ) : (
                   <Link
                     to="/premium"
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all shadow-lg shadow-green-600/20"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-semibold transition-all shadow-lg shadow-green-600/20 hover:shadow-green-600/40"
                   >
                     <Crown size={16} />
                     <span className="hidden lg:inline">Go Premium</span>
@@ -218,19 +223,37 @@ const Navbar = () => {
                 <>
                   <Link
                     to="/profile"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${user?.isPremium
+                        ? 'bg-gradient-to-r from-yellow-600/10 to-orange-600/10 border border-yellow-600/30 hover:border-yellow-600/50'
+                        : 'bg-white/5 hover:bg-white/10'
+                      }`}
                     onClick={() => setIsOpen(false)}
                   >
-                    <img
-                      src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
-                      alt="avatar"
-                      className="w-10 h-10 rounded-full border-2 border-primary/50 object-cover"
-                      key={`${user?.avatar}-${user?.avatarTimestamp}`}
-                    />
+                    <div className="relative">
+                      <img
+                        src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
+                        alt="avatar"
+                        className={`w-10 h-10 rounded-full object-cover ${user?.isPremium
+                            ? 'border-2 border-yellow-400'
+                            : 'border-2 border-primary/50'
+                          }`}
+                        key={`${user?.avatar}-${user?.avatarTimestamp}`}
+                      />
+                      {user?.isPremium && (
+                        <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full p-0.5">
+                          <Crown size={10} className="text-slate-900" />
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-text">{user?.name}</span>
-                        {user?.isPremium && <Crown size={16} className="text-warning" />}
+                        {user?.isPremium && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-400/20 border border-yellow-400/30 rounded-full">
+                            <Crown size={12} className="text-yellow-400" />
+                            <span className="text-xs font-bold text-yellow-400">PRO</span>
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted">
                         <span className="flex items-center gap-1">
@@ -242,6 +265,19 @@ const Navbar = () => {
                       </div>
                     </div>
                   </Link>
+
+                  {/* Go Premium Button for non-premium users in mobile */}
+                  {!user?.isPremium && (
+                    <Link
+                      to="/premium"
+                      className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-semibold transition-all shadow-lg text-center justify-center"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Crown size={18} />
+                      <span>Go Premium</span>
+                    </Link>
+                  )}
+
                   <button
                     onClick={() => { logout(); setIsOpen(false); }}
                     className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-danger hover:bg-danger/10 font-semibold transition-all"

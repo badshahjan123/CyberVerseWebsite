@@ -122,6 +122,13 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Check if user is blocked/inactive
+    if (user.isActive === false) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        message: 'Your account has been blocked. Please contact support for assistance.'
+      });
+    }
+
     // If 2FA is enabled, require verification
     if (user.twoFactorEnabled && user.twoFactorSecret) {
       logger.debug('2FA is enabled for user, requiring verification', { email });
@@ -179,6 +186,11 @@ router.post('/verify-2fa', async (req, res) => {
     const user = await User.findById(userId).select('+twoFactorSecret');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user is blocked/inactive
+    if (user.isActive === false) {
+      return res.status(403).json({ message: 'Your account has been blocked. Please contact support for assistance.' });
     }
 
     if (!user.twoFactorEnabled || !user.twoFactorSecret) {

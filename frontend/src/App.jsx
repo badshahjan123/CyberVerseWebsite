@@ -78,6 +78,7 @@ const SecureAdminLogin = lazy(() => import('./pages/admin/SecureAdminLogin'))
 const SecureAdminDashboard = lazy(() => import('./pages/admin/SecureAdminDashboard'))
 const AdminUserDetail = lazy(() => import('./pages/admin/AdminUserDetail'))
 const RoomEditor = lazy(() => import('./pages/admin/RoomEditor'))
+const SimpleUserManagement = lazy(() => import('./pages/admin/SimpleUserManagement'))
 
 // Labs pages
 const Labs = lazy(() => import('./pages/labs/Labs'))
@@ -125,6 +126,7 @@ function AppContent() {
               <Route path="/secure-admin-dashboard" element={<SecureAdminDashboard />} />
               <Route path="/admin/users/:id" element={<AdminUserDetail />} />
               <Route path="/admin/rooms/:id/edit" element={<RoomEditor />} />
+              <Route path="/admin/user-management" element={<SimpleUserManagement />} />
             </Routes>
           ) : (
             <Routes>

@@ -24,6 +24,8 @@ import {
   Zap,
   RefreshCw,
   Save,
+  Ban,
+  ShieldCheck,
 } from "lucide-react";
 
 // Disable any global WebSocket connections for admin
@@ -92,20 +94,10 @@ const SecureAdminDashboard = () => {
 
   const verifyAuth = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/secure-admin-login");
-        return;
-      }
-
       const response = await fetch(
         "http://localhost:5000/api/admin/auth/verify",
         {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
           credentials: "include",
         }
       );
@@ -121,7 +113,7 @@ const SecureAdminDashboard = () => {
       }
 
       const data = await response.json();
-      if (!data.user || data.user.role !== "admin") {
+      if (!data.user || (data.user.role !== "admin" && data.user.role !== "super_admin")) {
         localStorage.removeItem("token");
         localStorage.removeItem("adminUser");
         navigate("/secure-admin-login");
@@ -139,12 +131,10 @@ const SecureAdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem("token");
       if (activeTab === "dashboard") {
         const response = await fetch(
           "http://localhost:5000/api/admin/dashboard/stats",
           {
-            headers: { Authorization: `Bearer ${token}` },
             credentials: "include",
           }
         );
@@ -154,7 +144,6 @@ const SecureAdminDashboard = () => {
         }
       } else if (activeTab === "users") {
         const response = await fetch("http://localhost:5000/api/admin/users", {
-          headers: { Authorization: `Bearer ${token}` },
           credentials: "include",
         });
         if (response.ok) {
@@ -163,7 +152,6 @@ const SecureAdminDashboard = () => {
         }
       } else if (activeTab === "rooms") {
         const response = await fetch("http://localhost:5000/api/admin/rooms", {
-          headers: { Authorization: `Bearer ${token}` },
           credentials: "include",
         });
         if (response.ok) {
@@ -172,7 +160,6 @@ const SecureAdminDashboard = () => {
         }
       } else if (activeTab === "labs") {
         const response = await fetch("http://localhost:5000/api/admin/labs", {
-          headers: { Authorization: `Bearer ${token}` },
           credentials: "include",
         });
         if (response.ok) {
@@ -402,6 +389,54 @@ const SecureAdminDashboard = () => {
     }
   };
 
+  const toggleUserRole = async (userId, currentRole) => {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const action = newRole === 'admin' ? 'promote to admin' : 'demote to user';
+
+    if (globalThis.confirm(`Are you sure you want to ${action} this user?`)) {
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`http://localhost:5000/api/admin/users/${userId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ role: newRole }),
+        });
+        fetchData();
+        fetchRecentActivity();
+      } catch (error) {
+        console.error("Failed to update user role:", error);
+      }
+    }
+  };
+
+  const toggleUserBlock = async (userId, isActive) => {
+    const newStatus = !isActive;
+    const action = newStatus ? 'unblock' : 'block';
+
+    if (globalThis.confirm(`Are you sure you want to ${action} this user?${!newStatus ? '\n\nBlocked users cannot login or access the platform.' : ''}`)) {
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`http://localhost:5000/api/admin/users/${userId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ isActive: newStatus }),
+        });
+        fetchData();
+        fetchRecentActivity();
+      } catch (error) {
+        console.error("Failed to update user status:", error);
+      }
+    }
+  };
+
   const createNewRoom = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -553,8 +588,8 @@ const SecureAdminDashboard = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${activeTab === tab.id
-                      ? "bg-green-500/20 text-green-400 border border-green-500/30 shadow-lg shadow-green-500/20"
-                      : "text-gray-300 hover:bg-gray-700 hover:text-cyan-400"
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30 shadow-lg shadow-green-500/20"
+                    : "text-gray-300 hover:bg-gray-700 hover:text-cyan-400"
                     }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -565,6 +600,15 @@ const SecureAdminDashboard = () => {
                 </button>
               );
             })}
+
+            {/* Role Management Button */}
+            <button
+              onClick={() => navigate('/admin/user-management')}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-gray-300 hover:bg-gray-700 hover:text-cyan-400"
+            >
+              <UserCheck className="w-5 h-5" />
+              <span className="font-medium">Role Management</span>
+            </button>
           </nav>
 
           <div className="absolute bottom-4 left-4 right-4">
@@ -745,12 +789,12 @@ const SecureAdminDashboard = () => {
                         >
                           <div
                             className={`w-2 h-2 rounded-full ${activity.type === "user"
-                                ? "bg-green-400"
-                                : activity.type === "room"
-                                  ? "bg-cyan-400"
-                                  : activity.type === "lab"
-                                    ? "bg-purple-400"
-                                    : "bg-orange-400"
+                              ? "bg-green-400"
+                              : activity.type === "room"
+                                ? "bg-cyan-400"
+                                : activity.type === "lab"
+                                  ? "bg-purple-400"
+                                  : "bg-orange-400"
                               }`}
                           ></div>
                           <div className="flex-1">
@@ -862,9 +906,6 @@ const SecureAdminDashboard = () => {
                         <th className="text-left py-4 px-6 text-gray-300 font-medium">
                           Points
                         </th>
-                        <th className="text-left py-4 px-6 text-gray-300 font-medium">
-                          Actions
-                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -901,8 +942,8 @@ const SecureAdminDashboard = () => {
                             <td className="py-4 px-6">
                               <span
                                 className={`px-3 py-1 rounded-full text-xs font-medium ${user.role === "admin"
-                                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                                    : "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                  : "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
                                   }`}
                               >
                                 {user.role}
@@ -910,26 +951,6 @@ const SecureAdminDashboard = () => {
                             </td>
                             <td className="py-4 px-6 text-green-400 font-medium">
                               {user.points || 0}
-                            </td>
-                            <td className="py-4 px-6">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() =>
-                                    navigate(`/admin/users/${user._id}`)
-                                  }
-                                  className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors"
-                                  title="View Details"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => deleteUser(user._id)}
-                                  className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                                  title="Delete User"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1296,8 +1317,8 @@ const SecureAdminDashboard = () => {
                 <button
                   type="submit"
                   className={`px-4 py-2 text-white rounded-lg transition-all shadow-lg ${modalType === "room"
-                      ? "bg-cyan-600 hover:bg-cyan-700 hover:shadow-cyan-500/20"
-                      : "bg-purple-600 hover:bg-purple-700 hover:shadow-purple-500/20"
+                    ? "bg-cyan-600 hover:bg-cyan-700 hover:shadow-cyan-500/20"
+                    : "bg-purple-600 hover:bg-purple-700 hover:shadow-purple-500/20"
                     }`}
                 >
                   <Save className="w-4 h-4 inline mr-2" />

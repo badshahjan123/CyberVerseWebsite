@@ -31,6 +31,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { clearQuizCache } from "../../utils/clearQuizCache";
+import { shuffleCompleteQuiz } from "../../utils/shuffleQuestions";
 
 const RoomDetail = () => {
   const { slug: roomId } = useParams();
@@ -58,6 +59,7 @@ const RoomDetail = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [submissionStatus, setSubmissionStatus] = useState({}); // { [taskId]: 'idle'|'submitting'|'success'|'error' }
+  const [shuffledQuestions, setShuffledQuestions] = useState([]); // Shuffled quiz questions
 
   // Handle page exit detection for resume flow
   useEffect(() => {
@@ -138,6 +140,37 @@ const RoomDetail = () => {
           }
         }
         setRoom(roomData);
+
+        // Shuffle quiz questions for this user (if user is authenticated and quiz exists)
+        const userId = user?.id || user?._id;
+        console.log('🔍 Checking shuffle conditions:', {
+          hasUser: !!user,
+          userId: userId,
+          hasQuizzes: !!(roomData.quizzes && roomData.quizzes.length > 0),
+          quizCount: roomData.quizzes?.length || 0
+        });
+
+        if (userId && roomData.quizzes && roomData.quizzes.length > 0) {
+          const quiz = roomData.quizzes[0];
+          console.log('🎯 Quiz data:', {
+            quizId: quiz.id,
+            questionCount: quiz.questions?.length || 0
+          });
+
+          if (quiz.questions && quiz.questions.length > 0) {
+            const shuffled = shuffleCompleteQuiz(quiz.questions, userId, roomId);
+            setShuffledQuestions(shuffled);
+            console.log(`🔀 ✅ Shuffled ${shuffled.length} quiz questions for user ${userId.toString().substring(0, 8)}...`);
+            console.log('📋 Original question order:', quiz.questions.map(q => q.id));
+            console.log('🔄 Shuffled question order:', shuffled.map(q => q.id));
+          } else {
+            console.log('⚠️ No quiz questions found to shuffle');
+          }
+        } else {
+          console.log('⚠️ Skipping shuffle:', {
+            reason: !userId ? 'No user ID' : 'No quizzes'
+          });
+        }
 
         console.log("🚀 Room loaded:", roomData.title);
         console.log("📊 Room has tasks:", roomData.tasks?.length);
@@ -345,11 +378,10 @@ const RoomDetail = () => {
         try {
           toast({
             title: `+${pointsEarned} XP`,
-            description: `Correct Answer! ${
-              response.userStats?.points
-                ? `Total: ${response.userStats.points} pts`
-                : ""
-            }`,
+            description: `Correct Answer! ${response.userStats?.points
+              ? `Total: ${response.userStats.points} pts`
+              : ""
+              }`,
           });
         } catch (e) {
           // toast is optional; ignore if not available
@@ -408,14 +440,14 @@ const RoomDetail = () => {
         setSubmissionStatus((prev) => ({ ...prev, [taskId]: "error" }));
         try {
           toast({ title: "Incorrect", description: "Try again!" });
-        } catch (e) {}
+        } catch (e) { }
       }
     } catch (error) {
       console.error("Failed to submit task:", error);
       setSubmissionStatus((prev) => ({ ...prev, [taskId]: "error" }));
       try {
         toast({ title: "Submission failed", description: "Please try again." });
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -653,14 +685,13 @@ const RoomDetail = () => {
                   </span>
                 </span>
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    room.difficulty === "Beginner" || room.difficulty === "Easy"
-                      ? "bg-success/20 text-success border border-success/30"
-                      : room.difficulty === "Intermediate" ||
-                        room.difficulty === "Medium"
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${room.difficulty === "Beginner" || room.difficulty === "Easy"
+                    ? "bg-success/20 text-success border border-success/30"
+                    : room.difficulty === "Intermediate" ||
+                      room.difficulty === "Medium"
                       ? "bg-warning/20 text-warning border border-warning/30"
                       : "bg-danger/20 text-danger border border-danger/30"
-                  }`}
+                    }`}
                 >
                   {room.difficulty}
                 </span>
@@ -741,24 +772,22 @@ const RoomDetail = () => {
                     key={task.id}
                     onClick={() => toggleTask(task.id)}
                     disabled={status === "locked"}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left ${
-                      status === "completed"
-                        ? "bg-success/10 border border-success/30"
-                        : status === "available"
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left ${status === "completed"
+                      ? "bg-success/10 border border-success/30"
+                      : status === "available"
                         ? expandedTasks.includes(task.id)
                           ? "bg-primary/10 border border-primary/30"
                           : "bg-white/5 hover:bg-white/10 border border-white/10"
                         : "bg-slate-800/50 border border-slate-700/50 opacity-50 cursor-not-allowed"
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        status === "completed"
-                          ? "bg-success"
-                          : status === "available"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${status === "completed"
+                        ? "bg-success"
+                        : status === "available"
                           ? "bg-primary"
                           : "bg-slate-600"
-                      }`}
+                        }`}
                     >
                       {status === "completed" ? (
                         <CheckCircle className="h-5 w-5 text-white" />
@@ -772,13 +801,12 @@ const RoomDetail = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
-                        className={`text-sm font-semibold ${
-                          status === "completed"
-                            ? "text-success"
-                            : status === "available"
+                        className={`text-sm font-semibold ${status === "completed"
+                          ? "text-success"
+                          : status === "available"
                             ? "text-primary"
                             : "text-slate-500"
-                        }`}
+                          }`}
                       >
                         Task {index + 1}
                       </p>
@@ -815,36 +843,32 @@ const RoomDetail = () => {
               return (
                 <div
                   key={task.id}
-                  className={`card overflow-hidden transition-all ${
-                    !userProgress.joined
-                      ? "blur-sm opacity-50 pointer-events-none"
-                      : ""
-                  } ${
-                    isCompleted
+                  className={`card overflow-hidden transition-all ${!userProgress.joined
+                    ? "blur-sm opacity-50 pointer-events-none"
+                    : ""
+                    } ${isCompleted
                       ? "border-success/30"
                       : isExpanded
-                      ? "border-primary/30"
-                      : ""
-                  }`}
+                        ? "border-primary/30"
+                        : ""
+                    }`}
                 >
                   {/* Task Header - Always Visible */}
                   <div
                     onClick={() => toggleTask(task.id)}
-                    className={`p-6 cursor-pointer flex items-center justify-between ${
-                      status === "locked"
-                        ? "cursor-not-allowed opacity-50"
-                        : "hover:bg-white/5"
-                    }`}
+                    className={`p-6 cursor-pointer flex items-center justify-between ${status === "locked"
+                      ? "cursor-not-allowed opacity-50"
+                      : "hover:bg-white/5"
+                      }`}
                   >
                     <div className="flex items-center gap-4">
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          isCompleted
-                            ? "bg-success"
-                            : status === "locked"
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${isCompleted
+                          ? "bg-success"
+                          : status === "locked"
                             ? "bg-slate-600"
                             : "bg-primary"
-                        }`}
+                          }`}
                       >
                         {isCompleted ? (
                           <CheckCircle className="h-6 w-6 text-white" />
@@ -1017,83 +1041,91 @@ const RoomDetail = () => {
                 </div>
 
                 <div className="p-6 space-y-6">
-                  {room.quizzes[0].questions.map((question, qIndex) => (
-                    <div
-                      key={question.id}
-                      className="pb-6 border-b border-slate-700 last:border-0"
-                    >
-                      <p className="font-semibold text-white mb-4">
-                        {qIndex + 1}. {question.question_text}
-                      </p>
+                  {/* Use shuffled questions if available, otherwise fall back to original */}
+                  {(() => {
+                    const questionsToRender = shuffledQuestions.length > 0 ? shuffledQuestions : room.quizzes[0].questions;
+                    console.log('🎨 Rendering quiz with:', {
+                      source: shuffledQuestions.length > 0 ? 'SHUFFLED' : 'ORIGINAL',
+                      questionCount: questionsToRender.length,
+                      questionIds: questionsToRender.map(q => q.id)
+                    });
+                    return questionsToRender.map((question, qIndex) => (
+                      <div
+                        key={question.id}
+                        className="pb-6 border-b border-slate-700 last:border-0"
+                      >
+                        <p className="font-semibold text-white mb-4">
+                          {qIndex + 1}. {question.question_text}
+                        </p>
 
-                      {question.type === "single" && (
-                        <div className="space-y-2">
-                          {question.options.map((option, optIndex) => (
-                            <label
-                              key={optIndex}
-                              className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                                quizAnswers[question.id] === option
+                        {question.type === "single" && (
+                          <div className="space-y-2">
+                            {question.options.map((option, optIndex) => (
+                              <label
+                                key={optIndex}
+                                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${quizAnswers[question.id] === option
                                   ? "bg-primary/20 border border-primary/40"
                                   : "bg-white/5 hover:bg-white/10 border border-white/10"
-                              } ${quizSubmitted ? "pointer-events-none" : ""}`}
-                            >
-                              <input
-                                type="radio"
-                                name={`question-${question.id}`}
-                                checked={quizAnswers[question.id] === option}
-                                onChange={() =>
-                                  setQuizAnswers((prev) => ({
-                                    ...prev,
-                                    [question.id]: option,
-                                  }))
-                                }
-                                disabled={quizSubmitted}
-                                className="w-4 h-4 text-primary"
-                              />
-                              <span className="text-slate-300">{option}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
+                                  } ${quizSubmitted ? "pointer-events-none" : ""}`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`question-${question.id}`}
+                                  checked={quizAnswers[question.id] === option}
+                                  onChange={() =>
+                                    setQuizAnswers((prev) => ({
+                                      ...prev,
+                                      [question.id]: option,
+                                    }))
+                                  }
+                                  disabled={quizSubmitted}
+                                  className="w-4 h-4 text-primary"
+                                />
+                                <span className="text-slate-300">{option}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
 
-                      {/* Show result if quiz submitted */}
-                      {quizSubmitted && quizResults?.results && (
-                        <div className="mt-3">
-                          {quizResults.results.find(
-                            (r) => r.questionId === question.id
-                          )?.correct ? (
-                            <div className="flex items-start gap-2 p-3 bg-success/10 border border-success/30 rounded-lg">
-                              <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-semibold text-success">
-                                  Correct!
-                                </p>
-                                {question.explanation && (
-                                  <p className="text-xs text-slate-300 mt-1">
-                                    {question.explanation}
+                        {/* Show result if quiz submitted */}
+                        {quizSubmitted && quizResults?.results && (
+                          <div className="mt-3">
+                            {quizResults.results.find(
+                              (r) => r.questionId === question.id
+                            )?.correct ? (
+                              <div className="flex items-start gap-2 p-3 bg-success/10 border border-success/30 rounded-lg">
+                                <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-sm font-semibold text-success">
+                                    Correct!
                                   </p>
-                                )}
+                                  {question.explanation && (
+                                    <p className="text-xs text-slate-300 mt-1">
+                                      {question.explanation}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-start gap-2 p-3 bg-danger/10 border border-danger/30 rounded-lg">
-                              <X className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-semibold text-danger">
-                                  Incorrect
-                                </p>
-                                {question.explanation && (
-                                  <p className="text-xs text-slate-300 mt-1">
-                                    {question.explanation}
+                            ) : (
+                              <div className="flex items-start gap-2 p-3 bg-danger/10 border border-danger/30 rounded-lg">
+                                <X className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-sm font-semibold text-danger">
+                                    Incorrect
                                   </p>
-                                )}
+                                  {question.explanation && (
+                                    <p className="text-xs text-slate-300 mt-1">
+                                      {question.explanation}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  })()}
 
                   {/* Quiz Submit/Results */}
                   {!quizSubmitted ? (
@@ -1110,19 +1142,17 @@ const RoomDetail = () => {
                   ) : (
                     quizResults && (
                       <div
-                        className={`p-6 rounded-lg border-2 ${
-                          quizResults.passed
-                            ? "bg-success/10 border-success/30"
-                            : "bg-danger/10 border-danger/30"
-                        }`}
+                        className={`p-6 rounded-lg border-2 ${quizResults.passed
+                          ? "bg-success/10 border-success/30"
+                          : "bg-danger/10 border-danger/30"
+                          }`}
                       >
                         <div className="text-center">
                           <p
-                            className={`text-2xl font-bold mb-2 ${
-                              quizResults.passed
-                                ? "text-success"
-                                : "text-danger"
-                            }`}
+                            className={`text-2xl font-bold mb-2 ${quizResults.passed
+                              ? "text-success"
+                              : "text-danger"
+                              }`}
                           >
                             {quizResults.passed
                               ? "🎉 Quiz Passed!"

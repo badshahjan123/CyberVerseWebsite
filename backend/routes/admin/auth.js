@@ -20,8 +20,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Check if user is admin
-    if (user.role !== 'admin') {
+    // Check if user is admin or super_admin
+    if (user.role !== 'admin' && user.role !== 'super_admin') {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
@@ -79,7 +79,7 @@ router.get('/verify', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId).select('-password');
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
       return res.status(401).json({ message: 'Not authorized' });
     }
 

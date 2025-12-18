@@ -121,14 +121,14 @@ router.get('/users/:id', cookieAuth, async (req, res) => {
 });
 
 // Update user status/role
-router.put('/users/:id', cookieAuth, async (req, res) => {
+router.put('/users/:id', adminAuth, async (req, res) => {
   try {
     const { isActive, isPremium, role } = req.body;
     const updates = {};
 
     if (typeof isActive === 'boolean') updates.isActive = isActive;
     if (typeof isPremium === 'boolean') updates.isPremium = isPremium;
-    if (role && ['user', 'admin'].includes(role)) updates.role = role;
+    if (role && ['user', 'developer', 'admin', 'super_admin'].includes(role)) updates.role = role;
 
     const user = await User.findByIdAndUpdate(
       req.params.id,
@@ -148,7 +148,7 @@ router.put('/users/:id', cookieAuth, async (req, res) => {
 });
 
 // Delete user
-router.delete('/users/:id', cookieAuth, async (req, res) => {
+router.delete('/users/:id', adminAuth, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) {
