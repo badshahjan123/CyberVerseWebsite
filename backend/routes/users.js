@@ -49,7 +49,10 @@ const upload = multer({
 
 router.get('/leaderboard', async (req, res) => {
   try {
-    const { limit = 10, type = 'global' } = req.query;
+    const { limit = 10, type = 'global', page = 1 } = req.query;
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
+    const skip = (parsedPage - 1) * parsedLimit;
 
     let dateFilter = {};
     if (type === 'weekly') {
@@ -65,10 +68,11 @@ router.get('/leaderboard', async (req, res) => {
     const users = await User.find(dateFilter)
       .select('name points level completedLabs completedRooms isPremium')
       .sort({ points: -1, completedRooms: -1, completedLabs: -1 })
-      .limit(parseInt(limit));
+      .skip(skip)
+      .limit(parsedLimit);
 
     const leaderboard = users.map((user, index) => ({
-      rank: index + 1,
+      rank: skip + index + 1,  // Adjust rank based on page
       username: user.name,
       points: user.points,
       level: user.level,
@@ -327,6 +331,35 @@ router.post('/complete-lab', auth, [
   } catch (error) {
     console.error('Complete lab error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/users/delete-account
+// @desc    Delete/deactivate user account
+// @access  Private (user can only delete their own account)
+router.delete('/delete-account', auth, async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Deactivate account instead of permanently deleting (soft delete)
+    user.isActive = false;
+    user.email = `deleted_${Date.now()}_${user.email}`; // Prevent email reuse
+    await user.save();
+
+    // Clear user session
+    res.json({
+      success: true,
+      message: 'Account deactivated successfully'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ message: 'Server error during account deletion' });
   }
 });
 

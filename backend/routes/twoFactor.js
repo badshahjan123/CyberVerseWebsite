@@ -156,6 +156,129 @@ router.post('/verify-login', async (req, res) => {
   }
 });
 
+// POST /api/2fa/generate-backup-codes - Generate backup codes for 2FA
+router.post('/generate-backup-codes', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    if (!user.twoFactorEnabled) {
+      return res.status(400).json({ message: '2FA must be enabled first' });
+    }
+
+    // Generate 10 backup codes
+    const backupCodes = [];
+    for (let i = 0; i < 10; i++) {
+      const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+      backupCodes.push({
+        code: await require('bcryptjs').hash(code, 10), // Store hashed
+        used: false,
+        createdAt: new Date()
+      });
+    }
+
+    // Store hashed codes
+    user.twoFactorBackupCodes = backupCodes;
+    await user.save();
+
+    // Return unhashed codes to user (only shown once)
+    const plainCodes = [];
+    for (let i = 0; i < 10; i++) {
+      plainCodes.push(crypto.randomBytes(4).toString('hex').toUpperCase());
+    }
+
+    res.json({
+      message: 'Backup codes generated successfully',
+      codes: plainCodes,
+      warning: 'Save these codes securely. They will only be shown once.'
+    });
+  } catch (error) {
+    console.error('Generate backup codes error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/2fa/verify-backup-code - Verify backup code during login
+router.post('/verify-backup-code', async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+    
+    if (!userId || !code) {
+      return res.status(400).json({ message: 'User ID and backup code are required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user || !user.twoFactorEnabled) {
+      return res.status(400).json({ message: 'Invalid request' });
+    }
+
+    if (!user.twoFactorBackupCodes || user.twoFactorBackupCodes.length === 0) {
+      return res.status(400).json({ message: 'No backup codes available' });
+    }
+
+    // Find matching unused backup code
+    let codeMatched = false;
+    for (let i = 0; i < user.twoFactorBackupCodes.length; i++) {
+      const backupCode = user.twoFactorBackupCodes[i];
+      if (!backupCode.used) {
+        const isMatch = await require('bcryptjs').compare(code, backupCode.code);
+        if (isMatch) {
+          // Mark code as used
+          user.twoFactorBackupCodes[i].used = true;
+          await user.save();
+          codeMatched = true;
+          break;
+        }
+      }
+    }
+
+    if (!codeMatched) {
+      return res.status(401).json({ message: 'Invalid or already used backup code' });
+    }
+
+    // Generate auth token
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Backup code verified successfully',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        twoFactorEnabled: true
+      }
+    });
+  } catch (error) {
+    console.error('Verify backup code error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/2fa/backup-codes-status - Check how many backup codes remain
+router.get('/backup-codes-status', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    const totalCodes = user.twoFactorBackupCodes?.length || 0;
+    const usedCodes = user.twoFactorBackupCodes?.filter(c => c.used).length || 0;
+    const remainingCodes = totalCodes - usedCodes;
+
+    res.json({
+      total: totalCodes,
+      used: usedCodes,
+      remaining: remainingCodes
+    });
+  } catch (error) {
+    console.error('Backup codes status error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET /api/2fa/trusted-devices - List trusted devices
 router.get('/trusted-devices', auth, async (req, res) => {
   try {

@@ -403,6 +403,12 @@ router.post('/reset-password-2fa', [
       return res.status(401).json({ message: 'Invalid or expired 2FA code' });
     }
 
+    // Check if new password is same as current password
+    const isSamePassword = await user.comparePassword(newPassword);
+    if (isSamePassword) {
+      return res.status(400).json({ message: 'Cannot use old password' });
+    }
+
     // Update password
     user.password = newPassword;
     await user.save();

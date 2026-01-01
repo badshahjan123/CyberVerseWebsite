@@ -293,7 +293,16 @@ export function AppProvider({ children }) {
     localStorage.removeItem('token')
     localStorage.removeItem('lastActivity')
     sessionManager.cleanup()
-    navigate('/', { replace: true })
+    
+    // Clear session storage to prevent cached data access
+    sessionStorage.clear()
+    
+    // Manipulate history to prevent back button from showing protected pages
+    window.history.pushState(null, '', '/login')
+    window.history.pushState(null, '', '/login')
+    window.history.back()
+    
+    navigate('/login', { replace: true })
   }, [navigate])
 
   const contextValue = useMemo(() => ({

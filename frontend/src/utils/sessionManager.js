@@ -1,5 +1,5 @@
-// Session timeout configuration (30 minutes)
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+// Session timeout configuration (15 minutes)
+const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 class SessionManager {
   constructor() {

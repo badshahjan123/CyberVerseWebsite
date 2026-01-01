@@ -116,6 +116,20 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
       roomProgress.exerciseAnswers = {};
     }
 
+    // TASK SEQUENCE ENFORCEMENT: Check if previous tasks are completed
+    if (lectureIndex > 0) {
+      const previousTaskIndex = lectureIndex - 1;
+      const previousTaskCompleted = roomProgress.completedLectures.includes(previousTaskIndex);
+      
+      if (!previousTaskCompleted) {
+        return res.status(400).json({ 
+          message: 'Please complete the previous task first',
+          requiredTask: previousTaskIndex + 1,
+          currentTask: lectureIndex + 1
+        });
+      }
+    }
+
     // Initialize scoring arrays if they don't exist
     if (!roomProgress.taskScores) roomProgress.taskScores = [];
     if (!roomProgress.totalPointsEarned) roomProgress.totalPointsEarned = 0;
@@ -188,6 +202,51 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
   } catch (error) {
     console.error('Submit exercise error:', error);
     console.error('Error stack:', error.stack);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// POST /api/room-progress/:roomId/quiz/validate - Validate individual quiz question answer
+router.post('/:roomId/quiz/validate', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { questionId, answer } = req.body;
+
+    // Get room to check quiz questions
+    const room = await Room.findOne({ slug: roomId });
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    // Find the quiz and question
+    let question = null;
+    for (const quiz of room.quizzes || []) {
+      question = quiz.questions.find(q => q.id === questionId);
+      if (question) break;
+    }
+
+    if (!question) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+
+    // Validate answer based on question type
+    let isCorrect = false;
+    if (question.type === 'single') {
+      isCorrect = answer === question.correct_answer;
+    } else if (question.type === 'multi') {
+      isCorrect = JSON.stringify(answer.sort()) === JSON.stringify(question.correct_answer.sort());
+    } else if (question.type === 'short') {
+      isCorrect = answer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+    }
+
+    res.json({
+      correct: isCorrect,
+      explanation: !isCorrect ? (question.explanation || 'Please review the material and try again.') : null,
+      correctAnswer: !isCorrect ? question.correct_answer : null,
+      points: isCorrect ? question.points : 0
+    });
+  } catch (error) {
+    console.error('Validate quiz question error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
