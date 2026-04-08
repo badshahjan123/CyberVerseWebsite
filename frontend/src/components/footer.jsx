@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Shield, Github, Linkedin, Instagram, Mail, Award, Code2, Zap, Trophy, Crown } from 'lucide-react'
+import { Shield, Github, Linkedin, Instagram, Mail, Award, Code2, Zap, Trophy, Crown, Terminal, Flame } from 'lucide-react'
 
 const Footer = () => {
   const currentYear = new Date().getFullYear()
@@ -26,185 +26,154 @@ const Footer = () => {
   }
 
   const socialLinks = [
-    {
-      name: 'LinkedIn',
-      url: 'https://www.linkedin.com/in/badshah-khan-871222277',
-      icon: Linkedin,
-      color: 'hover:text-blue-400',
-      bgGlow: 'hover:bg-blue-400/10'
-    },
-    {
-      name: 'GitHub',
-      url: 'https://github.com/badshahjan123',
-      icon: Github,
-      color: 'hover:text-purple-400',
-      bgGlow: 'hover:bg-purple-400/10'
-    },
-    {
-      name: 'Instagram',
-      url: 'https://www.instagram.com/badshah___jamil?igsh=MXBkczl6bXJjM2R3cw==',
-      icon: Instagram,
-      color: 'hover:text-pink-400',
-      bgGlow: 'hover:bg-pink-400/10'
-    }
+    { name: 'LinkedIn',  url: 'https://www.linkedin.com/in/badshah-khan-871222277', icon: Linkedin,  color: '#0A66C2' },
+    { name: 'GitHub',    url: 'https://github.com/badshahjan123',                   icon: Github,    color: '#8B5CF6' },
+    { name: 'Instagram', url: 'https://www.instagram.com/badshah___jamil?igsh=MXBkczl6bXJjM2R3cw==', icon: Instagram, color: '#E1306C' }
   ]
 
   return (
-    <footer className="relative mt-auto bg-[rgb(8,12,16)] border-t border-white/10">
-      {/* Gamified Top Border with Glow Effect */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+    <footer className="cv-footer">
+      {/* Top neon border */}
+      <div className="cv-footer-topline" aria-hidden="true" />
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 mb-8">
-          {/* Brand Section */}
-          <div className="lg:col-span-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="relative">
-                <Shield className="w-8 h-8 text-primary" />
-                <div className="absolute inset-0 blur-md bg-primary/30"></div>
-              </div>
-              <span className="text-2xl font-bold gradient-text">CyberVerse</span>
+      {/* Static grid backdrop */}
+      <div className="cv-footer-grid" aria-hidden="true" />
+
+      <div className="cv-footer-inner">
+
+        {/* ── Brand ── */}
+        <div className="cv-footer-brand">
+          {/* Logo */}
+          <Link to="/" className="cv-footer-logo">
+            <div className="cv-footer-logo-icon">
+              <Shield size={18} style={{ color: '#00F5FF' }} />
             </div>
-            <p className="text-muted text-sm mb-6 leading-relaxed">
-              Master through gamified learning. Battle challenges, earn achievements, and level up your skills in a competitive environment.
+            <span className="cv-footer-logo-text">CyberVerse</span>
+          </Link>
+
+          <p className="cv-footer-tagline">
+            Master cybersecurity through gamified hacking challenges. Battle, earn XP,
+            and level&nbsp;up in a competitive hacker arena.
+          </p>
+
+          {/* Mini stats */}
+          <div className="cv-footer-mini-stats">
+            <div className="cv-footer-mini-stat">
+              <Trophy size={13} style={{ color: '#FACC15' }} />
+              <span>Global Leaderboard</span>
+            </div>
+            <div className="cv-footer-mini-stat">
+              <Flame size={13} style={{ color: '#00F5FF' }} />
+              <span>Daily Challenges</span>
+            </div>
+            <div className="cv-footer-mini-stat">
+              <Terminal size={13} style={{ color: '#39FF14' }} />
+              <span>Live Labs</span>
+            </div>
+          </div>
+
+          {/* Founder socials */}
+          <div className="cv-footer-social-block">
+            <p className="cv-footer-social-label">
+              <Crown size={13} style={{ color: '#FACC15' }} />
+              Connect with the Founder
             </p>
-
-            {/* Gamified Stats */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center gap-1.5 text-xs">
-                <Trophy className="w-4 h-4 text-warning" />
-                <span className="text-muted">learners</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <Award className="w-4 h-4 text-primary" />
-                <span className="text-muted">Rooms</span>
-              </div>
-            </div>
-
-            {/* Founder Social Links */}
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-text flex items-center gap-2">
-                <Crown className="w-4 h-4 text-warning" />
-                Connect with the Founder
-              </p>
-              <div className="flex items-center gap-2">
-                {socialLinks.map((social) => (
+            <div className="cv-footer-socials">
+              {socialLinks.map((s) => {
+                const Icon = s.icon
+                return (
                   <a
-                    key={social.name}
-                    href={social.url}
+                    key={s.name}
+                    href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`group relative p-2.5 rounded-lg bg-white/5 border border-white/10 ${social.bgGlow} ${social.color} transition-all hover:scale-110 hover:border-white/30`}
-                    aria-label={social.name}
+                    aria-label={s.name}
+                    className="cv-footer-social-btn"
+                    style={{ '--social-color': s.color }}
                   >
-                    <social.icon className="w-5 h-5" />
-                    <div className="absolute inset-0 rounded-lg blur-md opacity-0 group-hover:opacity-30 transition-opacity bg-current"></div>
+                    <Icon size={16} />
                   </a>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Platform Links */}
-          <div className="lg:col-span-2">
-            <h3 className="text-text font-bold mb-4 flex items-center gap-2">
-              <Code2 className="w-4 h-4 text-primary" />
-              Platform
-            </h3>
-            <ul className="space-y-2.5">
-              {footerLinks.platform.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-sm text-muted hover:text-primary transition-colors inline-flex items-center gap-1.5 group"
-                  >
-                    <Zap className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Resources Links */}
-          <div className="lg:col-span-3">
-            <h3 className="text-text font-bold mb-4 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-accent" />
-              Resources
-            </h3>
-            <ul className="space-y-2.5">
-              {footerLinks.resources.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-sm text-muted hover:text-accent transition-colors inline-flex items-center gap-1.5 group"
-                  >
-                    <Zap className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-accent" />
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company Links */}
-          <div className="lg:col-span-3">
-            <h3 className="text-text font-bold mb-4 flex items-center gap-2">
-              <Award className="w-4 h-4 text-warning" />
-              Company
-            </h3>
-            <ul className="space-y-2.5">
-              {footerLinks.company.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-sm text-muted hover:text-warning transition-colors inline-flex items-center gap-1.5 group"
-                  >
-                    <Zap className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-warning" />
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-white/10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/30">
-                <span className="text-xs font-semibold text-primary">v2.0</span>
-              </div>
-              <p className="text-sm text-muted">
-                © {currentYear} CyberVerse. All rights reserved.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-4 text-xs text-muted">
-              <a href="mailto:contact@cyberverse.com" className="hover:text-primary transition-colors flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5" />
-                Contact Us
-              </a>
-              <span className="text-white/20">|</span>
-              <span className="flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-primary" />
-                Built with 💚 by Badshah Jan and Yasir Hussain
-              </span>
+                )
+              })}
             </div>
           </div>
         </div>
 
-        {/* Achievement Badge - Gamified Element */}
-        <div className="mt-6 flex justify-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-effect border border-primary/30 hover:border-primary/50 transition-all group cursor-default">
-            <Award className="w-4 h-4 text-primary group-hover:rotate-12 transition-transform" />
-            <span className="text-xs font-semibold gradient-text">Secured by Industry Experts</span>
-            <div className="flex gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className={`w-1 h-4 rounded-full bg-primary transition-all delay-${i * 100} group-hover:h-6`}></div>
-              ))}
+        {/* ── Links ── */}
+        <div className="cv-footer-links-col">
+          <h3 className="cv-footer-col-title">
+            <Code2 size={14} style={{ color: '#00F5FF' }} /> Platform
+          </h3>
+          <ul className="cv-footer-link-list">
+            {footerLinks.platform.map((l) => (
+              <li key={l.name}>
+                <Link to={l.path} className="cv-footer-link">
+                  <Zap size={11} className="cv-footer-link-arrow" />
+                  {l.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="cv-footer-links-col">
+          <h3 className="cv-footer-col-title">
+            <Shield size={14} style={{ color: '#8B5CF6' }} /> Resources
+          </h3>
+          <ul className="cv-footer-link-list">
+            {footerLinks.resources.map((l) => (
+              <li key={l.name}>
+                <Link to={l.path} className="cv-footer-link cv-footer-link--purple">
+                  <Zap size={11} className="cv-footer-link-arrow" />
+                  {l.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="cv-footer-links-col">
+          <h3 className="cv-footer-col-title">
+            <Award size={14} style={{ color: '#FACC15' }} /> Company
+          </h3>
+          <ul className="cv-footer-link-list">
+            {footerLinks.company.map((l) => (
+              <li key={l.name}>
+                <Link to={l.path} className="cv-footer-link cv-footer-link--gold">
+                  <Zap size={11} className="cv-footer-link-arrow" />
+                  {l.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+      </div>
+
+      {/* ── Bottom Bar ── */}
+      <div className="cv-footer-bottom">
+        <div className="cv-footer-bottom-inner">
+          <div className="cv-footer-bottom-left">
+            <span className="cv-footer-version">v2.0</span>
+            <span className="cv-footer-copy">© {currentYear} CyberVerse. All rights reserved.</span>
+          </div>
+
+          <div className="cv-footer-bottom-center">
+            <div className="cv-footer-badge">
+              <Award size={13} style={{ color: '#00F5FF' }} />
+              <span>Secured by Industry Experts</span>
             </div>
+          </div>
+
+          <div className="cv-footer-bottom-right">
+            <a href="mailto:contact@cyberverse.com" className="cv-footer-contact">
+              <Mail size={13} /> Contact Us
+            </a>
+            <span className="cv-footer-divider" />
+            <span className="cv-footer-built">
+              <Shield size={13} style={{ color: '#00F5FF' }} />
+              Built with 💚 by Badshah Jan &amp; Yasir Hussain
+            </span>
           </div>
         </div>
       </div>

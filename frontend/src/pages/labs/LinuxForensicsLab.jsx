@@ -189,6 +189,23 @@ const LinuxForensicsLab = () => {
 
                     if (response.success) {
                         console.log('✅ Lab completion recorded:', response.data);
+                        
+                        // Broad real-time broadcast
+                        if (window.triggerRealtimeUpdate) window.triggerRealtimeUpdate();
+                        
+                        // Targeted stat update for the UI
+                        if (response.userStats && window.applyRealtimeUpdate) {
+                            window.applyRealtimeUpdate(response.userStats);
+                        }
+
+                        // Dispatch for specific page listeners (like Profile heatmap)
+                        window.dispatchEvent(new CustomEvent('labCompleted', {
+                            detail: {
+                                labId: 'linux-forensics',
+                                points: response.data.pointsEarned
+                            }
+                        }));
+
                         console.log(`🏆 Points earned: +${response.data.pointsEarned}`);
                         console.log(`📊 Total points: ${response.data.totalPoints}`);
 

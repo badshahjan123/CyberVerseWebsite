@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useApp } from "../../contexts/app-context";
 import { getRoomBySlug } from "../../services/rooms";
@@ -11,6 +11,7 @@ import {
   resetRoomProgress,
 } from "../../services/roomProgress";
 import { useToast } from "../../contexts/toast-context";
+import { useRealtime } from "../../contexts/realtime-context";
 import { useActivity } from "../../contexts/activity-context";
 import {
   Play,
@@ -29,14 +30,218 @@ import {
   Award,
   X,
   RefreshCw,
+  Zap,
+  Shield,
+  Target,
+  BookOpen,
+  Crown,
+  Calendar,
+  Share2,
+  Bookmark,
+  Circle,
+  CircleDot,
+  Check,
+  Copy
 } from "lucide-react";
 import { clearQuizCache } from "../../utils/clearQuizCache";
 import { shuffleCompleteQuiz } from "../../utils/shuffleQuestions";
+
+const CAT_IMG = {
+  Web: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=800",
+  Networking: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=800",
+  Development: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&q=80&w=800",
+  DevOps: "https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?auto=format&fit=crop&q=80&w=800",
+  Misc: "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=800",
+};
+const ULTIMATE_FALLBACK = "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800";
+
+/**
+ * VISUAL REPRESENTATION BLOCKS
+ */
+
+const VisualCard = ({ url, caption }) => (
+  <div className="rdp-visual-card rdp-fade-in">
+    <img src={url} alt={caption} className="rdp-visual-img" />
+    {caption && <span className="rdp-visual-caption">{caption}</span>}
+  </div>
+);
+
+const FlowDiagram = ({ steps }) => (
+  <div className="rdp-flow rdp-fade-in">
+    {steps.map((step, idx) => (
+      <Fragment key={idx}>
+        <div className="rdp-flow-step">{step}</div>
+        {idx < steps.length - 1 && <ArrowRight size={16} className="rdp-flow-arrow" />}
+      </Fragment>
+    ))}
+  </div>
+);
+
+const HierarchyTree = ({ data }) => {
+  if (!data) return null;
+  const renderNode = (node, idx) => (
+    <div key={idx} className="rdp-tree-node">
+      <div className="rdp-tree-item">
+        <Target size={12} className="text-primary mr-2" />
+        {node.name}
+      </div>
+      {node.children && node.children.length > 0 && (
+        <div className="rdp-tree-children">
+          {node.children.map((child, cIdx) => renderNode(child, cIdx))}
+        </div>
+      )}
+    </div>
+  );
+  return <div className="rdp-tree rdp-fade-in">{renderNode(data, 0)}</div>;
+};
+
+const TerminalBlock = ({ code }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    const cleanCode = code.replace(/^\$ /gm, '');
+    navigator.clipboard.writeText(cleanCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div className="rdp-terminal rdp-fade-in">
+      <div className="rdp-terminal-head">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+        </div>
+        <button onClick={handleCopy} className="rdp-copy-btn">
+          {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+        </button>
+      </div>
+      <div className="rdp-terminal-body">
+        {code.split('\n').map((line, lidx) => (
+          <div key={lidx}>
+            <span className="rdp-terminal-prompt">$</span>
+            {line.replace(/^\$ /, '')}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const EnhancedContentRenderer = ({ content, title }) => {
+  if (!content) return null;
+
+  const renderText = (text) => {
+    if (typeof text !== 'string') return text;
+    const html = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-black">$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em class="text-primary italic">$1</em>')
+      .replace(/`(.*?)`/g, '<code class="bg-white/10 px-1.5 py-0.5 rounded text-primary font-mono text-[0.9em]">$1</code>');
+    return <span dangerouslySetInnerHTML={{ __html: html }} />;
+  };
+
+  const blocks = content.split('\n\n');
+  const items = [];
+  let smartVisualInjected = false;
+
+  // Detect Smart Visual based on task title or content keywords
+  let smartVisual = null;
+  const taskTitle = title?.toLowerCase() || '';
+  if (taskTitle.includes('api') || taskTitle.includes('http')) {
+    smartVisual = { url: '/api-flow.png', caption: 'API Request / Response Cycle' };
+  } else if (taskTitle.includes('domain') || taskTitle.includes('dns') || taskTitle.includes('hierarchy')) {
+    smartVisual = { url: '/domain-hierarchy.png', caption: 'Domain Hierarchy Structure' };
+  }
+
+  blocks.forEach((block, idx) => {
+    const trimmed = block.trim();
+    if (!trimmed) return;
+
+    // 1. Terminal / Code Detection
+    if (trimmed.startsWith('[TERMINAL]') || trimmed.startsWith('$ ')) {
+      const code = trimmed.replace('[TERMINAL]', '').trim();
+      items.push(<TerminalBlock key={idx} code={code} />);
+      return;
+    }
+
+    // 2. Flow marker
+    if (trimmed.startsWith('[FLOW]')) {
+      const steps = trimmed.replace('[FLOW]', '').split('|').map(s => s.trim());
+      items.push(<FlowDiagram key={idx} steps={steps} />);
+      return;
+    }
+
+    // 3. Diagram marker
+    if (trimmed.startsWith('[DIAGRAM]')) {
+      const [url, caption] = trimmed.replace('[DIAGRAM]', '').split('|').map(s => s.trim());
+      items.push(<VisualCard key={idx} url={url} caption={caption} />);
+      return;
+    }
+
+    // 4. Tree marker
+    if (trimmed.startsWith('[TREE]')) {
+      const parts = trimmed.replace('[TREE]', '').split('|');
+      const rootName = parts[0]?.trim();
+      const children = parts[1]?.split(',').map(c => ({ name: c.trim() })) || [];
+      items.push(<HierarchyTree key={idx} data={{ name: rootName, children }} />);
+      return;
+    }
+
+    // 5. Headings (Simple detection)
+    if (trimmed.startsWith('### ') || trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
+      const cleanH = trimmed.replace(/^#+ /, '');
+      items.push(<h3 key={idx} className="text-xl font-black text-white mt-8 mb-6 italic tracking-tight">{renderText(cleanH)}</h3>);
+      
+      // Auto-inject visual after the first heading
+      if (!smartVisualInjected && smartVisual) {
+        items.push(<VisualCard key={`sv-${idx}`} url={smartVisual.url} caption={smartVisual.caption} />);
+        smartVisualInjected = true;
+      }
+      return;
+    }
+
+    // 6. Default Paragraph
+    items.push(<p key={idx} className="mb-4 leading-relaxed">{renderText(trimmed)}</p>);
+  });
+
+  return <div className="rdp-prose">{items}</div>;
+};
+
+
+
+const CodeSection = ({ code, language }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div className="rdp-code-wrap">
+      <div className="rdp-code-head">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+          </div>
+          <span className="rdp-code-lang">{language || 'terminal'}</span>
+        </div>
+        <button onClick={handleCopy} className="rdp-copy-btn">
+           {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+        </button>
+      </div>
+      <div className="rdp-code-body">
+        <code className="rdp-code">{code}</code>
+      </div>
+    </div>
+  );
+};
 
 const RoomDetail = () => {
   const { slug: roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useApp();
+  const { userStats, applyUpdate, requestLeaderboardUpdate } = useRealtime();
   const { markRoomAccessed, resetRoomProgress: resetActivityProgress } =
     useActivity();
 
@@ -60,6 +265,7 @@ const RoomDetail = () => {
   const { toast } = useToast();
   const [submissionStatus, setSubmissionStatus] = useState({}); // { [taskId]: 'idle'|'submitting'|'success'|'error' }
   const [shuffledQuestions, setShuffledQuestions] = useState([]); // Shuffled quiz questions
+  const [heroImg, setHeroImg] = useState("");
 
   // Handle page exit detection for resume flow
   useEffect(() => {
@@ -139,7 +345,9 @@ const RoomDetail = () => {
             }));
           }
         }
+
         setRoom(roomData);
+        setHeroImg(roomData.cover_image_url || CAT_IMG[roomData.category] || ULTIMATE_FALLBACK);
 
         // Shuffle quiz questions for this user (if user is authenticated and quiz exists)
         const userId = user?.id || user?._id;
@@ -219,7 +427,7 @@ const RoomDetail = () => {
               completedTasks: completedTasks,
               taskAnswers: progressData.progress?.exerciseAnswers || {},
               roomCompleted: isRoomActuallyComplete,
-              totalXP: progressData.progress?.totalXP || 0,
+              totalXP: progressData.progress?.totalPointsEarned || 0,
             });
 
             console.log(
@@ -295,8 +503,10 @@ const RoomDetail = () => {
   }, [roomId, user]);
 
   // Calculate progress percentage
-  const progressPercentage = room?.tasks?.length
-    ? (userProgress.completedTasks.length / room.tasks.length) * 100
+  const totalComponents = (room?.tasks?.length || 0) + (room?.quizzes?.length > 0 ? 1 : 0);
+  const completedComponents = userProgress.completedTasks.length + (userProgress.roomCompleted ? 1 : 0);
+  const progressPercentage = totalComponents > 0
+    ? (completedComponents / totalComponents) * 100
     : 0;
 
   // Handle Join Room
@@ -323,17 +533,8 @@ const RoomDetail = () => {
   const toggleTask = (taskId) => {
     if (!userProgress.joined) return;
 
-    // Check if task is unlocked
-    const taskIndex = taskId - 1;
-    if (taskIndex > 0 && !userProgress.completedTasks.includes(taskIndex)) {
-      return; // Task is locked
-    }
-
-    setExpandedTasks((prev) =>
-      prev.includes(taskId)
-        ? prev.filter((id) => id !== taskId)
-        : [...prev, taskId]
-    );
+    // Spec Requirement: No locking system. Allow clicking any task.
+    setExpandedTasks([taskId]); // Only expand one at a time for focus
   };
 
   // Submit task answer
@@ -370,9 +571,16 @@ const RoomDetail = () => {
             ...prev,
             completedTasks: [...prev.completedTasks, taskIndex],
             taskAnswers: { ...prev.taskAnswers, [taskId]: answer },
-            totalXP: prev.totalXP + pointsEarned,
           };
         });
+
+        // Update global store directly from backend response
+        if (response.userStats) {
+          applyUpdate(response.userStats);
+        }
+        
+        // Invalidate leaderboard data
+        requestLeaderboardUpdate();
 
         // Show points toast/animation with enhanced info
         try {
@@ -392,32 +600,47 @@ const RoomDetail = () => {
           // Clear input
           setTaskAnswers((prev) => ({ ...prev, [taskId]: "" }));
 
-          // Auto-expand next task (unlock)
+          // Auto-expand next task (stay user friendly)
           if (taskIndex < room.tasks.length - 1) {
             const nextTaskId = room.tasks[taskIndex + 1].id;
-            setExpandedTasks((prev) =>
-              Array.from(new Set([...(prev || []), nextTaskId]))
-            );
+            setExpandedTasks([nextTaskId]);
           } else {
             // Last task completed
             if (room.quizzes && room.quizzes.length > 0) {
               setShowQuiz(true);
             } else {
               // No quiz - room completed after last task
+              const finalXP = (userProgress.totalXP || 0) + pointsEarned;
+              
+              // Persist completion to backend
+              completeRoom(roomId, 100, finalXP)
+                .then(res => {
+                  if (res.userStats) applyUpdate(res.userStats);
+                  requestLeaderboardUpdate();
+                  console.log("✅ Room marked complete (no quiz path)");
+                })
+                .catch(err => {
+                  console.error("Delayed completion failure:", err);
+                });
+ 
               const updatedProgress = {
                 ...userProgress,
                 roomCompleted: true,
+                totalXP: finalXP,
                 completed: true,
                 completedAt: new Date().toISOString(),
               };
               setUserProgress(updatedProgress);
+ 
+              // Refresh global stats via Realtime fallback
+              if (window.triggerRealtimeUpdate) window.triggerRealtimeUpdate();
 
               // Dispatch completion event for dashboard updates
               window.dispatchEvent(
                 new CustomEvent("roomCompleted", {
                   detail: {
                     roomId,
-                    totalXP: userProgress.totalXP + pointsEarned,
+                    totalXP: finalXP,
                   },
                 })
               );
@@ -432,7 +655,7 @@ const RoomDetail = () => {
           // Mark submission status as done
           setSubmissionStatus((prev) => ({ ...prev, [taskId]: "done" }));
 
-          // Trigger real-time update
+          // Trigger real-time update fallback
           if (window.triggerRealtimeUpdate) window.triggerRealtimeUpdate();
         }, 1500);
       } else {
@@ -463,7 +686,6 @@ const RoomDetail = () => {
         completedTasks: [],
         taskAnswers: {},
         roomCompleted: false,
-        totalXP: 0,
       });
 
       // Reset UI state
@@ -538,7 +760,11 @@ const RoomDetail = () => {
         setTimeout(async () => {
           // Call backend to mark room as complete and update leaderboard
           try {
-            await completeRoom(roomId, Date.now(), finalTotalXP);
+            const completeResponse = await completeRoom(roomId, response.percentage, finalTotalXP);
+            if (completeResponse.userStats) {
+               applyUpdate(completeResponse.userStats);
+            }
+            requestLeaderboardUpdate();
             console.log("✅ Room marked complete on backend");
           } catch (error) {
             console.error("Failed to mark room as complete:", error);
@@ -580,669 +806,469 @@ const RoomDetail = () => {
 
   // Task status helper
   const getTaskStatus = (taskIndex) => {
+    const taskId = room.tasks?.[taskIndex]?.id;
     if (userProgress.completedTasks.includes(taskIndex)) return "completed";
-    if (taskIndex === 0 || userProgress.completedTasks.includes(taskIndex - 1))
-      return "available";
-    return "locked";
+    if (expandedTasks.includes(taskId)) return "in-progress";
+    return "not-started";
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-white">Loading room...</p>
-        </div>
-      </div>
-    );
-  }
+  /* ── Topic Icons Helper ── */
+  const getTopicIcon = (title) => {
+    const t = title.toLowerCase();
+    if (t.includes('web') || t.includes('http')) return <Zap size={14} />;
+    if (t.includes('net') || t.includes('ip') || t.includes('port')) return <Shield size={14} />;
+    if (t.includes('dev') || t.includes('code') || t.includes('api')) return <Terminal size={14} />;
+    if (t.includes('hack') || t.includes('vuln') || t.includes('exp')) return <Target size={14} />;
+    return <BookOpen size={14} />;
+  };
+
+  /* ── Topic Image Helper ── */
+  const getTopicImg = (title, category) => {
+    const t = title.toLowerCase();
+    if (t.includes('web')) return "https://images.unsplash.com/photo-1547658719-da2b51169166?auto=format&fit=crop&q=80&w=800";
+    if (t.includes('network')) return "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=800";
+    if (t.includes('linux')) return "https://images.unsplash.com/photo-1629654297299-c8506221ca97?auto=format&fit=crop&q=80&w=800";
+    if (t.includes('code') || t.includes('api')) return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800";
+    return "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800";
+  };
 
   if (!room) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="rdp-root flex items-center justify-center p-20">
         <div className="text-center">
-          <p className="text-white mb-4">Room not found or failed to load</p>
-          <button
-            onClick={() => navigate("/rooms")}
-            className="btn-primary px-4 py-2"
-          >
-            Back to Rooms
+          <p className="text-slate-400 mb-6">Room not found or failed to load</p>
+          <button onClick={() => navigate("/rooms")} className="rdp-back-btn">
+            <ArrowLeft size={16} /> Back to Rooms
           </button>
         </div>
       </div>
     );
   }
 
+  const activeTaskId = expandedTasks[0] || 1;
+  const activeTask = room.tasks?.find(t => t.id === activeTaskId) || room.tasks?.[0];
+  const activeTaskIndex = room.tasks?.findIndex(t => t.id === activeTaskId) ?? 0;
+
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sticky Progress Bar */}
-      <div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate("/rooms")}
-                className="text-primary hover:text-primary-hover flex items-center gap-2 text-sm"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Rooms
-              </button>
-              {import.meta.env.DEV && (
-                <button
+    <div className="rdp-root">
+      <div className="rdp-bg-glow" />
+
+      {/* ── STICKY NAV ── */}
+      <nav className="rdp-nav">
+        <div className="rdp-nav-content">
+          <div className="rdp-nav-left">
+            <button onClick={() => navigate("/rooms")} className="rdp-back-btn">
+              <ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span>
+            </button>
+            <div className="h-6 w-px bg-slate-800 hidden sm:block" />
+            <div className="flex flex-col">
+              <h4 className="font-bold text-white text-xs lg:text-sm truncate max-w-[200px] leading-tight">{room.title}</h4>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">{room.category} // SYSTEM_READY</span>
+            </div>
+          </div>
+
+          <div className="rdp-prog-wrap">
+            <div className="flex justify-between items-center mb-1">
+              <span className="rdp-prog-text">Your Progress</span>
+              <span className="text-[10px] font-bold text-slate-500">{Math.round(progressPercentage)}%</span>
+            </div>
+            <div className="rdp-prog-track">
+              <div className="rdp-prog-fill" style={{ width: `${progressPercentage}%` }} />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+             <div className="hidden md:flex flex-col items-end">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total XP</span>
+                <span className="text-primary font-bold">{userStats.totalXP}</span>
+             </div>
+             <button className="rdp-back-btn p-2"><Share2 size={16}/></button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="rdp-wrap">
+        {/* ── HERO ── */}
+        <section className="rdp-hero rdp-fade-in">
+          <div className="rdp-hero-info">
+            <div className="rdp-cat-pill" style={{ background: 'rgba(139,92,246,0.1)', color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.2)' }}>
+              <Shield size={14} /> {room.category}
+            </div>
+            <h1 className="rdp-title">{room.title}</h1>
+            <p className="rdp-desc">{room.description}</p>
+            
+            <div className="rdp-meta">
+              <div className="rdp-m-item">
+                <div className="flex flex-col">
+                  <span className="rdp-m-lbl text-success">Difficulty</span>
+                  <div className="flex items-center gap-2">
+                    <Shield size={12} className="text-success" />
+                    <span className="rdp-m-val">{room.difficulty}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="rdp-m-item">
+                <div className="flex flex-col">
+                  <span className="rdp-m-lbl">Duration</span>
+                  <span className="rdp-m-val">{room.estimatedTime || room.estimated_time_minutes + "m"}</span>
+                </div>
+              </div>
+              <div className="rdp-m-item">
+                <div className="flex flex-col">
+                  <span className="rdp-m-lbl">Points</span>
+                  <span className="rdp-m-val text-primary">{room.points} XP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rdp-hero-card">
+            <div className="rdp-hero-img-wrap">
+              <img
+                src={heroImg}
+                className="rdp-hero-img"
+                alt=""
+                onError={() => {
+                  const fallback = CAT_IMG[room.category] || ULTIMATE_FALLBACK;
+                  if (heroImg !== fallback) setHeroImg(fallback);
+                }}
+              />
+              <div className="rdp-hero-overlay" />
+            </div>
+            <div className="rdp-hero-actions">
+              {!userProgress.joined ? (
+                <button onClick={handleJoinRoom} className="rdp-main-btn">
+                  <Play size={18} fill="currentColor" /> Start Challenge
+                </button>
+              ) : (
+                <button 
                   onClick={() => {
-                    clearQuizCache(roomId);
-                    setQuizResults(null);
-                    setQuizSubmitted(false);
-                    setQuizAnswers({});
-                    toast({
-                      title: "Quiz cache cleared",
-                      description: "You can now retake the quiz",
-                    });
-                  }}
-                  className="text-slate-400 hover:text-slate-300 flex items-center gap-2 text-xs"
+                    const firstIncomp = room.tasks?.findIndex((t, i) => !userProgress.completedTasks.includes(i));
+                    toggleTask(room.tasks[firstIncomp === -1 ? 0 : firstIncomp].id);
+                  }} 
+                  className="rdp-main-btn"
                 >
-                  <RefreshCw className="h-3 w-3" />
-                  Clear Quiz Cache
+                  <Zap size={18} fill="currentColor" /> {userProgress.roomCompleted ? "Review Room" : "Continue"}
                 </button>
               )}
-            </div>
-            <div className="text-sm text-slate-400">
-              {userProgress.completedTasks.length} / {room.tasks?.length || 0}{" "}
-              Tasks Completed
-            </div>
-          </div>
-          <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 shadow-[0_0_12px_rgba(155,255,0,0.5)]"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Room Header */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-white mb-3">
-                {room.title}
-              </h1>
-              <p className="text-lg text-slate-300 mb-4">{room.description}</p>
-              <div className="flex items-center gap-6 text-sm text-slate-400">
-                <span className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  {room.estimatedTime || room.estimated_time_minutes + " min"}
-                </span>
-                <span className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  {room.participants} completed
-                </span>
-                <span className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-primary">
-                    {room.points} XP
-                  </span>
-                </span>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${room.difficulty === "Beginner" || room.difficulty === "Easy"
-                    ? "bg-success/20 text-success border border-success/30"
-                    : room.difficulty === "Intermediate" ||
-                      room.difficulty === "Medium"
-                      ? "bg-warning/20 text-warning border border-warning/30"
-                      : "bg-danger/20 text-danger border border-danger/30"
-                    }`}
-                >
-                  {room.difficulty}
-                </span>
+              <div className="flex gap-2">
+                <button className="rdp-back-btn flex-1 justify-center"><Bookmark size={14}/> Save</button>
+                <button onClick={handleTryAgain} className="rdp-back-btn flex-1 justify-center"><RefreshCw size={14}/> Reset</button>
               </div>
             </div>
-
-            {/* Join/Resume/Review Room Button */}
-            {!userProgress.joined ? (
-              // Not joined yet - Show Join button
-              <button
-                onClick={handleJoinRoom}
-                className="btn-primary px-8 py-4 text-lg flex items-center gap-2 shadow-lg hover:shadow-primary/50 transition-shadow"
-              >
-                <Play className="h-5 w-5" />
-                Join Room
-              </button>
-            ) : userProgress.roomCompleted &&
-              (!room.quizzes?.length || quizSubmitted) ? (
-              // Completed - Show Review and Try Again buttons
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    // Allow review by expanding all tasks
-                    const allTaskIds = room.tasks?.map((t) => t.id) || [];
-                    setExpandedTasks(allTaskIds);
-                    window.scrollTo({ top: 400, behavior: "smooth" });
-                  }}
-                  className="btn-ghost px-6 py-4 text-lg flex items-center gap-2"
-                >
-                  <CheckCircle className="h-5 w-5" />
-                  Review Room
-                </button>
-                <button
-                  onClick={handleTryAgain}
-                  className="btn-secondary px-6 py-4 text-lg flex items-center gap-2"
-                >
-                  <RefreshCw className="h-5 w-5" />
-                  Try Again
-                </button>
-              </div>
-            ) : (
-              // Joined but not completed - Show Resume button
-              <button
-                onClick={() => {
-                  // Scroll to current progress
-                  const firstIncompleteTask = room.tasks?.findIndex(
-                    (t, idx) => !userProgress.completedTasks.includes(idx)
-                  );
-                  if (firstIncompleteTask !== -1) {
-                    setExpandedTasks([firstIncompleteTask + 1]);
-                  }
-                  // Scroll to tasks section
-                  setTimeout(() => {
-                    window.scrollTo({ top: 400, behavior: "smooth" });
-                  }, 100);
-                }}
-                className="btn-secondary px-8 py-4 text-lg flex items-center gap-2 shadow-lg hover:shadow-accent/50 transition-shadow"
-              >
-                <Play className="h-5 w-5" />
-                Resume Room
-              </button>
-            )}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Main Content: Sidebar + Task Scroll */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* LEFT SIDEBAR - Task Navigator (30%) */}
-          <div className="lg:col-span-3">
-            <div className="sticky top-24 card p-5 space-y-3">
-              <h3 className="font-bold text-lg text-white mb-4">Tasks</h3>
-              {room.tasks?.map((task, index) => {
-                const status = getTaskStatus(index);
+        {/* ── MAIN LAYOUT ── */}
+        <div className="rdp-layout">
+          
+          {/* Side: Task Browser */}
+          <aside className="rdp-sidebar">
+            <div className="rdp-s-title">
+              <Terminal size={18} className="text-slate-500" />
+              Challenge Tasks
+            </div>
+            <div className="rdp-s-list">
+              {room.tasks?.map((t, idx) => {
+                const status = getTaskStatus(idx);
+                const isActive = activeTaskId === t.id;
                 return (
-                  <button
-                    key={task.id}
-                    onClick={() => toggleTask(task.id)}
-                    disabled={status === "locked"}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left ${status === "completed"
-                      ? "bg-success/10 border border-success/30"
-                      : status === "available"
-                        ? expandedTasks.includes(task.id)
-                          ? "bg-primary/10 border border-primary/30"
-                          : "bg-white/5 hover:bg-white/10 border border-white/10"
-                        : "bg-slate-800/50 border border-slate-700/50 opacity-50 cursor-not-allowed"
-                      }`}
+                  <button 
+                    key={t.id}
+                    onClick={() => toggleTask(t.id)}
+                    className={`rdp-t-item ${isActive ? 'rdp-t-item--active' : ''} ${status === 'completed' ? 'rdp-t-item--done' : ''}`}
                   >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${status === "completed"
-                        ? "bg-success"
-                        : status === "available"
-                          ? "bg-primary"
-                          : "bg-slate-600"
-                        }`}
-                    >
-                      {status === "completed" ? (
-                        <CheckCircle className="h-5 w-5 text-white" />
-                      ) : status === "locked" ? (
-                        <Lock className="h-4 w-4 text-white" />
+                    <div className="rdp-t-icon">
+                      {status === 'completed' ? (
+                        <Check size={14} className="text-success" />
+                      ) : status === 'in-progress' ? (
+                        <CircleDot size={14} className="text-primary animate-pulse" />
                       ) : (
-                        <span className="text-white text-sm font-bold">
-                          {index + 1}
-                        </span>
+                        <Circle size={14} className="text-slate-600" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm font-semibold ${status === "completed"
-                          ? "text-success"
-                          : status === "available"
-                            ? "text-primary"
-                            : "text-slate-500"
-                          }`}
-                      >
-                        Task {index + 1}
-                      </p>
-                      <p className="text-xs text-slate-400 truncate">
-                        {task.title}
-                      </p>
+                      <div className="rdp-t-title">{t.title}</div>
+                      <div className="text-[10px] font-bold text-slate-500">{t.xp || 100} XP</div>
                     </div>
                   </button>
                 );
               })}
+              {room.quizzes?.length > 0 && (
+                 <button 
+                    onClick={() => setShowQuiz(true)}
+                    disabled={!showQuiz && userProgress.completedTasks.length < room.tasks?.length}
+                    className={`rdp-t-item ${showQuiz ? 'rdp-t-item--active' : ''} ${quizSubmitted ? 'rdp-t-item--done' : ''}`}
+                 >
+                    <div className="rdp-t-icon">
+                      <Trophy size={16}/>
+                    </div>
+                    <span className="rdp-t-title">Final Quiz</span>
+                 </button>
+              )}
             </div>
-          </div>
+          </aside>
 
-          {/* RIGHT CONTENT - Task Cards (70%) */}
-          <div className="lg:col-span-9 space-y-6">
-            {!userProgress.joined && (
-              <div className="card p-8 text-center border-2 border-primary/30 bg-primary/5">
-                <Lock className="w-16 h-16 text-primary mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  Join this room to unlock tasks
-                </h3>
-                <p className="text-slate-400 mb-6">
-                  Click the "Join Room" button above to start your learning
-                  journey
-                </p>
+          {/* Main: Active Task Content */}
+          <main className="rdp-content">
+            {userProgress.roomCompleted && (
+              <div className="p-6 rounded-2xl bg-success/10 border border-success/30 flex items-center justify-between rdp-fade-in shadow-[0_0_30px_rgba(57,255,20,0.1)]">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center">
+                    <Trophy className="text-success" size={24}/>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-white italic tracking-tighter uppercase">Mission Successful</h3>
+                    <p className="text-sm text-success/80 font-bold uppercase tracking-widest">Sector Cleared | {userStats.totalXP} XP Collected</p>
+                  </div>
+                </div>
+                <button onClick={() => navigate("/dashboard")} className="rdp-back-btn border-success/30 hover:bg-success/20 text-white font-black">Open Archive</button>
               </div>
             )}
 
-            {room.tasks?.map((task, index) => {
-              const status = getTaskStatus(index);
-              const isExpanded = expandedTasks.includes(task.id);
-              const isCompleted = userProgress.completedTasks.includes(index);
-
-              return (
-                <div
-                  key={task.id}
-                  className={`card overflow-hidden transition-all ${!userProgress.joined
-                    ? "blur-sm opacity-50 pointer-events-none"
-                    : ""
-                    } ${isCompleted
-                      ? "border-success/30"
-                      : isExpanded
-                        ? "border-primary/30"
-                        : ""
-                    }`}
-                >
-                  {/* Task Header - Always Visible */}
-                  <div
-                    onClick={() => toggleTask(task.id)}
-                    className={`p-6 cursor-pointer flex items-center justify-between ${status === "locked"
-                      ? "cursor-not-allowed opacity-50"
-                      : "hover:bg-white/5"
-                      }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${isCompleted
-                          ? "bg-success"
-                          : status === "locked"
-                            ? "bg-slate-600"
-                            : "bg-primary"
-                          }`}
-                      >
-                        {isCompleted ? (
-                          <CheckCircle className="h-6 w-6 text-white" />
-                        ) : status === "locked" ? (
-                          <Lock className="h-5 w-5 text-white" />
-                        ) : (
-                          <span className="text-white font-bold">
-                            {index + 1}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">
-                          {task.title}
-                        </h3>
-                        {isCompleted && (
-                          <p className="text-sm text-success">
-                            Completed • +{task.xp || 100} XP
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {status !== "locked" &&
-                      (isExpanded ? (
-                        <ChevronUp className="h-5 w-5 text-slate-400" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-slate-400" />
-                      ))}
-                  </div>
-
-                  {/* Task Content - Collapsible */}
-                  {isExpanded && status !== "locked" && (
-                    <div className="border-t border-slate-700">
-                      {/* Learning Content */}
-                      <div className="p-6 prose prose-invert max-w-none">
-                        <div className="text-slate-300 leading-relaxed whitespace-pre-wrap">
-                          {task.content}
-                        </div>
-
-                        {/* Code Snippet (if exists) */}
-                        {task.codeSnippet && (
-                          <div className="mt-6 bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
-                            <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 border-b border-slate-700">
-                              <Terminal className="w-4 h-4 text-primary" />
-                              <span className="text-xs text-slate-400 font-mono">
-                                {task.codeLanguage || "code"}
-                              </span>
-                            </div>
-                            <pre className="p-4 overflow-x-auto">
-                              <code className="text-sm text-green-400 font-mono">
-                                {task.codeSnippet}
-                              </code>
-                            </pre>
-                          </div>
-                        )}
-
-                        {/* Hint (if exists) */}
-                        {task.hint && (
-                          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <HelpCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-semibold text-blue-400 mb-1">
-                                  Hint
-                                </p>
-                                <p className="text-sm text-slate-300">
-                                  {task.hint}
-                                </p>
+            {showQuiz ? (
+              /* QUIZ UI */
+              <div className="rdp-card rdp-fade-in">
+                <div className="rdp-card-head">
+                  <h2 className="rdp-card-title">Final Knowledge Check</h2>
+                  <Trophy size={20} className="text-warning" />
+                </div>
+                <div className="rdp-card-body space-y-10">
+                   {(() => {
+                      const questions = shuffledQuestions.length > 0 ? shuffledQuestions : room.quizzes[0].questions;
+                      return questions.map((q, qi) => (
+                        <div key={q.id} className="rdp-quiz-q">
+                           <h4 className="text-white font-bold mb-4 flex gap-3">
+                              <span className="text-slate-600">{qi + 1}.</span> {q.question_text}
+                           </h4>
+                           <div className="grid gap-3">
+                              {q.options.map((opt, oi) => (
+                                <label key={oi} className={`rdp-t-item font-medium transition-all ${quizAnswers[q.id] === opt ? 'bg-primary/20 border-primary/40 text-white' : ''} ${quizSubmitted ? 'pointer-events-none' : ''}`}>
+                                   <input 
+                                      type="radio" 
+                                      name={`q-${q.id}`} 
+                                      className="sr-only"
+                                      checked={quizAnswers[q.id] === opt}
+                                      onChange={() => !quizSubmitted && setQuizAnswers(p => ({ ...p, [q.id]: opt }))}
+                                   />
+                                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${quizAnswers[q.id] === opt ? 'border-primary' : 'border-slate-700'}`}>
+                                      {quizAnswers[q.id] === opt && <div className="w-2.5 h-2.5 bg-primary rounded-full"/>}
+                                   </div>
+                                   {opt}
+                                </label>
+                              ))}
+                           </div>
+                           {quizSubmitted && quizResults?.results && (
+                              <div className={`mt-4 p-4 rounded-xl flex gap-3 ${quizResults.results.find(r => r.questionId === q.id)?.correct ? 'bg-success/10 text-success border border-success/20' : 'bg-danger/10 text-danger border border-danger/20'}`}>
+                                 {quizResults.results.find(r => r.questionId === q.id)?.correct ? <CheckCircle size={18}/> : <X size={18}/>}
+                                 <div className="text-sm">
+                                    <span className="font-bold underline">{quizResults.results.find(r => r.questionId === q.id)?.correct ? 'Correct' : 'Incorrect'}</span>
+                                    {q.explanation && <p className="mt-1 opacity-80">{q.explanation}</p>}
+                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Answer Section (Footer) */}
-                      {!isCompleted && (
-                        <div className="p-6 bg-slate-900/50 border-t border-slate-700">
-                          <label className="block text-sm font-semibold text-white mb-3">
-                            {task.question}
-                          </label>
-                          <div className="flex gap-3">
-                            <input
-                              type="text"
-                              value={taskAnswers[task.id] || ""}
-                              onChange={(e) =>
-                                setTaskAnswers((prev) => ({
-                                  ...prev,
-                                  [task.id]: e.target.value,
-                                }))
-                              }
-                              placeholder="Enter your answer..."
-                              className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                              onKeyPress={(e) => {
-                                if (e.key === "Enter") {
-                                  handleTaskSubmit(task.id, index);
-                                }
-                              }}
-                            />
-                            <button
-                              onClick={() => handleTaskSubmit(task.id, index)}
-                              disabled={
-                                !taskAnswers[task.id] ||
-                                submissionStatus[task.id] === "submitting" ||
-                                submissionStatus[task.id] === "success"
-                              }
-                              className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Submit
-                            </button>
-                          </div>
-                          {/* Inline submission feedback */}
-                          {submissionStatus[task.id] === "success" && (
-                            <div className="mt-3 flex items-center gap-2 text-success">
-                              <CheckCircle className="h-5 w-5" />
-                              <p className="text-sm font-semibold">
-                                Correct Answer!
-                              </p>
-                            </div>
-                          )}
-
-                          {submissionStatus[task.id] === "error" && (
-                            <div className="mt-3 flex items-center gap-2 text-danger">
-                              <X className="h-5 w-5" />
-                              <p className="text-sm font-semibold">
-                                Incorrect answer. Try again.
-                              </p>
-                            </div>
-                          )}
+                           )}
                         </div>
-                      )}
+                      ));
+                   })()}
 
-                      {/* Completed State */}
-                      {isCompleted && (
-                        <div className="p-6 bg-success/10 border-t border-success/30">
-                          <div className="flex items-center gap-3 text-success">
-                            <CheckCircle className="h-6 w-6" />
-                            <div>
-                              <p className="font-semibold">Correct Answer!</p>
-                              <p className="text-sm">
-                                You earned {task.xp || 100} XP
-                              </p>
+                   {!quizSubmitted ? (
+                      <button 
+                        onClick={handleQuizSubmit}
+                        disabled={Object.keys(quizAnswers).length < room.quizzes[0].questions.length}
+                        className="rdp-main-btn py-5"
+                      >
+                         Submit Results
+                      </button>
+                   ) : (
+                      <div className={`p-8 rounded-2xl text-center border-2 ${quizResults?.passed ? 'bg-success/10 border-success/30' : 'bg-danger/10 border-danger/30'}`}>
+                         <h2 className={`text-2xl font-black mb-2 ${quizResults?.passed ? 'text-success' : 'text-danger'}`}>
+                            {quizResults?.passed ? "MISSION SUCCESSFUL" : "MISSION FAILED"}
+                         </h2>
+                         <p className="text-white font-bold text-xl mb-4">{quizResults?.percentage}% Success Rate</p>
+                         {quizResults?.passed ? (
+                            <div className="space-y-4">
+                               <p className="text-slate-400">The sector is secured. You have earned {quizResults.earnedPoints} XP bonus.</p>
+                               <button onClick={() => navigate("/rooms")} className="rdp-main-btn">Return to Base</button>
                             </div>
-                          </div>
+                         ) : (
+                            <button onClick={handleTryAgain} className="rdp-main-btn" style={{ background: '#ef4444' }}>Retake Mission</button>
+                         )}
+                      </div>
+                   )}
+                </div>
+              </div>
+            ) : (
+              /* TASK UI */
+              <div className="rdp-card rdp-fade-in" key={activeTaskId}>
+                <div className="rdp-card-head">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-primary">
+                      {getTopicIcon(activeTask.title)}
+                    </div>
+                    <div>
+                      <h2 className="rdp-card-title">{activeTask.title}</h2>
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">+ {activeTask.xp || 100} XP</span>
+                    </div>
+                  </div>
+                  {userProgress.completedTasks.includes(activeTaskIndex) && (
+                    <div className="flex items-center gap-2 text-success font-bold text-sm bg-success/10 px-3 py-1.5 rounded-lg border border-success/20">
+                      <CheckCircle size={14}/> Completed
+                    </div>
+                  )}
+                </div>
+
+                <div className="rdp-task-vis h-[240px] w-full relative">
+                   <img src={getTopicImg(activeTask.title, room.category)} className="w-full h-full object-cover" alt=""/>
+                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F1A] via-transparent to-transparent opacity-60"/>
+                </div>
+
+                <div className="rdp-card-body">
+                  <EnhancedContentRenderer content={activeTask.content} title={activeTask.title} />
+
+                  {activeTask.codeSnippet && (
+                    <CodeSection code={activeTask.codeSnippet} language={activeTask.codeLanguage} />
+                  )}
+
+                  {activeTask.hint && (
+                    <div className="mt-8 border-t border-slate-800 pt-6">
+                      <button 
+                         onClick={() => {
+                           if(confirm("Using a hint will deduct 25 XP. Proceed?")) {
+                             // XP Deduction simulation
+                             setUserProgress(p => ({ ...p, totalXP: Math.max(0, p.totalXP - 25) }));
+                             setExpandedTasks(p => [...p, `${activeTask.id}_hint`]); // Use different key to show hint
+                           }
+                         }}
+                         className="flex items-center gap-2 text-warning font-bold text-xs uppercase tracking-widest hover:text-white transition-colors"
+                      >
+                         <HelpCircle size={14}/> Unlock Technical Intel (-25 XP)
+                      </button>
+                      
+                      {(expandedTasks.includes(`${activeTask.id}_hint`) || userProgress.completedTasks.includes(activeTaskIndex)) && (
+                        <div className="mt-4 p-4 bg-amber-500/5 rounded-xl text-sm italic text-amber-200/70 border border-amber-500/10 rdp-fade-in">
+                          <span className="font-bold text-amber-500 not-italic mr-2">INTEL_RECOVERED:</span>
+                          {activeTask.hint}
                         </div>
                       )}
                     </div>
                   )}
-                </div>
-              );
-            })}
 
-            {/* QUIZ SECTION - Shows after all tasks completed */}
-            {showQuiz && room.quizzes && room.quizzes.length > 0 && (
-              <div className="card overflow-hidden border-primary/30">
-                <div className="p-6 bg-gradient-to-r from-purple-900/40 to-blue-900/40">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Trophy className="h-8 w-8 text-warning" />
-                    <h2 className="text-2xl font-bold text-white">
-                      Final Quiz
-                    </h2>
-                  </div>
-                  <p className="text-slate-300">
-                    Test your knowledge to complete the room!
-                  </p>
-                  {room.quizzes[0].pass_percentage && (
-                    <p className="text-sm text-slate-400 mt-2">
-                      Pass mark: {room.quizzes[0].pass_percentage}%
-                    </p>
-                  )}
-                </div>
-
-                <div className="p-6 space-y-6">
-                  {/* Use shuffled questions if available, otherwise fall back to original */}
-                  {(() => {
-                    const questionsToRender = shuffledQuestions.length > 0 ? shuffledQuestions : room.quizzes[0].questions;
-                    console.log('🎨 Rendering quiz with:', {
-                      source: shuffledQuestions.length > 0 ? 'SHUFFLED' : 'ORIGINAL',
-                      questionCount: questionsToRender.length,
-                      questionIds: questionsToRender.map(q => q.id)
-                    });
-                    return questionsToRender.map((question, qIndex) => (
-                      <div
-                        key={question.id}
-                        className="pb-6 border-b border-slate-700 last:border-0"
-                      >
-                        <p className="font-semibold text-white mb-4">
-                          {qIndex + 1}. {question.question_text}
-                        </p>
-
-                        {question.type === "single" && (
-                          <div className="space-y-2">
-                            {question.options.map((option, optIndex) => (
-                              <label
-                                key={optIndex}
-                                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${quizAnswers[question.id] === option
-                                  ? "bg-primary/20 border border-primary/40"
-                                  : "bg-white/5 hover:bg-white/10 border border-white/10"
-                                  } ${quizSubmitted ? "pointer-events-none" : ""}`}
-                              >
-                                <input
-                                  type="radio"
-                                  name={`question-${question.id}`}
-                                  checked={quizAnswers[question.id] === option}
-                                  onChange={() =>
-                                    setQuizAnswers((prev) => ({
-                                      ...prev,
-                                      [question.id]: option,
-                                    }))
-                                  }
-                                  disabled={quizSubmitted}
-                                  className="w-4 h-4 text-primary"
-                                />
-                                <span className="text-slate-300">{option}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Show result if quiz submitted */}
-                        {quizSubmitted && quizResults?.results && (
-                          <div className="mt-3">
-                            {quizResults.results.find(
-                              (r) => r.questionId === question.id
-                            )?.correct ? (
-                              <div className="flex items-start gap-2 p-3 bg-success/10 border border-success/30 rounded-lg">
-                                <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-semibold text-success">
-                                    Correct!
-                                  </p>
-                                  {question.explanation && (
-                                    <p className="text-xs text-slate-300 mt-1">
-                                      {question.explanation}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-start gap-2 p-3 bg-danger/10 border border-danger/30 rounded-lg">
-                                <X className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-semibold text-danger">
-                                    Incorrect
-                                  </p>
-                                  {question.explanation && (
-                                    <p className="text-xs text-slate-300 mt-1">
-                                      {question.explanation}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                  {!userProgress.completedTasks.includes(activeTaskIndex) && (
+                    <div className="rdp-ans-section">
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="rdp-ans-lbl m-0">{activeTask.question}</label>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">Input Flag Below</span>
                       </div>
-                    ))
-                  })()}
-
-                  {/* Quiz Submit/Results */}
-                  {!quizSubmitted ? (
-                    <button
-                      onClick={handleQuizSubmit}
-                      disabled={
-                        Object.keys(quizAnswers).length <
-                        room.quizzes[0].questions.length
-                      }
-                      className="w-full btn-primary py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Submit Quiz
-                    </button>
-                  ) : (
-                    quizResults && (
-                      <div
-                        className={`p-6 rounded-lg border-2 ${quizResults.passed
-                          ? "bg-success/10 border-success/30"
-                          : "bg-danger/10 border-danger/30"
-                          }`}
-                      >
-                        <div className="text-center">
-                          <p
-                            className={`text-2xl font-bold mb-2 ${quizResults.passed
-                              ? "text-success"
-                              : "text-danger"
-                              }`}
-                          >
-                            {quizResults.passed
-                              ? "🎉 Quiz Passed!"
-                              : "❌ Quiz Failed"}
-                          </p>
-                          <p className="text-lg text-white mb-4">
-                            Score: {quizResults.percentage}% (
-                            {quizResults.earnedPoints}/{quizResults.totalPoints}{" "}
-                            points)
-                          </p>
-                          {quizResults.passed ? (
-                            <p className="text-slate-300">
-                              Great job! You've completed the room!
-                            </p>
-                          ) : (
-                            <button
-                              onClick={handleTryAgain}
-                              className="btn-ghost px-6 py-2 mt-2"
-                            >
-                              Try Again
-                            </button>
-                          )}
-                        </div>
+                      <div className="rdp-ans-row">
+                        <input 
+                          type="text" 
+                          className="rdp-inp font-mono" 
+                          placeholder="CV{flag_here}..."
+                          value={taskAnswers[activeTask.id] || ""}
+                          onChange={(e) => setTaskAnswers(p => ({ ...p, [activeTask.id]: e.target.value }))}
+                          onKeyPress={(e) => e.key === 'Enter' && handleTaskSubmit(activeTask.id, activeTaskIndex)}
+                        />
+                        <button 
+                          onClick={() => handleTaskSubmit(activeTask.id, activeTaskIndex)}
+                          disabled={!taskAnswers[activeTask.id] || submissionStatus[activeTask.id] === 'submitting'}
+                          className="rdp-submit"
+                        >
+                          {submissionStatus[activeTask.id] === 'submitting' ? <RefreshCw className="animate-spin" size={18}/> : 'Submit Flag'}
+                        </button>
                       </div>
-                    )
+                    </div>
                   )}
                 </div>
               </div>
             )}
-          </div>
+          </main>
+
+          {/* Right: Room Stats / Creator */}
+          <aside className="rdp-info">
+             <div className="rdp-info-sec">
+                <span className="rdp-info-lbl">Room Intel</span>
+                <div className="rdp-info-box space-y-4">
+                   <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500">Enrollment</span>
+                      <div className="flex items-center gap-1.5">
+                         <Users size={12} className="text-primary"/>
+                         <span className="text-white font-bold">{room.enrollmentCount || room.participants || 0}</span>
+                      </div>
+                   </div>
+                   <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500">Avg. Time</span>
+                      <span className="text-white font-bold">{room.estimatedTime || room.estimated_time_minutes + "m"}</span>
+                   </div>
+                   <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500">Rating</span>
+                      <div className="flex items-center gap-1 text-warning font-bold">
+                         ★ {room.rating || "4.8"}
+                      </div>
+                   </div>
+                   <div className="h-px bg-slate-800"/>
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                         <Terminal size={18} className="text-primary"/>
+                      </div>
+                      <div className="flex flex-col">
+                         <span className="text-[10px] font-bold text-slate-500 uppercase">Creator</span>
+                         <span className="text-xs font-bold text-white">{room.creator || "CyberVerse Admin"}</span>
+                      </div>
+                   </div>
+                </div>
+             </div>
+
+             <div className="rdp-info-sec">
+                <span className="rdp-info-lbl">Tags & Skills</span>
+                <div className="flex flex-wrap gap-2">
+                   {room.tags?.map(t => (
+                      <span key={t} className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[11px] font-bold text-slate-400 capitalize"># {t}</span>
+                   ))}
+                </div>
+             </div>
+
+             {userProgress.roomCompleted && (
+                <div className="p-5 rounded-2xl bg-primary/10 border border-primary/20 text-center space-y-3">
+                   <Trophy size={32} className="mx-auto text-primary"/>
+                   <h5 className="text-white font-black text-xs uppercase tracking-widest">Sector Cleared</h5>
+                   <p className="text-[11px] text-slate-400">You have successfully dominated this room and gathered all available intel.</p>
+                </div>
+             )}
+          </aside>
         </div>
       </div>
 
-      {/* Completion Modal */}
+      {/* ── Completion Modal ── */}
       {showCompletionModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card max-w-md w-full text-center p-8 animate-in fade-in zoom-in duration-500">
-            <div className="w-20 h-20 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-              <Trophy className="h-10 w-10 text-black" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-2">
-              Room Completed!
-            </h2>
-            <p className="text-lg text-slate-300 mb-4">
-              Congratulations on completing {room.title}
-            </p>
-
-            {/* Score Breakdown */}
-            <div className="bg-slate-800/50 rounded-lg p-4 mb-6">
-              <div className="flex items-center justify-center gap-2 text-4xl font-bold text-primary mb-3">
-                <Sparkles className="h-8 w-8" />
-                <span>{userProgress.totalXP} XP</span>
-                <Sparkles className="h-8 w-8" />
-              </div>
-              <div className="text-sm text-slate-400 space-y-1">
-                <div className="flex justify-between">
-                  <span>Tasks Completed:</span>
-                  <span className="text-primary font-semibold">
-                    {userProgress.completedTasks.length} ×{" "}
-                    {room.tasks?.[0]?.xp || 100} ={" "}
-                    {userProgress.completedTasks.length *
-                      (room.tasks?.[0]?.xp || 100)}{" "}
-                    XP
-                  </span>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-4">
+          <div className="max-w-md w-full text-center space-y-8 rdp-fade-in">
+             <div className="relative inline-block">
+                <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+                   <Award size={48} className="text-primary"/>
                 </div>
-                {quizResults && (
-                  <div className="flex justify-between">
-                    <span>Quiz Bonus:</span>
-                    <span className="text-accent font-semibold">
-                      +{quizResults.earnedPoints} XP
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full -z-10 animate-pulse"/>
+             </div>
+             
+             <div className="space-y-2">
+                <h1 className="text-4xl font-black text-white italic tracking-tighter">MISSION COMPLETE</h1>
+                <p className="text-slate-400">System breach detected... Data harvested successfully.</p>
+             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate("/rooms")}
-                className="flex-1 btn-ghost py-3"
-              >
-                Back to Rooms
-              </button>
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="flex-1 btn-primary py-3"
-              >
-                Dashboard
-              </button>
-            </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                   <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">XP EARNED</span>
+                   <span className="text-2xl font-black text-primary">+{userProgress.totalXP}</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                   <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">SCORE</span>
+                   <span className="text-2xl font-black text-white">{quizResults?.percentage || 100}%</span>
+                </div>
+             </div>
+
+             <div className="flex gap-4">
+                <button onClick={() => navigate("/rooms")} className="flex-1 rdp-back-btn justify-center py-4 bg-transparent border-slate-700">Back to Rooms</button>
+                <button onClick={() => navigate("/dashboard")} className="flex-1 rdp-main-btn py-4">Dashboard</button>
+             </div>
           </div>
         </div>
       )}

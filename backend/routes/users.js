@@ -11,6 +11,9 @@ const asyncHandler = require('../middleware/asyncHandler');
 const { attachUser } = require('../middleware/userMiddleware');
 const { ApiError } = require('../middleware/errorHandler');
 const { HTTP_STATUS, MESSAGES } = require('../config/constants');
+const BadgeHelper = require('../utils/badgeHelper');
+const RealtimeHelper = require('../utils/realtimeHelper');
+const Lab = require('../models/Lab');
 
 const router = express.Router();
 
@@ -66,7 +69,7 @@ router.get('/leaderboard', async (req, res) => {
     }
 
     const users = await User.find(dateFilter)
-      .select('name points level completedLabs completedRooms isPremium')
+      .select('name points level completedLabs completedRooms isPremium badges')
       .sort({ points: -1, completedRooms: -1, completedLabs: -1 })
       .skip(skip)
       .limit(parsedLimit);
@@ -216,6 +219,9 @@ router.get('/stats', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const WeeklyStats = require('../models/WeeklyStats');
+    const weekly = await WeeklyStats.getCurrentWeekStats(user._id);
+
     const rank = await user.calculateRank();
     const level = user.calculateLevel();
     const pointsToNextLevel = user.getPointsToNextLevel();
@@ -233,6 +239,13 @@ router.get('/stats', auth, async (req, res) => {
         isPremium: user.isPremium,
         currentStreak: user.currentStreak,
         longestStreak: user.longestStreak
+      },
+      weeklyStats: {
+        labsCompleted: weekly.labsCompleted || 0,
+        roomsCompleted: weekly.roomsCompleted || 0,
+        pointsEarned: weekly.pointsEarned || 0,
+        timeSpent: `${Math.round(weekly.timeSpent / 60)}h`,
+        rankChange: (weekly.startRank || rank) - rank
       }
     });
   } catch (error) {
@@ -319,8 +332,57 @@ router.post('/complete-lab', auth, [
 
     await user.save();
 
+    // Check and award badges for lab completion
+    const context = {
+        type: 'lab',
+        itemId: labId,
+        points: score,
+        isPerfectScore: score >= 100 // adjust as needed
+    };
+    
+    // Update Skill Matrix
+    const lab = await Lab.findById(labId);
+    if (lab) {
+        user.updateSkill(lab.category, score);
+        await user.save();
+    }
+
+    const newBadges = await BadgeHelper.checkAndAwardBadges(user._id, context);
+    if (newBadges.length > 0 && global.io) {
+        newBadges.forEach(badge => {
+            global.io.to(`user:${user._id}`).emit('badge:earned', badge);
+        });
+    }
+
+    // Recalculate and broadcast everything via RealtimeHelper
+    if (global.io) {
+      await RealtimeHelper.broadcastUserUpdate(user._id, global.io);
+    }
+
+    // RECORD WEEKLY ACTIVITY
+    const WeeklyStats = require('../models/WeeklyStats');
+    await WeeklyStats.recordActivity(user._id, 'lab', score, true);
+
+    // PREPARE UPDATED USER STATS
+    const rank = await user.calculateRank();
+    const userStats = {
+      name: user.name,
+      points: user.points,
+      totalXP: user.points,
+      level: user.level,
+      rank: rank,
+      currentStreak: user.currentStreak,
+      streak: user.currentStreak,
+      longestStreak: user.longestStreak,
+      completedRooms: user.completedRooms,
+      completedLabs: user.completedLabs,
+      isPremium: user.isPremium,
+      pointsToNextLevel: user.getPointsToNextLevel()
+    };
+
     res.json({
       message: 'Lab completed successfully',
+      userStats,
       user: {
         id: user._id,
         points: user.points,

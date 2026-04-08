@@ -1,288 +1,180 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { Shield, Eye, EyeOff, AlertCircle, CheckCircle2, Loader2, Check, ArrowRight } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Shield, Eye, EyeOff, ArrowRight, Check, Loader2, Lock, Flame, Trophy, Zap
+} from "lucide-react";
 import { useApp } from "../../contexts/app-context";
-import { ModernButton } from "../../components/ui-components";
-import { apiCall } from "../../config/api";
 import TwoFactorAuth from "../../components/two-factor/TwoFactorAuth";
 import { GoogleLogin } from "@react-oauth/google";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const {
-    login,
-    loginWithGoogle,
-    verify2FA,
-    isAuthenticated,
-    user,
-    loading: authLoading,
-  } = useApp();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  const { login, loginWithGoogle, verify2FA, isAuthenticated, user, loading: authLoading } = useApp();
+
+  const [email, setEmail]               = useState("");
+  const [password, setPassword]         = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [success, setSuccess]           = useState(false);
+  const [error, setError]               = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [twoFactorData, setTwoFactorData] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
 
-  const redirectTo = searchParams.get("redirect") || "/dashboard";
   const isTimeout = searchParams.get("timeout") === "true";
 
-  const handleGoogleSuccess = useCallback(
-    async (credentialResponse) => {
-      setError("");
-      const result = await loginWithGoogle(credentialResponse);
-      if (!result.success) {
-        setError(result.message || "Google authentication failed");
-      }
-    },
-    [loginWithGoogle]
-  );
+  const handleGoogleSuccess = useCallback(async (cred) => {
+    setError("");
+    const result = await loginWithGoogle(cred);
+    if (!result.success) setError(result.message || "Google authentication failed");
+  }, [loginWithGoogle]);
 
   const handleGoogleError = useCallback(() => {
     setError("Google authentication failed. Please try again.");
   }, []);
 
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      setLoading(true);
-      setError("");
-
-      const deviceInfo = {
-        userAgent: navigator.userAgent,
-        ipAddress: "client-ip", // This would be set by backend
-        deviceName: navigator.platform,
-        location: "Unknown",
-      };
-
-      const result = await login(email, password, deviceInfo);
-
-      if (result.success) {
-        if (result.requiresTwoFactor) {
-          // Show 2FA screen
-          setTwoFactorData({
-            email: result.email,
-            userId: result.userId,
-          });
-          setShowTwoFactor(true);
-        } else {
-          // Complete login
-          setSuccess(true);
-          // Always navigate to dashboard
-          navigate("/dashboard", { replace: true });
-        }
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const deviceInfo = { userAgent: navigator.userAgent, ipAddress: "client-ip", deviceName: navigator.platform, location: "Unknown" };
+    const result = await login(email, password, deviceInfo);
+    if (result.success) {
+      if (result.requiresTwoFactor) {
+        setTwoFactorData({ email: result.email, userId: result.userId });
+        setShowTwoFactor(true);
       } else {
-        setError(result.message || "Invalid credentials. Please try again.");
+        setSuccess(true);
+        navigate("/dashboard", { replace: true });
       }
-      setLoading(false);
-    },
-    [email, password, login, navigate, redirectTo]
+    } else {
+      setError(result.message || "Invalid credentials. Please try again.");
+    }
+    setLoading(false);
+  }, [email, password, login, navigate]);
+
+  const handle2FAVerify = useCallback(async (userId, code) => {
+    try {
+      const response = await verify2FA(userId, code);
+      if (response.success) { setSuccess(true); setShowTwoFactor(false); window.location.href = "/dashboard"; }
+      return response;
+    } catch (err) { return { success: false, message: err.message || "Verification failed" }; }
+  }, [verify2FA]);
+
+  const handle2FACancel = useCallback(() => { setShowTwoFactor(false); setTwoFactorData(null); }, []);
+
+  if (authLoading) return (
+    <div className="auth2-bg"><div className="auth2-loader"><Loader2 className="auth2-spin-icon" /><p>Initializing secure session...</p></div></div>
   );
-
-  const handle2FAVerify = useCallback(
-    async (userId, code) => {
-      try {
-        console.log("Starting 2FA verification in Login page...");
-        const response = await verify2FA(userId, code);
-        console.log("2FA Verification response:", response);
-
-        if (response.success) {
-          console.log("Verification successful, preparing navigation...");
-          setSuccess(true);
-          setShowTwoFactor(false);
-
-          // Force immediate navigation to dashboard
-          console.log("Navigating to dashboard...");
-          window.location.href = "/dashboard";
-        }
-        return response;
-      } catch (error) {
-        console.error("2FA verification error:", error);
-        return {
-          success: false,
-          message: error.message || "Verification failed",
-        };
-      }
-    },
-    [verify2FA, twoFactorData, navigate, redirectTo]
+  if (showTwoFactor && twoFactorData) return (
+    <TwoFactorAuth email={twoFactorData.email} userId={twoFactorData.userId} onVerify={handle2FAVerify} onCancel={handle2FACancel} />
   );
-
-  const handle2FACancel = useCallback(() => {
-    setShowTwoFactor(false);
-    setTwoFactorData(null);
-  }, []);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-400 mx-auto mb-4" />
-          <p className="text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (showTwoFactor && twoFactorData) {
-    return (
-      <TwoFactorAuth
-        email={twoFactorData.email}
-        userId={twoFactorData.userId}
-        onVerify={handle2FAVerify}
-        onCancel={handle2FACancel}
-      />
-    );
-  }
-
-  if (isAuthenticated && user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Check className="h-12 w-12 text-green-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">
-            Already Logged In
-          </h2>
-          <p className="text-slate-400 mb-4">
-            You are already signed in as {user.name}
-          </p>
-          <Link
-            to={
-              user.role === "admin" ? "/secure-admin-dashboard" : "/dashboard"
-            }
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-          >
-            Go to Dashboard <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (isAuthenticated && user) return (
+    <div className="auth2-bg"><div className="auth2-loader">
+      <Check className="auth2-check-icon" />
+      <h2 style={{ fontFamily: "'Orbitron',sans-serif", color: "#F0F6FC" }}>Already Signed In</h2>
+      <p style={{ color: "#64748B" }}>Logged in as <strong style={{ color: "#00F5FF" }}>{user.name}</strong></p>
+      <Link to={user.role === "admin" ? "/secure-admin-dashboard" : "/dashboard"} className="auth2-already-btn">
+        Go to Dashboard <ArrowRight size={15} />
+      </Link>
+    </div></div>
+  );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
-          <div className="text-center mb-6">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-white mb-1">
-              {isTimeout ? "Session Expired" : "Welcome Back"}
+    <div className="auth2-bg">
+      {/* Background layers */}
+      <div className="auth2-glow auth2-glow--cyan" aria-hidden="true" />
+      <div className="auth2-glow auth2-glow--purple" aria-hidden="true" />
+      <div className="auth2-grid" aria-hidden="true" />
+
+      <div className="auth2-card-wrap">
+        {/* Logo above card */}
+        <Link to="/" className="auth2-logo">
+          <div className="auth2-logo-icon"><Shield size={18} style={{ color: "#00F5FF" }} /></div>
+          <span className="auth2-logo-text">CyberVerse</span>
+        </Link>
+
+        {/* Card */}
+        <div className="auth2-card">
+          {/* Header */}
+          <div className="auth2-card-header">
+            {isTimeout && (
+              <div className="auth2-timeout-badge">⚠ Session Expired</div>
+            )}
+            <h1 className="auth2-card-title">
+              {isTimeout ? "Sign In Again" : "Welcome Back"}
             </h1>
-            <p className="text-gray-300 text-sm">
+            <p className="auth2-card-sub">
               {isTimeout
-                ? "Your session has expired due to inactivity. Please sign in again."
-                : "Sign in to continue your journey"}
+                ? "Your session expired due to inactivity."
+                : "Sign in to access your hacker dashboard"}
             </p>
           </div>
 
-          <div className="mb-4">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              theme="filled_blue"
-              size="large"
-              text="continue_with"
-            />
+          {/* Google */}
+          <div className="auth2-google-wrap">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError}
+              theme="filled_black" size="large" text="continue_with" width="100%" />
           </div>
 
-          <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-slate-800 px-2 text-gray-400">
-                or continue with email
-              </span>
-            </div>
+          {/* Divider */}
+          <div className="auth2-divider">
+            <span className="auth2-divider-line" />
+            <span className="auth2-divider-text">or continue with email</span>
+            <span className="auth2-divider-line" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full h-11 px-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="auth2-form">
+            <div className="auth2-field">
+              <label className="auth2-label">Email Address</label>
+              <input id="login-email" type="email" placeholder="hacker@cyberverse.io"
+                value={email} onChange={e => setEmail(e.target.value)}
+                required autoComplete="email" className="auth2-input" />
             </div>
 
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full h-11 px-3 pr-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+            <div className="auth2-field">
+              <div className="auth2-label-row">
+                <label className="auth2-label">Password</label>
+                <button type="button" onClick={() => navigate("/forgot-password")} className="auth2-forgot">
+                  Forgot password?
+                </button>
+              </div>
+              <div className="auth2-input-wrap">
+                <input id="login-password" type={showPassword ? "text" : "password"}
+                  placeholder="••••••••" value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required autoComplete="current-password" className="auth2-input" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="auth2-eye" aria-label="Toggle password">
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
             </div>
 
-            <div className="text-right mb-4">
-              <button
-                type="button"
-                onClick={() => navigate("/forgot-password")}
-                className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                Forgot Password?
-              </button>
-            </div>
+            {error && <div className="auth2-error"><span>⚠</span>{error}</div>}
 
-            {error && (
-              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-2">
-                {error}
-              </p>
-            )}
-
-            <ModernButton
-              variant="primary"
-              size="sm"
-              type="submit"
-              disabled={loading || success}
-              className="w-full h-11"
-            >
-              {success ? (
-                <Check className="h-4 w-4" />
-              ) : loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </ModernButton>
+            <button type="submit" id="login-submit" disabled={loading || success} className="auth2-submit">
+              {success ? <><Check size={16} /> Authenticated!</>
+                : loading ? <><Loader2 size={16} className="auth2-btn-spin" /> Verifying...</>
+                : <>Sign In <ArrowRight size={16} /></>}
+            </button>
           </form>
 
-          <div className="mt-4 text-center text-sm">
-            <span className="text-gray-400">Don't have an account? </span>
-            <button
-              type="button"
-              onClick={() => navigate("/signup")}
-              className="font-medium text-blue-400 hover:text-blue-300"
-            >
-              Sign up
+          {/* Footer */}
+          <p className="auth2-switch">
+            Don't have an account?{" "}
+            <button type="button" onClick={() => navigate("/signup")} className="auth2-switch-link">
+              Create one free →
             </button>
-          </div>
+          </p>
+        </div>
+
+        {/* Trust badges */}
+        <div className="auth2-badges">
+          <span className="auth2-badge"><Trophy size={11} style={{ color: "#FACC15" }} /> 23K+ Hackers</span>
+          <span className="auth2-badge"><Flame size={11} style={{ color: "#00F5FF" }} /> 86 Live Labs</span>
+          <span className="auth2-badge"><Lock size={11} style={{ color: "#39FF14" }} /> End-to-end encrypted</span>
         </div>
       </div>
     </div>

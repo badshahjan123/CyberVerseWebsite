@@ -1,28 +1,35 @@
 import { useState, useEffect } from 'react'
 import { useRealtime } from '../contexts/realtime-context'
-import { Wifi, WifiOff, RefreshCw } from 'lucide-react'
+import { useApp } from '../contexts/app-context'
+import { RefreshCw } from 'lucide-react'
 
 export const ConnectionStatus = () => {
     const { connected } = useRealtime()
+    const { isAuthenticated } = useApp()
     const [showStatus, setShowStatus] = useState(false)
 
     useEffect(() => {
+        // Only bother tracking connection state for authenticated users
+        if (!isAuthenticated) {
+            setShowStatus(false)
+            return
+        }
+
         let timeout
         if (!connected) {
-            // Wait 2 seconds before showing the disconnected message
-            // This prevents flickering during page loads or quick reconnections
+            // Wait 3 seconds before showing — avoids flicker on initial load
             timeout = setTimeout(() => {
                 setShowStatus(true)
-            }, 2000)
+            }, 3000)
         } else {
             setShowStatus(false)
         }
 
         return () => clearTimeout(timeout)
-    }, [connected])
+    }, [connected, isAuthenticated])
 
-    // Don't show anything if connected or within grace period
-    if (connected || !showStatus) return null
+    // Only show for authenticated users when truly disconnected
+    if (!isAuthenticated || connected || !showStatus) return null
 
     return (
         <div className="fixed bottom-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-2">
@@ -35,6 +42,7 @@ export const ConnectionStatus = () => {
         </div>
     )
 }
+
 
 // Optional: Detailed version with connection info for debugging
 export const ConnectionStatusDetailed = () => {

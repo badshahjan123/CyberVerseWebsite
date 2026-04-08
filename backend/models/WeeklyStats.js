@@ -60,10 +60,34 @@ weeklyStatsSchema.statics.getCurrentWeekStats = async function(userId) {
       userId,
       weekStartDate: startOfWeek,
       weekEndDate: endOfWeek,
+      startRank: 0,
+      currentRank: 0
     });
   }
 
   return weeklyStats;
+};
+
+// Update stats for an activity
+weeklyStatsSchema.statics.recordActivity = async function(userId, activityType, points, isNewCompletion = true) {
+  const stats = await this.getCurrentWeekStats(userId);
+  
+  if (points) {
+    stats.pointsEarned += points;
+  }
+  
+  if (isNewCompletion) {
+    if (activityType === 'room') {
+      stats.roomsCompleted += 1;
+    } else if (activityType === 'lab') {
+      stats.labsCompleted += 1;
+    }
+  }
+  
+  // Update rank if necessary (can be called separately if rank calculation is expensive)
+  // For now, we just save the points
+  await stats.save();
+  return stats;
 };
 
 module.exports = mongoose.model('WeeklyStats', weeklyStatsSchema);

@@ -339,29 +339,36 @@ router.post('/:labId/complete', auth, async (req, res) => {
 
         await lab.save();
 
+        // RECORD WEEKLY ACTIVITY
+        const WeeklyStats = require('../models/WeeklyStats');
+        await WeeklyStats.recordActivity(user._id, 'lab', lab.points, true);
+
+        // PREPARE UPDATED USER STATS
+        const rank = await user.calculateRank();
+        const userStats = {
+          name: user.name,
+          points: user.points,
+          totalXP: user.points,
+          level: user.level,
+          rank: rank,
+          currentStreak: user.currentStreak,
+          streak: user.currentStreak,
+          completedRooms: user.completedRooms,
+          completedLabs: user.completedLabs,
+          isPremium: user.isPremium,
+          pointsToNextLevel: user.getPointsToNextLevel()
+        };
+
         console.log(`✅ User ${user.name} completed lab: ${lab.title} (+${lab.points} points)`);
 
         // Emit real-time updates via Socket.IO (if io is available)
         const io = req.app.get('io');
         if (io) {
-            // Fetch updated leaderboard
-            const leaderboard = await User.find()
-                .select('name email points level avatar completedLabs completedRooms')
-                .sort({ points: -1 })
-                .limit(50);
-
-            // Emit leaderboard update
-            io.emit('leaderboard-update', leaderboard);
-
-            // Emit user stats update to the specific user
-            io.to(req.user.id).emit('stats-update', {
-                points: user.points,
-                level: user.level,
-                completedLabs: user.completedLabs,
-                completedRooms: user.completedRooms,
-                currentStreak: user.currentStreak,
-                longestStreak: user.longestStreak
-            });
+            // Broadest possible broadcast for leaderboard
+            io.emit('leaderboard:update'); 
+            
+            // Targeted update for the specific user
+            io.to(`user:${user._id.toString()}`).emit('user:stats:update', userStats);
 
             console.log('📡 Real-time updates sent to clients');
         }
@@ -369,6 +376,7 @@ router.post('/:labId/complete', auth, async (req, res) => {
         res.json({
             success: true,
             message: `Lab completed successfully! +${lab.points} points`,
+            userStats,
             data: {
                 labId: lab._id,
                 labTitle: lab.title,

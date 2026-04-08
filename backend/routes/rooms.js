@@ -1,6 +1,7 @@
 const express = require('express');
 const Room = require('../models/Room');
 const User = require('../models/User');
+const WeeklyStats = require('../models/WeeklyStats');
 const { auth } = require('../middleware/auth');
 const router = express.Router();
 
@@ -186,15 +187,44 @@ router.post('/:slug/exercises/:exerciseId/submit', auth, async (req, res) => {
       const user = await User.findById(req.user.id);
       if (user) {
         user.points = (user.points || 0) + exercise.points;
+        
+        // Update streak on any point-earning activity
+        user.updateStreak('room', req.params.slug);
+        
         await user.save();
+
+        // Calculate rank for real-time update
+        const rank = await user.calculateRank();
+        const userStats = {
+          name: user.name,
+          points: user.points,
+          totalXP: user.points,
+          level: user.level,
+          rank: rank,
+          currentStreak: user.currentStreak,
+          streak: user.currentStreak,
+          longestStreak: user.longestStreak,
+          completedRooms: user.completedRooms,
+          completedLabs: user.completedLabs,
+          isPremium: user.isPremium,
+          pointsToNextLevel: user.getPointsToNextLevel()
+        };
+
+        return res.json({
+          success: true,
+          correct: isCorrect,
+          points: exercise.points,
+          message: 'Correct answer!',
+          userStats
+        });
       }
     }
 
     res.json({
       success: true,
       correct: isCorrect,
-      points: isCorrect ? exercise.points : 0,
-      message: isCorrect ? 'Correct answer!' : 'Incorrect answer. Try again.'
+      points: 0,
+      message: 'Incorrect answer. Try again.'
     });
   } catch (error) {
     res.status(500).json({
@@ -377,17 +407,41 @@ router.post('/:slug/quizzes/:quizId/submit', auth, async (req, res) => {
         console.log(`⚠️ Quiz passed but not all tasks complete (${completedTasks}/${totalTasks})`);
       }
 
+
       await user.save();
+
+      // RECORD WEEKLY ACTIVITY
+      await WeeklyStats.recordActivity(user._id, 'room', earnedPoints, passed && wasNeverCompleted);
+
+      // PREPARE UPDATED USER STATS FOR FRONTEND
+      const rank = await user.calculateRank();
+      const userStats = {
+        name: user.name,
+        points: user.points,
+        totalXP: user.points,
+        level: user.level,
+        rank: rank,
+        currentStreak: user.currentStreak,
+        streak: user.currentStreak,
+        longestStreak: user.longestStreak,
+        completedRooms: user.completedRooms,
+        completedLabs: user.completedLabs,
+        isPremium: user.isPremium,
+        pointsToNextLevel: user.getPointsToNextLevel()
+      };
+
+      // RETURN WITH USER STATS
+      return res.json({
+        success: true,
+        passed,
+        percentage: Math.round(percentage),
+        earnedPoints,
+        totalPoints,
+        results,
+        userStats
+      });
     }
 
-    res.json({
-      success: true,
-      passed,
-      percentage: Math.round(percentage),
-      earnedPoints,
-      totalPoints,
-      results
-    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -438,9 +492,28 @@ router.post('/:slug/complete', auth, async (req, res) => {
 
     await room.save();
 
+    // GET UPDATED USER STATS
+    const user = await User.findById(req.user.id);
+    const rank = await user.calculateRank();
+    const userStats = {
+      name: user.name,
+      points: user.points,
+      totalXP: user.points,
+      level: user.level,
+      rank: rank,
+      currentStreak: user.currentStreak,
+      streak: user.currentStreak,
+      longestStreak: user.longestStreak,
+      completedRooms: user.completedRooms,
+      completedLabs: user.completedLabs,
+      isPremium: user.isPremium,
+      pointsToNextLevel: user.getPointsToNextLevel()
+    };
+
     res.json({
       success: true,
       message: isReplay ? 'Room replayed successfully!' : 'Room completed successfully!',
+      userStats,
       data: {
         completedAt: new Date(),
         score: finalScore || 0,

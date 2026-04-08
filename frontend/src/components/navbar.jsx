@@ -1,26 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { Award, Crown, Menu, X, Search, Shield, Flame, Zap, Trophy, LogOut, Swords, Star, Target } from 'lucide-react';
-import NotificationDropdown from './NotificationDropdown';
-import { useApp } from '../contexts/app-context';
-import { API_BASE_URL } from '../config/api';
-import SearchModal from './SearchModal';
-import ProfileDropdown from './ProfileDropdown';
+import React, { useState, useEffect, useRef } from "react";
+import { NavLink, Link } from "react-router-dom";
+import {
+  Award,
+  Crown,
+  Menu,
+  X,
+  Search,
+  Shield,
+  Flame,
+  Zap,
+  Trophy,
+  LogOut,
+  Swords,
+  Star,
+  Target,
+} from "lucide-react";
+import NotificationDropdown from "./NotificationDropdown";
+import { useApp } from "../contexts/app-context";
+import { useRealtime } from "../contexts/realtime-context";
+import { API_BASE_URL } from "../config/api";
+import SearchModal from "./SearchModal";
+import ProfileDropdown from "./ProfileDropdown";
+
+// --- Sub-components for Gamified Animations ---
+const XPDisplay = ({ value }) => {
+  const [displayValue, setDisplayValue] = useState(value);
+  const prevValueRef = useRef(value);
+
+  useEffect(() => {
+    if (value === prevValueRef.current) return;
+    
+    // Simple count-up animation over 1 sec
+    const start = prevValueRef.current;
+    const end = value;
+    const duration = 1000;
+    const startTime = Date.now();
+
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      const current = Math.floor(start + (end - start) * progress);
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        prevValueRef.current = value;
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [value]);
+
+  return (
+    <div className="cv-stat-chip" title="Total XP">
+      <Zap size={12} className={displayValue !== value ? "text-yellow-400 animate-pulse" : "text-yellow-400"} />
+      <span className="tabular-nums">
+        {displayValue.toLocaleString()} 
+        <span className="text-[10px] text-slate-500 font-bold ml-0.5">XP</span>
+      </span>
+    </div>
+  );
+};
+
+const LevelDisplay = ({ level }) => {
+  const [pulse, setPulse] = useState(false);
+  const prevLevelRef = useRef(level);
+
+  useEffect(() => {
+    if (level > prevLevelRef.current) {
+      setPulse(true);
+      const timer = setTimeout(() => setPulse(false), 2000);
+      prevLevelRef.current = level;
+      return () => clearTimeout(timer);
+    }
+  }, [level]);
+
+  return (
+    <div className={`cv-stat-chip ${pulse ? "cv-stat-level-up" : ""}`} title="Level">
+      <Trophy size={12} className={pulse ? "text-primary animate-bounce" : "text-primary"} />
+      <span className={pulse ? "text-white scale-110 transition-transform" : ""}>
+        LVL {level}
+      </span>
+    </div>
+  );
+};
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, logout } = useApp();
+  const { userStats } = useRealtime();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [streak, setStreak] = useState(0); // User's current streak
 
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Close mobile menu on resize
@@ -30,144 +111,120 @@ const Navbar = () => {
         setIsOpen(false);
       }
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Global keyboard shortcut for search (Ctrl+K or Cmd+K)
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+      if ((event.ctrlKey || event.metaKey) && event.key === "k") {
         event.preventDefault();
         setIsSearchOpen(true);
       }
     };
 
     if (isAuthenticated) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
     }
   }, [isAuthenticated]);
-
-  // Fetch user streak
-  useEffect(() => {
-    const fetchStreak = async () => {
-      if (isAuthenticated && user) {
-        try {
-          const token = localStorage.getItem('token')
-          const response = await fetch('http://localhost:5000/api/user/streak', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-          if (response.ok) {
-            const data = await response.json()
-            setStreak(data.currentStreak || 0)
-          }
-        } catch (error) {
-          console.error('Failed to fetch streak:', error)
-        }
-      }
-    }
-    fetchStreak()
-  }, [isAuthenticated, user])
 
   const navLinks = [
     { to: "/dashboard", text: "Dashboard" },
     { to: "/labs", text: "Labs" },
     { to: "/rooms", text: "Rooms" },
     { to: "/leaderboard", text: "Leaderboard" },
-    { to: "/premium", text: "Premium" },
+    { to: "/certificates", text: "Certificates" },
   ];
+
+  const ud = {
+    xp: userStats?.totalXP || user?.points || 0,
+    level: userStats?.level || user?.level || 1,
+    streak: userStats?.streak || user?.currentStreak || 0,
+    rank: userStats?.rank || user?.rank || 999,
+    isPremium: userStats?.isPremium ?? user?.isPremium ?? false
+  };
 
   return (
     <>
-      <nav className={`navbar sticky top-0 z-50 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${scrolled ? 'shadow-lg' : ''}`}>
-        <div className="container mx-auto flex items-center justify-between h-16">
-          {/* Logo with Icon */}
+      <nav
+        className={`cv-navbar sticky top-0 z-50 transition-all duration-300 ${scrolled ? "cv-navbar-scrolled" : ""}`}
+      >
+        <div className="container mx-auto px-4 flex items-center justify-between h-16">
+          {/* Left: Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 group-hover:border-primary/50 transition-all">
-              <Shield className="w-5 h-5 text-primary" />
+            <div className="cv-logo-shield">
+              <Shield size={18} className="text-primary" />
             </div>
-            <span className="text-xl font-bold gradient-text hidden sm:inline">CyberVerse</span>
+            <span className="cv-logo-text">
+              <span className="text-primary">C</span>YBERVERSE
+            </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          {/* Center: Navigation Links */}
+          <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${isActive
-                    ? 'text-primary bg-primary/10 border border-primary/20'
-                    : 'text-muted hover:text-text hover:bg-white/5'
-                  }`
+                  `cv-nav-link ${isActive ? "cv-nav-link-active" : ""}`
                 }
               >
                 {link.text}
               </NavLink>
             ))}
-            {isAuthenticated && (
-              <NavLink
-                to="/certificates"
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${isActive
-                    ? 'text-primary bg-primary/10 border border-primary/20'
-                    : 'text-muted hover:text-text hover:bg-white/5'
-                  }`
-                }
-              >
-                <Award size={16} /> Certificates
-              </NavLink>
-            )}
           </div>
 
-          {/* Auth Buttons & Profile */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* Right Side: Status & Profile */}
+          <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <>
                 <button
                   onClick={() => setIsSearchOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all border border-white/10"
+                  className="cv-nav-search-btn"
                   title="Search (Ctrl+K)"
                 >
-                  <Search size={16} />
-                  <span className="hidden lg:inline text-sm">Search</span>
-                  <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-xs bg-white/10 rounded border border-white/20">⌘K</kbd>
+                  <Search size={14} />
                 </button>
 
                 <NotificationDropdown />
 
-                {/* Streak Counter */}
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
-                  <Flame size={18} className="text-green-500" />
-                  <span className="text-sm font-bold text-text">{streak}</span>
+                {/* Gamified Status Cluster */}
+                <div className="cv-stats-cluster">
+                  <div className="cv-stat-chip" title="Streak">
+                    <Flame size={12} className={ud.streak > 0 ? "text-orange-500 animate-pulse" : "text-slate-500"} />
+                    <span>{ud.streak}</span>
+                  </div>
+                  <div className="cv-stat-divider" />
+                  
+                  {/* XP Chip with Animated Counter */}
+                  <XPDisplay value={ud.xp} />
+                  
+                  <div className="cv-stat-divider" />
+                  
+                  {/* Level Chip with Pulse Effect */}
+                  <LevelDisplay level={ud.level} />
                 </div>
 
-                {/* Premium Badge or Go Premium Button */}
-                {user?.isPremium ? (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-600/40 rounded-lg shadow-lg shadow-yellow-600/10">
-                    <Crown size={18} className="text-yellow-400" />
-                    <span className="hidden lg:inline font-bold text-yellow-400">Premium</span>
-                  </div>
-                ) : (
-                  <Link
-                    to="/premium"
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-semibold transition-all shadow-lg shadow-green-600/20 hover:shadow-green-600/40"
-                  >
-                    <Crown size={16} />
-                    <span className="hidden lg:inline">Go Premium</span>
-                  </Link>
-                )}
+                {/* Premium Outline Button */}
+                <Link to="/premium" className="cv-premium-outline-btn">
+                  <Crown size={14} className="mr-1.5" />
+                  <span>PREMIUM</span>
+                </Link>
 
                 {/* Profile Dropdown */}
-                <ProfileDropdown user={user} onLogout={logout} />
+                <ProfileDropdown user={{ ...user, ...userStats }} onLogout={logout} />
               </>
             ) : (
               <>
-                <Link to="/login" className="btn-ghost text-sm px-5 py-2 rounded-lg">Log In</Link>
-                <Link to="/signup" className="btn-primary text-sm">Sign Up</Link>
+                <Link to="/login" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">
+                  LOG IN
+                </Link>
+                <Link to="/signup" className="cv-premium-outline-btn px-6 ml-2">
+                  SIGN UP
+                </Link>
               </>
             )}
           </div>
@@ -192,9 +249,10 @@ const Navbar = () => {
                   key={link.to}
                   to={link.to}
                   className={({ isActive }) =>
-                    `px-4 py-3 rounded-lg text-base font-semibold transition-all ${isActive
-                      ? 'text-primary bg-primary/10 border border-primary/20'
-                      : 'text-muted hover:text-text hover:bg-white/5'
+                    `px-4 py-3 rounded-lg text-base font-semibold transition-all ${
+                      isActive
+                        ? "text-primary bg-primary/10 border border-primary/20"
+                        : "text-muted hover:text-text hover:bg-white/5"
                     }`
                   }
                   onClick={() => setIsOpen(false)}
@@ -202,20 +260,6 @@ const Navbar = () => {
                   {link.text}
                 </NavLink>
               ))}
-              {isAuthenticated && (
-                <NavLink
-                  to="/certificates"
-                  className={({ isActive }) =>
-                    `px-4 py-3 rounded-lg text-base font-semibold transition-all flex items-center gap-2 ${isActive
-                      ? 'text-primary bg-primary/10 border border-primary/20'
-                      : 'text-muted hover:text-text hover:bg-white/5'
-                    }`
-                  }
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Award size={18} /> Certificates
-                </NavLink>
-              )}
 
               <div className="border-t border-white/10 my-2"></div>
 
@@ -223,20 +267,28 @@ const Navbar = () => {
                 <>
                   <Link
                     to="/profile"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${user?.isPremium
-                        ? 'bg-gradient-to-r from-yellow-600/10 to-orange-600/10 border border-yellow-600/30 hover:border-yellow-600/50'
-                        : 'bg-white/5 hover:bg-white/10'
-                      }`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                      user?.isPremium
+                        ? "bg-gradient-to-r from-yellow-600/10 to-orange-600/10 border border-yellow-600/30 hover:border-yellow-600/50"
+                        : "bg-white/5 hover:bg-white/10"
+                    }`}
                     onClick={() => setIsOpen(false)}
                   >
                     <div className="relative">
                       <img
-                        src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
+                        src={
+                          user?.avatar
+                            ? user.avatar.startsWith("http")
+                              ? user.avatar
+                              : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`
+                            : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`
+                        }
                         alt="avatar"
-                        className={`w-10 h-10 rounded-full object-cover ${user?.isPremium
-                            ? 'border-2 border-yellow-400'
-                            : 'border-2 border-primary/50'
-                          }`}
+                        className={`w-10 h-10 rounded-full object-cover ${
+                          user?.isPremium
+                            ? "border-2 border-yellow-400"
+                            : "border-2 border-primary/50"
+                        }`}
                         key={`${user?.avatar}-${user?.avatarTimestamp}`}
                       />
                       {user?.isPremium && (
@@ -247,20 +299,30 @@ const Navbar = () => {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-text">{user?.name}</span>
-                        {user?.isPremium && (
+                        <span className="font-semibold text-text">
+                          {user?.name}
+                        </span>
+                        {ud.isPremium && (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-400/20 border border-yellow-400/30 rounded-full">
                             <Crown size={12} className="text-yellow-400" />
-                            <span className="text-xs font-bold text-yellow-400">PRO</span>
+                            <span className="text-xs font-bold text-yellow-400">
+                              PRO
+                            </span>
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted">
                         <span className="flex items-center gap-1">
-                          <Zap size={12} className="text-warning" /> Lvl {user?.level || 1}
+                          <Zap size={12} className="text-warning" /> Lvl{" "}
+                          {ud.level}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Trophy size={12} className="text-primary" /> {user?.points || 0} pts
+                           <Flame size={12} className="text-orange-500" />{" "}
+                           {ud.streak}d
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Trophy size={12} className="text-primary" />{" "}
+                          {(ud.xp || 0).toLocaleString()} pts
                         </span>
                       </div>
                     </div>
@@ -279,7 +341,10 @@ const Navbar = () => {
                   )}
 
                   <button
-                    onClick={() => { logout(); setIsOpen(false); }}
+                    onClick={() => {
+                      logout();
+                      setIsOpen(false);
+                    }}
                     className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-danger hover:bg-danger/10 font-semibold transition-all"
                   >
                     <LogOut size={18} />
@@ -288,15 +353,30 @@ const Navbar = () => {
                 </>
               ) : (
                 <div className="flex flex-col space-y-2 pt-2">
-                  <Link to="/login" className="btn-ghost text-center py-3 rounded-lg" onClick={() => setIsOpen(false)}>Log In</Link>
-                  <Link to="/signup" className="btn-primary text-center py-3" onClick={() => setIsOpen(false)}>Sign Up</Link>
+                  <Link
+                    to="/login"
+                    className="btn-ghost text-center py-3 rounded-lg"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Log In
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="btn-primary text-center py-3"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
                 </div>
               )}
             </div>
           </div>
         )}
       </nav>
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </>
   );
 };

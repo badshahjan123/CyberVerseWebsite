@@ -15,46 +15,17 @@ import {
   AlertCircle,
   Smartphone,
   Building2,
-  Banknote
+  Banknote,
+  Flame
 } from "lucide-react"
-
-const PaymentMethodCard = memo(({ method, selected, onSelect }) => {
-  const Icon = method.icon
-  return (
-    <div
-      onClick={() => onSelect(method.id)}
-      className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 ${selected
-        ? "bg-primary-500/10 border-primary-500"
-        : "bg-slate-800/30 border-slate-700/50 hover:border-primary-500/30"
-        }`}
-    >
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${selected ? 'bg-primary-500/20' : 'bg-slate-700/50'}`}>
-          <Icon className={`h-6 w-6 ${selected ? 'text-primary-400' : 'text-slate-400'}`} />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-slate-100">{method.name}</h3>
-          <p className="text-sm text-slate-400">{method.description}</p>
-        </div>
-        {selected && (
-          <div className="h-6 w-6 rounded-full bg-primary-500 flex items-center justify-center">
-            <Check className="h-4 w-4 text-white" />
-          </div>
-        )}
-      </div>
-    </div>
-  )
-})
-
-PaymentMethodCard.displayName = 'PaymentMethodCard'
 
 const CheckoutPage = memo(() => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, updateUserProfile } = useApp()
   const selectedPlan = location.state?.plan || {
-    name: "Pro",
-    price: "$19",
+    name: "Elite Infiltrator",
+    price: "$10",
     period: "month"
   }
 
@@ -66,71 +37,28 @@ const CheckoutPage = memo(() => {
     cardName: "",
     expiryDate: "",
     cvv: "",
-    email: "",
-    country: "",
+    email: user?.email || "",
+    country: "PK",
     phoneNumber: "",
     accountNumber: "",
     selectedBank: ""
   })
 
   const paymentMethods = [
-    {
-      id: "card",
-      name: "Credit/Debit Card",
-      description: "Visa, Mastercard, Amex",
-      icon: CreditCard
-    },
-    {
-      id: "jazzcash",
-      name: "JazzCash",
-      description: "Mobile wallet payment",
-      icon: Smartphone
-    },
-    {
-      id: "easypaisa",
-      name: "EasyPaisa",
-      description: "Mobile wallet payment",
-      icon: Smartphone
-    },
-    {
-      id: "sadapay",
-      name: "SadaPay",
-      description: "Digital wallet",
-      icon: Wallet
-    },
-    {
-      id: "nayapay",
-      name: "NayaPay",
-      description: "Digital wallet",
-      icon: Wallet
-    },
-    {
-      id: "bank",
-      name: "Bank Transfer",
-      description: "Pakistani banks",
-      icon: Building2
-    }
+    { id: "card", name: "Credit/Debit", icon: CreditCard },
+    { id: "jazzcash", name: "JazzCash", icon: Smartphone },
+    { id: "easypaisa", name: "EasyPaisa", icon: Smartphone },
+    { id: "sadapay", name: "SadaPay", icon: Wallet },
+    { id: "nayapay", name: "NayaPay", icon: Wallet },
+    { id: "bank", name: "Online Bank", icon: Building2 }
   ]
 
   const pakistaniBanks = [
-    { id: "hbl", name: "Habib Bank Limited (HBL)" },
-    { id: "ubl", name: "United Bank Limited (UBL)" },
-    { id: "mcb", name: "MCB Bank Limited" },
-    { id: "abl", name: "Allied Bank Limited (ABL)" },
-    { id: "nbl", name: "National Bank of Pakistan (NBP)" },
-    { id: "bafl", name: "Bank Alfalah Limited" },
-    { id: "meezanbank", name: "Meezan Bank Limited" },
-    { id: "faysal", name: "Faysal Bank Limited" },
-    { id: "askari", name: "Askari Bank Limited" },
-    { id: "soneri", name: "Soneri Bank Limited" },
-    { id: "standard", name: "Standard Chartered Bank" },
-    { id: "js", name: "JS Bank Limited" },
-    { id: "samba", name: "Samba Bank Limited" },
-    { id: "silk", name: "Silk Bank Limited" },
-    { id: "summit", name: "Summit Bank Limited" },
-    { id: "dubai", name: "Dubai Islamic Bank" },
-    { id: "albaraka", name: "Al Baraka Bank" },
-    { id: "bankislami", name: "BankIslami Pakistan Limited" }
+    { id: "hbl", name: "HBL" },
+    { id: "ubl", name: "UBL" },
+    { id: "meezan", name: "Meezan Bank" },
+    { id: "alfalah", name: "Bank Alfalah" },
+    { id: "mcb", name: "MCB" }
   ]
 
   const handleInputChange = (e) => {
@@ -144,11 +72,9 @@ const CheckoutPage = memo(() => {
     setError("")
 
     try {
-      // Generate transaction ID
-      const transactionId = `TXN${Date.now()}`
+      const transactionId = `CV-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
       const paymentMethodName = paymentMethods.find(m => m.id === selectedPaymentMethod)?.name
 
-      // Call backend API to upgrade user to premium
       const response = await apiCall('/payments/upgrade-to-premium', {
         method: 'POST',
         body: JSON.stringify({
@@ -159,548 +85,267 @@ const CheckoutPage = memo(() => {
         })
       })
 
-      // Update user context with premium status
       if (response.user) {
         updateUserProfile(response.user)
       }
 
-      // Navigate to success page
       navigate('/payment-success', {
         state: {
           plan: selectedPlan,
-          paymentMethod: { name: paymentMethods.find(m => m.id === selectedPaymentMethod)?.name },
+          paymentMethod: { name: paymentMethodName },
           transactionId,
           date: new Date().toLocaleDateString()
         }
       })
     } catch (err) {
-      console.error('Payment error:', err)
-      setError(err.message || 'Payment failed. Please try again.')
+      setError(err.message || 'Payment Authorization Failed')
       setProcessing(false)
     }
   }
 
-  // Show subscription management for existing premium users
   if (user?.isPremium) {
-    const subscription = user.premiumSubscription || {}
-    const startDate = subscription.startDate
-      ? new Date(subscription.startDate).toLocaleDateString()
-      : 'N/A'
-
-    return (
-      <div className="bg-slate-950 min-h-screen py-12">
-        <div className="container mx-auto px-6 max-w-4xl">
-          {/* Header */}
-          <div className="mb-8">
-            <button onClick={() => navigate('/premium')} className="flex items-center gap-2 text-slate-400 hover:text-primary-400 transition-colors mb-4">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Plans
-            </button>
-            <h1 className="text-4xl font-bold text-white mb-2">Subscription Management</h1>
-            <p className="text-slate-400">Manage your premium subscription</p>
-          </div>
-
-          {/* Active Subscription Card */}
-          <div className="bg-gradient-to-br from-primary-500/10 to-purple-500/10 border-2 border-primary-500/30 rounded-xl p-8 mb-6">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <Shield className="h-8 w-8 text-primary-400" />
-                  <h2 className="text-3xl font-bold text-white">Active Premium Subscription</h2>
-                </div>
-                <p className="text-slate-300">You're currently enjoying all premium benefits</p>
-              </div>
-              <Badge className="bg-green-500/20 text-green-300 border-green-500/50">✓ Active</Badge>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <p className="text-slate-400 text-sm mb-1">Plan</p>
-                <p className="text-white text-xl font-semibold">{subscription.plan || 'Premium'}</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <p className="text-slate-400 text-sm mb-1">Status</p>
-                <p className="text-green-400 text-xl font-semibold">Active</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <p className="text-slate-400 text-sm mb-1">Start Date</p>
-                <p className="text-white text-xl font-semibold">{startDate}</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <p className="text-slate-400 text-sm mb-1">Payment Method</p>
-                <p className="text-white text-xl font-semibold">{subscription.paymentMethod || 'N/A'}</p>
-              </div>
-            </div>
-
-            <div className="bg-primary-500/10 border border-primary-500/20 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-primary-400 flex-shrink-0 mt-0.5" />
-              <div><p className="text-slate-200 text-sm">You already have an active premium subscription. You're enjoying all premium features!</p></div>
-            </div>
-          </div>
-
-          <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-8 mb-6">
-            <h3 className="text-2xl font-bold text-white mb-6">Your Premium Benefits</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              {['Unlimited access to all labs', 'Advanced analytics dashboard', 'Priority customer support', 'Certificate generation', 'Exclusive premium labs', 'Ad-free experience', 'Early access to new features', 'Community forum access'].map((benefit, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
-                  <span className="text-slate-300">{benefit}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <ModernButton variant="primary" size="lg" onClick={() => navigate('/dashboard')} className="flex-1">
-              Go to Dashboard
-            </ModernButton>
-            <ModernButton variant="outline" size="lg" onClick={() => navigate('/labs')} className="flex-1">
-              Explore Premium Labs
-            </ModernButton>
-          </div>
-
-          <div className="mt-6 flex items-start gap-3 p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg">
-            <Lock className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-slate-300">
-                Need help? Contact our support team at <span className="text-primary-400">support@cyberverse.com</span> or visit the Settings page to manage your subscription.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    navigate('/dashboard')
+    return null
   }
 
   return (
-    <div className="bg-slate-950 min-h-screen py-12">
-      <div className="container mx-auto px-6 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <button
+    <div className="ch-root">
+      <div className="ch-grid-bg" />
+      <div className="ch-glow" />
+
+      <div className="ch-container">
+        {/* HEADER */}
+        <header className="ch-header rcp-fade-in">
+          <button 
             onClick={() => navigate('/premium')}
-            className="flex items-center gap-2 text-slate-400 hover:text-primary-400 transition-colors mb-4"
+            className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors mb-8 font-black text-[10px] uppercase tracking-widest"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Plans
+            <ArrowLeft size={16} />
+            Abort Transition
           </button>
-          <h1 className="text-4xl font-bold text-white mb-2">Complete Your Purchase</h1>
-          <p className="text-slate-400">Secure checkout powered by industry-leading encryption</p>
-        </div>
+          <div className="ch-subtitle">Operational Pipeline</div>
+          <h1 className="ch-title">Initialize <span className="text-primary italic">Upgrade</span></h1>
+        </header>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Payment Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Payment Methods */}
-            <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-6">
-              <h2 className="text-2xl font-bold text-slate-100 mb-6">Payment Method</h2>
-              <div className="space-y-4">
-                {paymentMethods.map((method) => (
-                  <PaymentMethodCard
-                    key={method.id}
-                    method={method}
-                    selected={selectedPaymentMethod === method.id}
-                    onSelect={setSelectedPaymentMethod}
-                  />
-                ))}
+        <div className="ch-main-grid rcp-fade-in" style={{ animationDelay: '0.1s' }}>
+          {/* LEFT: PAYMENT CONTROL */}
+          <div className="ch-left-col">
+            <div className="ch-card">
+              <h2 className="ch-section-title">
+                <Shield className="text-primary" size={20} />
+                Access Protocol
+                <span>STEP 01/02</span>
+              </h2>
+
+              <div className="ch-method-grid">
+                {paymentMethods.map((m) => {
+                  const Icon = m.icon
+                  const isActive = selectedPaymentMethod === m.id
+                  return (
+                    <div 
+                      key={m.id}
+                      onClick={() => setSelectedPaymentMethod(m.id)}
+                      className={`ch-method-opt ${isActive ? 'ch-method-opt--active' : ''}`}
+                    >
+                      <div className="ch-method-icon">
+                        <Icon size={20} />
+                      </div>
+                      <span className="ch-method-name">{m.name}</span>
+                    </div>
+                  )
+                })}
               </div>
-            </div>
 
-            {/* Payment Details Form */}
-            <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-6">
-              <h2 className="text-2xl font-bold text-slate-100 mb-6">Payment Details</h2>
+              <h2 className="ch-section-title">
+                <Lock className="text-slate-500" size={20} />
+                Secure Data Port
+                <span>STEP 02/02</span>
+              </h2>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Error Message Display */}
+              <form onSubmit={handleSubmit}>
                 {error && (
-                  <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400 text-sm">{error}</p>
+                  <div className="bg-danger/10 border border-danger/20 rounded-xl p-4 mb-8 flex items-center gap-3">
+                    <AlertCircle size={18} className="text-danger" />
+                    <p className="text-danger text-xs font-bold uppercase">{error}</p>
                   </div>
                 )}
 
-                {selectedPaymentMethod === "card" && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Card Number
-                      </label>
-                      <input
-                        type="text"
+                {/* CARD FIELDS */}
+                {selectedPaymentMethod === 'card' && (
+                  <div className="animate-fade-in">
+                    <div className="ch-input-wrap">
+                      <label className="ch-label">Card Authentication Number</label>
+                      <input 
+                        className="ch-input"
                         name="cardNumber"
                         value={formData.cardNumber}
                         onChange={handleInputChange}
-                        placeholder="1234 5678 9012 3456"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
+                        placeholder="XXXX XXXX XXXX XXXX"
                         required
                       />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Cardholder Name
-                      </label>
-                      <input
-                        type="text"
-                        name="cardName"
-                        value={formData.cardName}
-                        onChange={handleInputChange}
-                        placeholder="John Doe"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">
-                          Expiry Date
-                        </label>
-                        <input
-                          type="text"
+                    <div className="ch-form-row">
+                      <div className="ch-input-wrap">
+                        <label className="ch-label">Expiration Key</label>
+                        <input 
+                          className="ch-input"
                           name="expiryDate"
                           value={formData.expiryDate}
                           onChange={handleInputChange}
                           placeholder="MM/YY"
-                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">
-                          CVV
-                        </label>
-                        <input
-                          type="text"
+                      <div className="ch-input-wrap">
+                        <label className="ch-label">Security CVV</label>
+                        <input 
+                          className="ch-input"
                           name="cvv"
                           value={formData.cvv}
                           onChange={handleInputChange}
-                          placeholder="123"
-                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
+                          placeholder="XXX"
                           required
                         />
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
-                {selectedPaymentMethod === "jazzcash" && (
-                  <>
-                    <div className="text-center py-4">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-orange-500 mb-4">
-                        <Smartphone className="h-10 w-10 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-100 mb-2">JazzCash Payment</h3>
-                      <p className="text-slate-400 text-sm mb-6">
-                        Enter your JazzCash mobile account number
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        JazzCash Mobile Number
-                      </label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleInputChange}
-                        placeholder="03XX-XXXXXXX"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
-                        required
-                      />
-                      <p className="text-xs text-slate-500 mt-2">
-                        You will receive a payment request on your JazzCash app
-                      </p>
-                    </div>
-                  </>
+                {/* MOBILE WALLETS */}
+                {(['jazzcash', 'easypaisa', 'sadapay', 'nayapay'].includes(selectedPaymentMethod)) && (
+                   <div className="animate-fade-in">
+                     <div className="ch-input-wrap">
+                        <label className="ch-label">Account Mobile ID</label>
+                        <input 
+                          type="tel"
+                          className="ch-input"
+                          name="phoneNumber"
+                          value={formData.phoneNumber}
+                          onChange={handleInputChange}
+                          placeholder="03XX-XXXXXXX"
+                          required
+                        />
+                        <p className="text-[9px] font-bold text-slate-500 uppercase mt-4">
+                          Note: A secure verification request will be dispatched to your mobile terminal.
+                        </p>
+                     </div>
+                   </div>
                 )}
 
-                {selectedPaymentMethod === "easypaisa" && (
-                  <>
-                    <div className="text-center py-4">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 mb-4">
-                        <Smartphone className="h-10 w-10 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-100 mb-2">EasyPaisa Payment</h3>
-                      <p className="text-slate-400 text-sm mb-6">
-                        Enter your EasyPaisa mobile account number
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        EasyPaisa Mobile Number
-                      </label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleInputChange}
-                        placeholder="03XX-XXXXXXX"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
-                        required
-                      />
-                      <p className="text-xs text-slate-500 mt-2">
-                        You will receive a payment request on your EasyPaisa app
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                {selectedPaymentMethod === "sadapay" && (
-                  <>
-                    <div className="text-center py-4">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 mb-4">
-                        <Wallet className="h-10 w-10 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-100 mb-2">SadaPay Payment</h3>
-                      <p className="text-slate-400 text-sm mb-6">
-                        Enter your SadaPay mobile account number
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        SadaPay Mobile Number
-                      </label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleInputChange}
-                        placeholder="03XX-XXXXXXX"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
-                        required
-                      />
-                      <p className="text-xs text-slate-500 mt-2">
-                        You will receive a payment request on your SadaPay app
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                {selectedPaymentMethod === "nayapay" && (
-                  <>
-                    <div className="text-center py-4">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 mb-4">
-                        <Wallet className="h-10 w-10 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-100 mb-2">NayaPay Payment</h3>
-                      <p className="text-slate-400 text-sm mb-6">
-                        Enter your NayaPay mobile account number
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        NayaPay Mobile Number
-                      </label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleInputChange}
-                        placeholder="03XX-XXXXXXX"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
-                        required
-                      />
-                      <p className="text-xs text-slate-500 mt-2">
-                        You will receive a payment request on your NayaPay app
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                {selectedPaymentMethod === "bank" && (
-                  <>
-                    <div className="text-center py-4">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 mb-4">
-                        <Building2 className="h-10 w-10 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-100 mb-2">Bank Transfer</h3>
-                      <p className="text-slate-400 text-sm mb-6">
-                        Select your bank and enter account details
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Select Bank
-                      </label>
-                      <select
+                {/* BANK TRANSFER */}
+                {selectedPaymentMethod === 'bank' && (
+                  <div className="animate-fade-in">
+                    <div className="ch-input-wrap">
+                      <label className="ch-label">Terminal Bank</label>
+                      <select 
+                        className="ch-input"
                         name="selectedBank"
                         value={formData.selectedBank}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-primary-500"
                         required
                       >
-                        <option value="">Choose your bank</option>
-                        {pakistaniBanks.map((bank) => (
-                          <option key={bank.id} value={bank.id}>
-                            {bank.name}
-                          </option>
-                        ))}
+                        <option value="">Select Financial Node</option>
+                        {pakistaniBanks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Account Number / IBAN
-                      </label>
-                      <input
-                        type="text"
+                    <div className="ch-input-wrap">
+                      <label className="ch-label">Account Identification / IBAN</label>
+                      <input 
+                        className="ch-input"
                         name="accountNumber"
                         value={formData.accountNumber}
                         onChange={handleInputChange}
-                        placeholder="PK36XXXXXXXXXXXXXXXXXXXX"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
+                        placeholder="PKXX XXXX XXXX XXXX"
                         required
                       />
-                      <p className="text-xs text-slate-500 mt-2">
-                        Enter your IBAN or account number for verification
-                      </p>
                     </div>
-                  </>
-                )}
-
-                {selectedPaymentMethod === "paypal" && (
-                  <div className="text-center py-8">
-                    <Wallet className="h-16 w-16 text-primary-400 mx-auto mb-4" />
-                    <p className="text-slate-300 mb-4">
-                      You will be redirected to PayPal to complete your purchase
-                    </p>
                   </div>
                 )}
 
-                {selectedPaymentMethod === "crypto" && (
-                  <div className="text-center py-8">
-                    <Bitcoin className="h-16 w-16 text-primary-400 mx-auto mb-4" />
-                    <p className="text-slate-300 mb-4">
-                      You will receive wallet address and payment instructions
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Email Address
-                  </label>
-                  <input
+                <div className="ch-input-wrap mt-8">
+                  <label className="ch-label">Communication Channel (Email)</label>
+                  <input 
                     type="email"
+                    className="ch-input"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="your@email.com"
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500"
+                    placeholder="operator@nexus.com"
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Country
-                  </label>
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-primary-500"
-                    required
-                  >
-                    <option value="">Select Country</option>
-                    <option value="US">United States</option>
-                    <option value="UK">United Kingdom</option>
-                    <option value="CA">Canada</option>
-                    <option value="AU">Australia</option>
-                    <option value="DE">Germany</option>
-                    <option value="FR">France</option>
-                    <option value="IN">India</option>
-                    <option value="PK">Pakistan</option>
-                  </select>
-                </div>
-
-                <ModernButton
+                <button 
                   type="submit"
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
                   disabled={processing}
+                  className="rcp-primary-btn !w-full !justify-center !py-4 mt-8 !text-base"
                 >
                   {processing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Processing...
-                    </>
+                    <div className="flex items-center gap-3">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-black/20 border-t-black" />
+                      UPGRADING...
+                    </div>
                   ) : (
-                    <>
-                      <Lock className="mr-2 h-5 w-5" />
-                      Pay {selectedPlan.price}
-                    </>
+                    <>CONFIRM TRANSACTION • {selectedPlan.price}</>
                   )}
-                </ModernButton>
+                </button>
               </form>
-            </div>
-
-            {/* Security Notice */}
-            <div className="flex items-start gap-3 p-4 bg-primary-500/10 border border-primary-500/20 rounded-lg">
-              <Shield className="h-5 w-5 text-primary-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm text-slate-300">
-                  Your payment information is encrypted and secure. We never store your card details.
-                </p>
-              </div>
             </div>
           </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-6 sticky top-6">
-              <h2 className="text-xl font-bold text-slate-100 mb-6">Order Summary</h2>
-
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-100">{selectedPlan.name} Plan</h3>
-                    <p className="text-sm text-slate-400">Billed {selectedPlan.period}ly</p>
-                  </div>
-                  <Badge className="bg-primary-500/20 text-primary-300">
-                    Popular
-                  </Badge>
-                </div>
-
-                <div className="border-t border-slate-700 pt-4 space-y-3">
-                  <div className="flex justify-between text-slate-300">
-                    <span>Subtotal</span>
-                    <span>{selectedPlan.price}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-300">
-                    <span>Tax</span>
-                    <span>$0.00</span>
-                  </div>
-                  <div className="border-t border-slate-700 pt-3 flex justify-between text-lg font-bold text-slate-100">
-                    <span>Total</span>
-                    <span>{selectedPlan.price}</span>
-                  </div>
+          {/* RIGHT: ORDER SUMMARY */}
+          <div className="ch-right-col">
+            <div className="ch-summary-card">
+              <div className="ch-plan-preview">
+                <div className="ch-preview-tag">SELECTED UPGRADE</div>
+                <h3 className="ch-preview-name">{selectedPlan.name}</h3>
+                <div className="flex items-center gap-2 text-primary font-black">
+                  <Flame size={16} />
+                  <span>+500 XP INSTANT BONUS</span>
                 </div>
               </div>
 
-              <div className="space-y-3 mb-6">
-                <h3 className="text-sm font-semibold text-slate-300">What's Included:</h3>
-                <ul className="space-y-2">
-                  {[
-                    "Unlimited labs access",
-                    "Advanced analytics",
-                    "Priority support",
-                    "Certificate generation",
-                    "Exclusive pro labs"
-                  ].map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2 text-sm text-slate-400">
-                      <Check className="h-4 w-4 text-primary-400 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+              <div className="space-y-4">
+                <div className="ch-summary-line">
+                  <span>Base Access</span>
+                  <span className="text-white">$0.00</span>
+                </div>
+                <div className="ch-summary-line">
+                  <span>Tactical License</span>
+                  <span className="text-white">{selectedPlan.price}</span>
+                </div>
+                <div className="ch-summary-line">
+                  <span>Network Tax</span>
+                  <span className="text-white">$0.00</span>
+                </div>
+                
+                <div className="ch-summary-line ch-summary-line--total">
+                  <span>Total Yield</span>
+                  <span>{selectedPlan.price}</span>
+                </div>
               </div>
 
-              <div className="flex items-start gap-2 p-3 bg-slate-900/50 rounded-lg">
-                <AlertCircle className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-slate-400">
-                  Cancel anytime. No questions asked. Full refund within 30 days.
-                </p>
+              <div className="mt-8 space-y-3">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Unlocked Assets</p>
+                {[
+                  "Unlimited Lab Deployments",
+                  "Elite AttackBox Hardware",
+                  "Private VPN Grid Access",
+                  "Certificate Generation"
+                ].map((txt, i) => (
+                  <div key={i} className="flex items-center gap-3 text-xs font-bold text-slate-400">
+                    <Check size={14} className="text-primary" />
+                    {txt}
+                  </div>
+                ))}
+              </div>
+
+              <div className="ch-trust-badge">
+                <Lock className="text-slate-600" size={24} />
+                <div className="ch-trust-text">
+                  SECURE VAULT ENCRYPTION <br/>
+                  <span className="text-[8px] opacity-60">AES-256 BIT PROTECTED CHANNEL</span>
+                </div>
               </div>
             </div>
           </div>

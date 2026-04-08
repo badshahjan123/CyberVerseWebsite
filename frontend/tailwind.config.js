@@ -59,6 +59,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        orbitron: ['Orbitron', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',

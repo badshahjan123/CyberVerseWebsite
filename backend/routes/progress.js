@@ -3,6 +3,8 @@ const User = require('../models/User');
 const Room = require('../models/Room');
 const Lab = require('../models/Lab');
 const NotificationService = require('../utils/notificationHelper');
+const BadgeHelper = require('../utils/badgeHelper');
+const RealtimeHelper = require('../utils/realtimeHelper');
 const { auth } = require('../middleware/auth');
 const router = express.Router();
 
@@ -75,10 +77,23 @@ router.post('/update', auth, async (req, res) => {
     const oldLevel = user.level;
     user.points += pointsToAdd;
 
-    // Calculate new level (every 1000 points = 1 level)
+    user.xp = user.points;
     const newLevel = Math.floor(user.points / 1000) + 1;
-    leveledUp = newLevel > user.level;
+    leveledUp = newLevel > oldLevel;
     user.level = newLevel;
+
+    // Update skill based on item's category
+    if (isFirstCompletion) {
+      let category = 'Misc';
+      if (type === 'room') {
+        const room = await Room.findOne({ slug: itemId }).select('category');
+        if (room) category = room.category;
+      } else {
+        const lab = await Lab.findById(itemId).select('category');
+        if (lab) category = lab.category;
+      }
+      user.updateSkill(category, pointsToAdd);
+    }
 
     // Update streak for first-time completions
     if (isFirstCompletion) {
@@ -112,23 +127,23 @@ router.post('/update', auth, async (req, res) => {
           await NotificationService.notifyStreak(userId, user.currentStreak);
         }
 
-        // Check and notify achievements
-        const newAchievements = await NotificationService.checkAndNotifyAchievements(userId, user);
-
-        // Add new badges to user
-        for (const achievement of newAchievements) {
-          const existingBadge = user.badges.find(b => b.name === achievement);
-          if (!existingBadge) {
-            user.badges.push({
-              name: achievement,
-              description: getAchievementDescription(achievement),
-              icon: getAchievementIcon(achievement)
+        // Check and notify achievements (New System)
+        const context = {
+            type,
+            itemId,
+            points,
+            isPerfectScore: points >= 100, // standard for perfect
+            noHintsUsed: req.body.noHintsUsed || false,
+            skillType: req.body.skillType || null
+        };
+        
+        const newBadges = await BadgeHelper.checkAndAwardBadges(userId, context);
+        
+        // Emit socket event for each new badge for real-time popup
+        if (newBadges.length > 0 && global.io) {
+            newBadges.forEach(badge => {
+                global.io.to(`user:${userId}`).emit('badge:earned', badge);
             });
-          }
-        }
-
-        if (newAchievements.length > 0) {
-          await user.save();
         }
       } catch (notificationError) {
         console.error('Notification error:', notificationError);
@@ -136,37 +151,17 @@ router.post('/update', auth, async (req, res) => {
       }
     }
 
-    // Calculate new rank
+    // Recalculate and broadcast everything via RealtimeHelper
     const rank = await user.calculateRank();
-
-    // Emit real-time updates
-    const io = global.io;
-    if (io) {
-      // Send stats update to the specific user
-      io.to(`user:${userId}`).emit('user:stats:update', {
-        points: user.points,
-        level: user.level,
-        rank,
-        completedLabs: user.completedLabs,
-        completedRooms: user.completedRooms,
-        currentStreak: user.currentStreak,
-        longestStreak: user.longestStreak
+    if (global.io) {
+      await RealtimeHelper.broadcastUserUpdate(userId, global.io);
+      
+      // Specifically signal completion to trigger toasts if needed
+      global.io.to(`user:${userId}`).emit('room:progress:update', {
+        completed: isFirstCompletion,
+        type,
+        itemId
       });
-
-      // Broadcast leaderboard update to all users if it's a first completion
-      if (isFirstCompletion) {
-        const leaderboard = await User.find({ isActive: true })
-          .select('name points level completedLabs completedRooms avatar')
-          .sort({ points: -1, completedLabs: -1, completedRooms: -1 })
-          .limit(50);
-
-        const leaderboardWithRank = leaderboard.map((u, index) => ({
-          ...u.toObject(),
-          rank: index + 1
-        }));
-
-        io.emit('leaderboard:update', leaderboardWithRank);
-      }
     }
 
     res.json({
@@ -197,7 +192,7 @@ router.get('/leaderboard', async (req, res) => {
     const { limit = 10 } = req.query;
 
     const leaderboard = await User.find({ isActive: true })
-      .select('name points level completedLabs completedRooms avatar')
+      .select('name points level completedLabs completedRooms avatar badges')
       .sort({ points: -1, completedLabs: -1, completedRooms: -1 })
       .limit(parseInt(limit));
 
@@ -363,41 +358,6 @@ router.get('/completed-room-ids', auth, async (req, res) => {
   }
 });
 
-// Helper functions for achievements
-function getAchievementDescription(achievement) {
-  const descriptions = {
-    'First Steps': 'Completed your first room',
-    'Lab Explorer': 'Completed your first lab',
-    'Room Master': 'Completed 5 rooms',
-    'Challenge Champion': 'Completed 10 rooms',
-    'Lab Expert': 'Completed 5 labs',
-    'Research Scientist': 'Completed 10 labs',
-    'Point Collector': 'Earned 1,000 points',
-    'Point Master': 'Earned 5,000 points',
-    'Point Legend': 'Earned 10,000 points',
-    'Rising Star': 'Reached level 5',
-    'Cyber Warrior': 'Reached level 10',
-    'Security Expert': 'Reached level 20'
-  };
-  return descriptions[achievement] || 'Special achievement unlocked';
-}
-
-function getAchievementIcon(achievement) {
-  const icons = {
-    'First Steps': '🚀',
-    'Lab Explorer': '🔬',
-    'Room Master': '🏆',
-    'Challenge Champion': '👑',
-    'Lab Expert': '🧪',
-    'Research Scientist': '🔬',
-    'Point Collector': '💎',
-    'Point Master': '💰',
-    'Point Legend': '🌟',
-    'Rising Star': '⭐',
-    'Cyber Warrior': '⚔️',
-    'Security Expert': '🛡️'
-  };
-  return icons[achievement] || '🏅';
-}
+// Achievement helper functions removed in favor of Badge model system
 
 module.exports = router;

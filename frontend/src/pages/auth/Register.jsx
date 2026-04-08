@@ -1,253 +1,184 @@
-import { useState, memo, useCallback, useEffect } from "react";
+import { useState, memo, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { useApp } from "../../contexts/app-context";
-import { ModernButton } from "../../components/ui-components";
-import {
-  Shield,
-  Loader2,
-  Check,
-  ArrowRight,
-  Mail,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Shield, Loader2, Check, ArrowRight, Eye, EyeOff, Lock, Trophy, Zap } from "lucide-react";
+
+/* Password strength meter */
+const StrengthBar = ({ password }) => {
+  if (!password) return null;
+  const checks = [
+    password.length >= 6,
+    /[A-Z]/.test(password),
+    /[a-z]/.test(password),
+    /\d/.test(password),
+    /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
+  ];
+  const score = checks.filter(Boolean).length;
+  const labels = ["", "Very Weak", "Weak", "Fair", "Strong", "Very Strong"];
+  const colors = ["", "#EF4444", "#F97316", "#FACC15", "#22C55E", "#39FF14"];
+  return (
+    <div className="auth2-strength">
+      <div className="auth2-strength-bars">
+        {[1,2,3,4,5].map(i => (
+          <div key={i} className="auth2-strength-bar"
+            style={{ background: i <= score ? colors[score] : "rgba(255,255,255,0.08)" }} />
+        ))}
+      </div>
+      <span className="auth2-strength-label" style={{ color: colors[score] }}>{labels[score]}</span>
+    </div>
+  );
+};
 
 const RegisterPage = memo(() => {
   const navigate = useNavigate();
   const { register, loginWithGoogle } = useApp();
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleGoogleSuccess = useCallback(
-    async (credentialResponse) => {
-      setError("");
-      const result = await loginWithGoogle(credentialResponse);
-      if (!result.success) {
-        setError(result.message || "Google authentication failed");
-      }
-    },
-    [loginWithGoogle]
-  );
+  const [username, setUsername]               = useState("");
+  const [email, setEmail]                     = useState("");
+  const [password, setPassword]               = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading]                 = useState(false);
+  const [success, setSuccess]                 = useState(false);
+  const [error, setError]                     = useState("");
+  const [showPassword, setShowPassword]       = useState(false);
+  const [showConfirm, setShowConfirm]         = useState(false);
+
+  const handleGoogleSuccess = useCallback(async (cred) => {
+    setError("");
+    const result = await loginWithGoogle(cred);
+    if (!result.success) setError(result.message || "Google authentication failed");
+  }, [loginWithGoogle]);
 
   const handleGoogleError = useCallback(() => {
     setError("Google authentication failed. Please try again.");
   }, []);
 
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      setLoading(true);
-      setError("");
-
-      if (!username || username.trim().length < 2) {
-        setError("Username must be at least 2 characters long");
-        setLoading(false);
-        return;
-      }
-
-      // Validate username
-      if (!username || username.trim().length < 2) {
-        setError("Username must be at least 2 characters long");
-        setLoading(false);
-        return;
-      }
-
-      // Validate email
-      if (!email || !email.includes("@")) {
-        setError("Please enter a valid email address");
-        setLoading(false);
-        return;
-      }
-
-      const strongRegex =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{6,}$/;
-
-      if (!strongRegex.test(password)) {
-        setError(
-          "Password must be at least 6 characters long and include uppercase, lowercase, number, and special character"
-        );
-        setLoading(false);
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        setError("Passwords do not match");
-        setLoading(false);
-        return;
-      }
-
-      const result = await register(username, email, password);
-
-      if (result.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
-      } else {
-        setError(result.message || "Registration failed. Please try again.");
-      }
-      setLoading(false);
-    },
-    [username, email, password, confirmPassword, register, navigate]
-  );
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    if (!username || username.trim().length < 2) { setError("Username must be at least 2 characters"); return setLoading(false); }
+    if (!email || !email.includes("@"))          { setError("Please enter a valid email address");     return setLoading(false); }
+    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{6,}$/;
+    if (!strongRegex.test(password))             { setError("Password must be 6+ chars with upper, lower, number & symbol"); return setLoading(false); }
+    if (password !== confirmPassword)            { setError("Passwords do not match");                return setLoading(false); }
+    const result = await register(username, email, password);
+    if (result.success) { setSuccess(true); setTimeout(() => navigate("/login"), 2000); }
+    else setError(result.message || "Registration failed. Please try again.");
+    setLoading(false);
+  }, [username, email, password, confirmPassword, register, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
-          <div className="text-center mb-6">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-white mb-1">
-              Join CyberVerse
-            </h1>
-            <p className="text-gray-300 text-sm">Only Gmail accounts allowed</p>
+    <div className="auth2-bg">
+      <div className="auth2-glow auth2-glow--purple" aria-hidden="true" />
+      <div className="auth2-glow auth2-glow--cyan auth2-glow--bottom" aria-hidden="true" />
+      <div className="auth2-grid" aria-hidden="true" />
+
+      <div className="auth2-card-wrap">
+        {/* Logo */}
+        <Link to="/" className="auth2-logo">
+          <div className="auth2-logo-icon auth2-logo-icon--purple"><Shield size={18} style={{ color: "#8B5CF6" }} /></div>
+          <span className="auth2-logo-text">CyberVerse</span>
+        </Link>
+
+        {/* Card */}
+        <div className="auth2-card auth2-card--wide">
+          <div className="auth2-card-header">
+            <h1 className="auth2-card-title">Create Account</h1>
+            <p className="auth2-card-sub">Join thousands of hackers worldwide — it's free</p>
           </div>
 
-          {/* Google Sign Up Button */}
-          <div className="mb-4">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              theme="filled_blue"
-              size="large"
-              width="100%"
-              text="signup_with"
-            />
+          <div className="auth2-google-wrap">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError}
+              theme="filled_black" size="large" text="signup_with" width="100%" />
           </div>
 
-          <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-slate-800 px-2 text-gray-400">
-                or continue with email
-              </span>
-            </div>
+          <div className="auth2-divider">
+            <span className="auth2-divider-line" />
+            <span className="auth2-divider-text">or sign up with email</span>
+            <span className="auth2-divider-line" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="w-full h-11 px-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
+          <form onSubmit={handleSubmit} className="auth2-form auth2-form--grid">
+            {/* Username */}
+            <div className="auth2-field">
+              <label className="auth2-label">Username</label>
+              <input id="reg-username" type="text" placeholder="e.g. 0xShadow"
+                value={username} onChange={e => setUsername(e.target.value)}
+                required autoComplete="username" className="auth2-input auth2-input--purple" />
             </div>
 
-            <div>
-              <input
-                type="email"
-                placeholder="Gmail address only"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full h-11 px-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
+            {/* Email */}
+            <div className="auth2-field">
+              <label className="auth2-label">Gmail Address</label>
+              <input id="reg-email" type="email" placeholder="hacker@gmail.com"
+                value={email} onChange={e => setEmail(e.target.value)}
+                required autoComplete="email" className="auth2-input auth2-input--purple" />
             </div>
 
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full h-11 px-3 pr-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+            {/* Password */}
+            <div className="auth2-field">
+              <label className="auth2-label">Password</label>
+              <div className="auth2-input-wrap">
+                <input id="reg-password" type={showPassword ? "text" : "password"}
+                  placeholder="Min 6 chars, upper, lower, number, symbol"
+                  value={password} onChange={e => setPassword(e.target.value)}
+                  required autoComplete="new-password" className="auth2-input auth2-input--purple" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="auth2-eye">
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+              <StrengthBar password={password} />
             </div>
 
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="w-full h-11 px-3 pr-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-2">
-                {error}
-              </p>
-            )}
-
-            {success && (
-              <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg p-2">
-                <Check className="inline h-4 w-4 mr-1" />
-                Account created Successfully navigating to login page..
-              </p>
-            )}
-
-            <ModernButton
-              variant="primary"
-              size="sm"
-              type="submit"
-              disabled={loading || success}
-              className="w-full h-11"
-            >
-              {success ? (
-                <Check className="h-4 w-4" />
-              ) : loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  Create Account
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
+            {/* Confirm Password */}
+            <div className="auth2-field">
+              <label className="auth2-label">Confirm Password</label>
+              <div className="auth2-input-wrap">
+                <input id="reg-confirm" type={showConfirm ? "text" : "password"}
+                  placeholder="Repeat your password"
+                  value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                  required autoComplete="new-password"
+                  className={`auth2-input auth2-input--purple ${confirmPassword && confirmPassword !== password ? "auth2-input--err" : confirmPassword && confirmPassword === password ? "auth2-input--ok" : ""}`} />
+                <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="auth2-eye">
+                  {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+              {confirmPassword && confirmPassword === password && (
+                <p className="auth2-match-ok"><Check size={11} /> Passwords match</p>
               )}
-            </ModernButton>
+            </div>
+
+            {/* Error / Success */}
+            {error   && <div className="auth2-error auth2-error--full"><span>⚠</span>{error}</div>}
+            {success && <div className="auth2-success auth2-success--full"><Check size={13} /> Account created! Redirecting to login...</div>}
+
+            <button type="submit" id="register-submit" disabled={loading || success}
+              className="auth2-submit auth2-submit--purple auth2-submit--full">
+              {success ? <><Check size={16} /> Account Created!</>
+                : loading ? <><Loader2 size={16} className="auth2-btn-spin" /> Creating account...</>
+                : <>Create Account <ArrowRight size={16} /></>}
+            </button>
+
+            <p className="auth2-terms auth2-terms--full">
+              By signing up you agree to our{" "}
+              <Link to="/terms" className="auth2-terms-link">Terms</Link> and{" "}
+              <Link to="/privacy" className="auth2-terms-link">Privacy Policy</Link>.
+            </p>
           </form>
 
-          <div className="mt-4 text-center text-sm">
-            <span className="text-gray-400">Already have an account? </span>
-            <Link
-              to="/login"
-              className="font-medium text-blue-400 hover:text-blue-300"
-            >
-              Sign in
-            </Link>
-          </div>
+          <p className="auth2-switch">
+            Already have an account?{" "}
+            <Link to="/login" className="auth2-switch-link">Sign in →</Link>
+          </p>
+        </div>
+
+        {/* Trust badges */}
+        <div className="auth2-badges">
+          <span className="auth2-badge"><Trophy size={11} style={{ color: "#FACC15" }} /> Free forever</span>
+          <span className="auth2-badge"><Zap size={11} style={{ color: "#8B5CF6" }} /> Instant access</span>
+          <span className="auth2-badge"><Lock size={11} style={{ color: "#39FF14" }} /> End-to-end encrypted</span>
         </div>
       </div>
     </div>

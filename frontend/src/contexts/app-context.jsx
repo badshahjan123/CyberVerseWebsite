@@ -19,6 +19,36 @@ export function AppProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const navigate = useNavigate()
 
+  // Keep ALL user fields — stats (points, level, completedRooms, etc.) are needed
+  // by Rooms.jsx, Dashboard.jsx, and the progress lookup maps.
+  // RealtimeContext owns the live-updating copies; app-context is the source of truth
+  // for identity + progress arrays.
+  const normaliseUser = (raw) => ({
+    ...raw,
+    roomProgress: raw.roomProgress || [],
+    labProgress:  raw.labProgress  || [],
+  })
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const response = await apiCall('/auth/me')
+      if (response?.user) {
+        // Include all fields needed for dashboard and rooms page
+        const fullUser = response.user
+        setUser(prev => ({
+          ...prev,
+          ...fullUser,
+          // Always keep progress arrays fresh
+          roomProgress: fullUser.roomProgress,
+          labProgress: fullUser.labProgress
+        }))
+        return fullUser
+      }
+    } catch (e) {
+      console.error('Failed to refresh user profile:', e)
+    }
+  }, [])
+
   const updateUserProfile = useCallback((data) => {
     setUser(prev => ({
       ...prev,
@@ -49,7 +79,6 @@ export function AppProvider({ children }) {
 
     const token = localStorage.getItem('token')
     if (token) {
-      // Check if session is expired
       if (sessionManager.isSessionExpired()) {
         handleSessionTimeout()
         return
@@ -58,9 +87,8 @@ export function AppProvider({ children }) {
       apiCall('/auth/me')
         .then(response => {
           if (response?.user) {
-            setUser(response.user)
+            setUser(normaliseUser(response.user))
             setIsAuthenticated(true)
-            // Initialize session manager
             sessionManager.init(handleSessionTimeout)
           } else {
             localStorage.removeItem('token')
@@ -132,20 +160,16 @@ export function AppProvider({ children }) {
         try {
           const userData = await apiCall('/auth/me')
           if (userData?.user || (userData?.data && userData.data.user)) {
-            const user = userData?.user || userData.data.user
-            console.log('Setting authenticated user:', user)
-            setUser(user)
+            const fullUser = userData?.user || userData.data.user
+            setUser(normaliseUser(fullUser))
             setIsAuthenticated(true)
             setLoading(false)
             sessionManager.init(handleSessionTimeout)
-
-            // Navigate to dashboard
             navigate('/dashboard', { replace: true })
-
             return {
               success: true,
               message: 'Verification successful',
-              user,
+              user: normaliseUser(fullUser),
               token,
               isAuthenticated: true
             }
@@ -205,16 +229,16 @@ export function AppProvider({ children }) {
       if (response.token) {
         console.log('Login successful, no 2FA required')
         localStorage.setItem('token', response.token)
-        setUser(response.user)
+        const normUser = normaliseUser(response.user)
+        setUser(normUser)
         setIsAuthenticated(true)
         sessionManager.init(handleSessionTimeout)
         navigate('/dashboard', { replace: true })
-      }
-
-      return {
-        success: true,
-        requiresTwoFactor: false,
-        user: response.user
+        return {
+          success: true,
+          requiresTwoFactor: false,
+          user: normUser
+        }
       }
     } catch (error) {
       return {
@@ -314,8 +338,9 @@ export function AppProvider({ children }) {
     register,
     logout,
     verify2FA,
-    updateUserProfile
-  }), [user, loading, isAuthenticated, login, loginWithGoogle, register, logout, verify2FA, updateUserProfile])
+    updateUserProfile,
+    refreshUser
+  }), [user, loading, isAuthenticated, login, loginWithGoogle, register, logout, verify2FA, updateUserProfile, refreshUser])
 
   return (
     <AppContext.Provider value={contextValue}>

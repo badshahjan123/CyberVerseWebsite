@@ -1,664 +1,578 @@
-import { useState, useMemo, memo, useCallback, useEffect } from "react";
+import { useState, useMemo, memo, useCallback, useEffect, useRef } from "react"
 import {
-  Search,
-  Grid,
-  List,
-  Lock,
-  Clock,
-  Users,
-  Filter,
-  Star,
-  Play,
-  BookOpen,
-  Trophy,
-  X,
-  ChevronDown,
-  Sparkles,
-  TrendingUp,
-  Award,
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import { ProtectedRoute } from "../../components/protected-route";
-import { getLabs } from "../../services/labs";
+  Search, Grid, List, Lock, Clock, Users, Filter, Star, Play,
+  BookOpen, Trophy, X, ChevronDown, Zap, CheckCircle2, Crown,
+  ArrowRight, SlidersHorizontal, Terminal, ChevronLeft, ChevronRight,
+  Flame, TrendingUp, Shield, Target
+} from "lucide-react"
+import { Link } from "react-router-dom"
+import { ProtectedRoute } from "../../components/protected-route"
+import { useApp } from "../../contexts/app-context"
+import axios from "../../api/axios"
 
-// Rich Media Lab Card Component
-const LabCard = memo(({ lab }) => (
-  <Link to={`/labs/${lab.slug || lab.id}`} className="block group">
-    <div className="card overflow-hidden hover:scale-[1.02] hover:border-primary/40 transition-all duration-300 h-full">
-      {/* Image Cover */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
+/* ─── helpers ─── */
+const DIFF_COLORS = {
+  Easy:     { color: "#39FF14", bg: "rgba(57,255,20,0.12)",   border: "rgba(57,255,20,0.3)"   },
+  Beginner: { color: "#39FF14", bg: "rgba(57,255,20,0.12)",   border: "rgba(57,255,20,0.3)"   },
+  Medium:   { color: "#FACC15", bg: "rgba(250,204,21,0.12)",  border: "rgba(250,204,21,0.3)"  },
+  Hard:     { color: "#F97316", bg: "rgba(249,115,22,0.12)",  border: "rgba(249,115,22,0.3)"  },
+  Insane:   { color: "#FF3D71", bg: "rgba(255,61,113,0.12)",  border: "rgba(255,61,113,0.3)"  },
+}
+const getDiff = d => DIFF_COLORS[d] || { color: "#94A3B8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.2)" }
+
+/* ─── Star Rating ─── */
+const StarRating = memo(({ rating }) => {
+  const r = Number(rating) || 0
+  return (
+    <div className="lp2-stars">
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} size={12}
+          style={{ fill: i <= Math.round(r) ? "#FACC15" : "transparent",
+                   color: i <= Math.round(r) ? "#FACC15" : "#2D3748" }} />
+      ))}
+      <span className="lp2-stars-val">{r.toFixed(1)}</span>
+    </div>
+  )
+})
+StarRating.displayName = "StarRating"
+
+/* ─── Lab Card (Grid mode) ─── */
+const LabCard = memo(({ lab, progress, isPremiumUser }) => {
+  const dm = getDiff(lab.difficulty)
+  const slug = lab.slug || lab.id
+  const isCompleted = progress?.completed || false
+  const progressPct = progress?.progress || (isCompleted ? 100 : 0)
+  const isLocked = lab.isPremium && !isPremiumUser
+
+  return (
+    <div className={`lp2-card ${isCompleted ? "lp2-card--done" : ""} ${isLocked ? "lp2-card--locked" : ""}`}>
+      {/* Image */}
+      <div className="lp2-card-img-wrap">
         <img
-          src={lab.coverImage}
+          src={lab.coverImage || "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=600"}
           alt={lab.title}
-          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
           loading="lazy"
+          className="lp2-card-img"
         />
-        {/* Badge Overlays */}
-        <div className="absolute top-3 right-3 flex gap-2">
-          {lab.isPremium ? (
-            <div className="flex items-center gap-1 px-2 py-1 bg-warning/90 backdrop-blur-sm text-black rounded-md text-xs font-bold">
-              <Lock className="h-3 w-3" />
-              PRO
-            </div>
-          ) : (
-            <div className="px-2 py-1 bg-success/90 backdrop-blur-sm text-white rounded-md text-xs font-bold">
-              FREE
-            </div>
-          )}
+        {/* Top badges */}
+        <div className="lp2-card-top-badges">
+          {lab.isPremium
+            ? <span className="lp2-badge lp2-badge--pro"><Crown size={9}/> PRO</span>
+            : <span className="lp2-badge lp2-badge--free">FREE</span>
+          }
+          {isCompleted && <span className="lp2-badge lp2-badge--done"><CheckCircle2 size={9}/> Done</span>}
         </div>
-        {/* Type Badge */}
-        <div className="absolute bottom-3 left-3">
-          {lab.type === "ctf" ? (
-            <div className="flex items-center gap-1 px-2 py-1 bg-purple-600/90 backdrop-blur-sm text-white rounded-md text-xs font-semibold">
-              <Trophy className="h-3 w-3" />
-              CTF
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 px-2 py-1 bg-blue-600/90 backdrop-blur-sm text-white rounded-md text-xs font-semibold">
-              <BookOpen className="h-3 w-3" />
-              Walkthrough
-            </div>
-          )}
+        {/* Bottom type badge */}
+        <div className="lp2-card-bot-badges">
+          {lab.type === "ctf"
+            ? <span className="lp2-type lp2-type--ctf"><Trophy size={10}/> CTF</span>
+            : <span className="lp2-type lp2-type--walk"><BookOpen size={10}/> Walkthrough</span>
+          }
         </div>
+        {/* Lock overlay */}
+        {isLocked && (
+          <div className="lp2-lock-layer">
+            <Lock size={22} style={{ color: "#FACC15" }}/>
+            <span>Premium Only</span>
+            <Link to="/premium" className="lp2-upgrade-cta">Upgrade →</Link>
+          </div>
+        )}
       </div>
 
-      {/* Card Content */}
-      <div className="p-4">
-        <h3 className="font-bold text-text mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-          {lab.title}
-        </h3>
-        <p className="text-xs text-muted mb-3">Created by {lab.creator}</p>
+      {/* Body */}
+      <div className="lp2-card-body">
+        {/* Title */}
+        <h3 className="lp2-card-title">{lab.title}</h3>
+        <p className="lp2-card-by">by {lab.creator || "CyberVerse"}</p>
 
-        {/* Star Rating */}
-        <div className="flex items-center gap-1 mb-3">
-          {[...Array(5)].map((_, i) => (
-            <Star
-              key={i}
-              className={`h-3 w-3 ${i < Math.floor(lab.rating)
-                ? "fill-warning text-warning"
-                : "text-muted/30"
-                }`}
-            />
-          ))}
-          <span className="text-xs text-muted ml-1">
-            ({lab.rating.toFixed(1)})
-          </span>
-        </div>
-
-        {/* Metadata Row */}
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-3 text-muted">
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {lab.participants}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {lab.duration}
-            </span>
-          </div>
-          <span
-            className={`px-2 py-1 rounded-md font-semibold ${lab.difficulty === "Easy"
-              ? "bg-success/20 text-success border border-success/30"
-              : lab.difficulty === "Medium"
-                ? "bg-warning/20 text-warning border border-warning/30"
-                : lab.difficulty === "Hard"
-                  ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                  : "bg-danger/20 text-danger border border-danger/30"
-              }`}
-          >
+        {/* Rating + Difficulty row */}
+        <div className="lp2-card-row">
+          <StarRating rating={lab.rating || 4.5} />
+          <span className="lp2-diff-pill"
+            style={{ color: dm.color, background: dm.bg, border: `1px solid ${dm.border}` }}>
             {lab.difficulty}
           </span>
         </div>
+
+        {/* Stats row */}
+        <div className="lp2-card-stats">
+          <span className="lp2-stat"><Users size={11}/> {lab.participants || 0}</span>
+          <span className="lp2-stat"><Clock size={11}/> {lab.duration || "30 min"}</span>
+          <span className="lp2-stat lp2-stat--xp"><Zap size={11}/> {lab.points || 100} XP</span>
+        </div>
+
+        {/* Progress bar if in-progress */}
+        {progressPct > 0 && !isCompleted && (
+          <div className="lp2-prog-row">
+            <div className="lp2-prog-track">
+              <div className="lp2-prog-fill" style={{ width: `${progressPct}%` }}/>
+            </div>
+            <span className="lp2-prog-pct">{progressPct}%</span>
+          </div>
+        )}
+
+        {/* CTA */}
+        <div className="lp2-card-cta">
+          {isLocked ? (
+            <Link to="/premium" className="lp2-btn lp2-btn--lock"><Lock size={13}/> Unlock Lab</Link>
+          ) : isCompleted ? (
+            <Link to={`/labs/${slug}`} className="lp2-btn lp2-btn--done"><CheckCircle2 size={13}/> Review</Link>
+          ) : progressPct > 0 ? (
+            <Link to={`/labs/${slug}`} className="lp2-btn lp2-btn--resume"><Play size={13}/> Resume</Link>
+          ) : (
+            <Link to={`/labs/${slug}`} className="lp2-btn lp2-btn--start"><Play size={13}/> Start Lab</Link>
+          )}
+          <Link to={`/labs/${slug}`} className="lp2-btn lp2-btn--icon" aria-label="View details">
+            <ArrowRight size={14}/>
+          </Link>
+        </div>
       </div>
     </div>
-  </Link>
-));
+  )
+})
+LabCard.displayName = "LabCard"
 
+/* ─── Lab List Row (List mode) ─── */
+const LabRow = memo(({ lab, progress, isPremiumUser }) => {
+  const dm = getDiff(lab.difficulty)
+  const slug = lab.slug || lab.id
+  const isCompleted = progress?.completed || false
+  const isLocked = lab.isPremium && !isPremiumUser
+
+  return (
+    <div className="lp2-row">
+      <img
+        src={lab.coverImage || "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=180"}
+        alt={lab.title}
+        loading="lazy"
+        className="lp2-row-img"
+      />
+      <div className="lp2-row-body">
+        <div className="lp2-row-top">
+          <div>
+            <h3 className="lp2-row-title">{lab.title}</h3>
+            <p className="lp2-row-by">by {lab.creator || "CyberVerse"}</p>
+          </div>
+          <div className="lp2-row-badges">
+            {lab.isPremium
+              ? <span className="lp2-badge lp2-badge--pro"><Crown size={9}/> PRO</span>
+              : <span className="lp2-badge lp2-badge--free">FREE</span>
+            }
+            {lab.type === "ctf"
+              ? <span className="lp2-type lp2-type--ctf"><Trophy size={10}/> CTF</span>
+              : <span className="lp2-type lp2-type--walk"><BookOpen size={10}/> Walkthrough</span>
+            }
+            <span className="lp2-diff-pill" style={{ color: dm.color, background: dm.bg, border: `1px solid ${dm.border}` }}>
+              {lab.difficulty}
+            </span>
+          </div>
+        </div>
+        <div className="lp2-row-meta">
+          <StarRating rating={lab.rating || 4.5} />
+          <span className="lp2-stat"><Users size={11}/> {lab.participants || 0}</span>
+          <span className="lp2-stat"><Clock size={11}/> {lab.duration || "30 min"}</span>
+          <span className="lp2-stat lp2-stat--xp"><Zap size={11}/> {lab.points || 100} XP</span>
+        </div>
+      </div>
+      <div className="lp2-row-cta">
+        {isLocked ? (
+          <Link to="/premium" className="lp2-btn lp2-btn--lock"><Lock size={13}/> Unlock</Link>
+        ) : isCompleted ? (
+          <Link to={`/labs/${slug}`} className="lp2-btn lp2-btn--done"><CheckCircle2 size={13}/> Done</Link>
+        ) : (
+          <Link to={`/labs/${slug}`} className="lp2-btn lp2-btn--start"><Play size={13}/> Start</Link>
+        )}
+      </div>
+    </div>
+  )
+})
+LabRow.displayName = "LabRow"
+
+/* ─── Main Labs Page ─── */
 const Labs = memo(() => {
-  const [viewMode, setViewMode] = useState("grid");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedDifficulties, setSelectedDifficulties] = useState([]);
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [selectedType, setSelectedType] = useState("all"); // walkthrough, ctf, all
-  const [subscriptionFilter, setSubscriptionFilter] = useState("all"); // all, free, premium
-  const [sortBy, setSortBy] = useState("newest"); // newest, popular, difficulty
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile filter toggle
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const { user } = useApp()
+  const [labs, setLabs]         = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(null)
+  const [viewMode, setViewMode] = useState("grid")
+  const [sortBy, setSortBy]     = useState("newest")
+  const [page, setPage]         = useState(1)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const itemsPerPage = 9
+  const searchTimer = useRef(null)
 
-  // Labs will be populated from API
-  const [labs, setLabs] = useState([]);
+  const [filters, setFilters] = useState({
+    search: "", subscription: "all", category: "all", type: "all", difficulties: [], tags: []
+  })
 
-  // Featured Lab - will be set from API response
-  const featuredLab = useMemo(
-    () => labs.find((lab) => lab.featured) || null,
-    [labs]
-  );
+  /* User lab progress map */
+  const userProgress = useMemo(() => {
+    const m = {}
+    if (!user?.labProgress) return m
+    user.labProgress.forEach(lp => {
+      m[lp.labId] = { completed: !!lp.completed, progress: lp.progress || (lp.completed ? 100 : 0) }
+    })
+    return m
+  }, [user?.labProgress])
 
-  // TODO: Fetch labs from API
+  const isPremiumUser = user?.isPremium || false
+
+  /* Fetch */
+  const fetchLabs = useCallback(async (search = filters.search) => {
+    setLoading(true); setError(null)
+    try {
+      const p = new URLSearchParams()
+      if (filters.category && filters.category !== "all") p.append("category", filters.category)
+      if (filters.difficulties?.length) p.append("difficulty", filters.difficulties[0])
+      if (search) p.append("search", search)
+      if (filters.type !== "all") p.append("type", filters.type)
+      const res = await axios.get(`/labs?${p}`)
+      setLabs(res.data.data || [])
+    } catch {
+      setError("Unable to load labs. Please try again.")
+      setLabs([])
+    } finally { setLoading(false) }
+  }, [filters.category, filters.difficulties, filters.type])
+
+  /* Debounce search */
   useEffect(() => {
-    const fetchLabs = async () => {
-      try {
-        const fetchedLabs = await getLabs({ category: selectedCategory, difficulty: selectedDifficulties, type: selectedType })
-        setLabs(fetchedLabs)
-      } catch (error) {
-        console.error("Failed to fetch labs:", error);
-      }
-    };
-    fetchLabs();
-  }, [
-    selectedCategory,
-    selectedDifficulties,
-    selectedType,
-    subscriptionFilter,
-  ]);
+    clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => fetchLabs(filters.search), 380)
+    return () => clearTimeout(searchTimer.current)
+  }, [filters.search])
 
-  const categories = useMemo(
-    () => [
-      { value: "all", label: "All Categories" },
-      { value: "web", label: "Web Security" },
-      { value: "network", label: "Network" },
-      { value: "system", label: "System" },
-      { value: "crypto", label: "Cryptography" },
-      { value: "osint", label: "OSINT" },
-      { value: "mobile", label: "Mobile" },
-    ],
-    []
-  );
+  useEffect(() => { fetchLabs() }, [fetchLabs])
 
-  const difficulties = ["Easy", "Medium", "Hard", "Insane"];
+  /* Derived categories from labs */
+  const categories = useMemo(() => {
+    const cats = [...new Set(labs.map(l => l.category).filter(Boolean))]
+    return [{ value: "all", label: "All Categories" }, ...cats.map(c => ({ value: c, label: c.charAt(0).toUpperCase() + c.slice(1) }))]
+  }, [labs])
 
   const allTags = useMemo(() => {
-    const tags = new Set();
-    labs.forEach((lab) => lab.tags?.forEach((tag) => tags.add(tag)));
-    return Array.from(tags);
-  }, [labs]);
+    const t = new Set(); labs.forEach(l => l.tags?.forEach(x => t.add(x))); return [...t]
+  }, [labs])
 
-  // Advanced Filtering
-  const filteredLabs = useMemo(() => {
-    return labs.filter((lab) => {
-      const matchesSearch =
-        lab.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lab.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory =
-        selectedCategory === "all" || lab.category === selectedCategory;
-      const matchesDifficulty =
-        selectedDifficulties.length === 0 ||
-        selectedDifficulties.includes(lab.difficulty);
-      const matchesTags =
-        selectedTags.length === 0 ||
-        selectedTags.some((tag) => lab.tags.includes(tag));
-      const matchesType = selectedType === "all" || lab.type === selectedType;
-      const matchesSubscription =
-        subscriptionFilter === "all" ||
-        (subscriptionFilter === "free" && !lab.isPremium) ||
-        (subscriptionFilter === "premium" && lab.isPremium);
+  /* Client-side filter + sort */
+  const filtered = useMemo(() => labs.filter(lab => {
+    const s = filters.search.toLowerCase()
+    return (
+      (!s || lab.title?.toLowerCase().includes(s) || lab.description?.toLowerCase().includes(s)) &&
+      (filters.subscription === "all" || (filters.subscription === "free" ? !lab.isPremium : lab.isPremium)) &&
+      (!filters.difficulties?.length || filters.difficulties.includes(lab.difficulty)) &&
+      (!filters.tags?.length || filters.tags.some(t => lab.tags?.includes(t)))
+    )
+  }), [labs, filters])
 
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesDifficulty &&
-        matchesTags &&
-        matchesType &&
-        matchesSubscription
-      );
-    });
-  }, [
-    labs,
-    searchTerm,
-    selectedCategory,
-    selectedDifficulties,
-    selectedTags,
-    selectedType,
-    subscriptionFilter,
-  ]);
+  const sorted = useMemo(() => {
+    const a = [...filtered]
+    if (sortBy === "popular") return a.sort((x,y) => (y.participants||0) - (x.participants||0))
+    if (sortBy === "rating")  return a.sort((x,y) => (y.rating||0) - (x.rating||0))
+    if (sortBy === "xp")      return a.sort((x,y) => (y.points||0) - (x.points||0))
+    if (sortBy === "shortest") return a.sort((x,y) => parseInt(x.estimatedTime||30) - parseInt(y.estimatedTime||30))
+    return a
+  }, [filtered, sortBy])
 
-  // Sorting
-  const sortedLabs = useMemo(() => {
-    const sorted = [...filteredLabs];
-    switch (sortBy) {
-      case "popular":
-        return sorted.sort(
-          (a, b) => parseFloat(b.participants) - parseFloat(a.participants)
-        );
-      case "difficulty":
-        const difficultyOrder = { Easy: 1, Medium: 2, Hard: 3, Insane: 4 };
-        return sorted.sort(
-          (a, b) =>
-            difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]
-        );
-      case "newest":
-      default:
-        return sorted; // Already in newest order
-    }
-  }, [filteredLabs, sortBy]);
+  const paginated    = useMemo(() => sorted.slice((page-1)*itemsPerPage, page*itemsPerPage), [sorted, page])
+  const totalPages   = Math.ceil(sorted.length / itemsPerPage)
 
-  // Pagination
-  const paginatedLabs = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return sortedLabs.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedLabs, currentPage]);
+  const setFilter = useCallback((k, v) => { setFilters(p => ({ ...p, [k]: v })); setPage(1) }, [])
+  const clearAll  = useCallback(() => { setFilters({ search:"", subscription:"all", category:"all", type:"all", difficulties:[], tags:[] }); setPage(1) }, [])
 
-  const totalPages = Math.ceil(sortedLabs.length / itemsPerPage);
+  const activeCount = useMemo(() => {
+    let n = 0
+    if (filters.search) n++
+    if (filters.subscription !== "all") n++
+    if (filters.category !== "all") n++
+    if (filters.type !== "all") n++
+    n += (filters.difficulties?.length || 0)
+    n += (filters.tags?.length || 0)
+    return n
+  }, [filters])
 
-  // Handlers
-  const toggleDifficulty = useCallback((difficulty) => {
-    setSelectedDifficulties((prev) =>
-      prev.includes(difficulty)
-        ? prev.filter((d) => d !== difficulty)
-        : [...prev, difficulty]
-    );
-    setCurrentPage(1);
-  }, []);
+  /* ─── Sidebar inner component ─── */
+  const FilterPanel = useCallback(() => {
+    const [open, setOpen] = useState({ sub: true, cat: true, type: true, diff: true, tags: false })
+    const toggle = k => setOpen(p => ({ ...p, [k]: !p[k] }))
 
-  const toggleTag = useCallback((tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-    setCurrentPage(1);
-  }, []);
+    const Section = ({ k, label, children }) => (
+      <div className="lp2-fs">
+        <button className="lp2-fs-head" onClick={() => toggle(k)}>
+          <span>{label}</span>
+          <ChevronDown size={13} style={{ transform: open[k] ? "rotate(180deg)":"none", transition:"0.2s ease" }}/>
+        </button>
+        {open[k] && <div className="lp2-fs-body">{children}</div>}
+      </div>
+    )
 
-  const clearFilters = useCallback(() => {
-    setSelectedDifficulties([]);
-    setSelectedTags([]);
-    setSelectedCategory("all");
-    setSelectedType("all");
-    setSubscriptionFilter("all");
-    setSearchTerm("");
-    setCurrentPage(1);
-  }, []);
+    return (
+      <div className="lp2-panel">
+        {/* Header */}
+        <div className="lp2-panel-head">
+          <span className="lp2-panel-title"><SlidersHorizontal size={13}/> Filters</span>
+          {activeCount > 0 && (
+            <button className="lp2-panel-clear" onClick={clearAll}>
+              <X size={11}/> Clear {activeCount}
+            </button>
+          )}
+        </div>
+
+        {/* Search */}
+        <div className="lp2-search-wrap">
+          <Search size={13} className="lp2-search-ico"/>
+          <input
+            className="lp2-search-inp"
+            placeholder="Search labs…"
+            value={filters.search}
+            onChange={e => setFilter("search", e.target.value)}
+          />
+          {filters.search && (
+            <button className="lp2-search-clr" onClick={() => setFilter("search","")}>
+              <X size={11}/>
+            </button>
+          )}
+        </div>
+
+        {/* Subscription */}
+        <Section k="sub" label="Subscription">
+          {[["all","All Labs"],["free","Free Only"],["premium","Premium"]].map(([v,l]) => (
+            <label key={v} className={`lp2-opt ${filters.subscription === v ? "lp2-opt--on":""}`}>
+              <input type="radio" name="sub" checked={filters.subscription === v} onChange={() => setFilter("subscription", v)}/>
+              <span>{l}</span>
+            </label>
+          ))}
+        </Section>
+
+        {/* Category */}
+        <Section k="cat" label="Category">
+          {categories.map(c => (
+            <label key={c.value} className={`lp2-opt ${filters.category === c.value ? "lp2-opt--on":""}`}>
+              <input type="radio" name="cat" checked={filters.category === c.value} onChange={() => setFilter("category", c.value)}/>
+              <span>{c.label}</span>
+            </label>
+          ))}
+        </Section>
+
+        {/* Type */}
+        <Section k="type" label="Type">
+          {[["all","All Types"],["walkthrough","Walkthrough"],["ctf","CTF Challenge"]].map(([v,l]) => (
+            <label key={v} className={`lp2-opt ${filters.type === v ? "lp2-opt--on":""}`}>
+              <input type="radio" name="type" checked={filters.type === v} onChange={() => setFilter("type", v)}/>
+              <span>{l}</span>
+            </label>
+          ))}
+        </Section>
+
+        {/* Difficulty */}
+        <Section k="diff" label="Difficulty">
+          {[["Easy","#39FF14"],["Medium","#FACC15"],["Hard","#F97316"],["Insane","#FF3D71"]].map(([d,col]) => {
+            const on = filters.difficulties?.includes(d)
+            return (
+              <label key={d} className={`lp2-opt ${on ? "lp2-opt--on":""}`}>
+                <input type="checkbox" checked={!!on}
+                  onChange={() => setFilter("difficulties",
+                    on ? filters.difficulties.filter(x=>x!==d) : [...(filters.difficulties||[]), d]
+                  )}
+                />
+                <span style={{ color: col }}>{d}</span>
+              </label>
+            )
+          })}
+        </Section>
+
+        {/* Tags */}
+        {allTags.length > 0 && (
+          <Section k="tags" label="Tags">
+            <div className="lp2-tag-cloud">
+              {allTags.map(t => {
+                const on = filters.tags?.includes(t)
+                return (
+                  <button key={t}
+                    className={`lp2-tag ${on ? "lp2-tag--on":""}`}
+                    onClick={() => setFilter("tags", on ? filters.tags.filter(x=>x!==t) : [...(filters.tags||[]), t])}>
+                    {t}
+                  </button>
+                )
+              })}
+            </div>
+          </Section>
+        )}
+      </div>
+    )
+  }, [filters, categories, allTags, activeCount, setFilter, clearAll])
 
   return (
     <ProtectedRoute>
-      <div className="page-container bg-[rgb(8,12,16)] text-text min-h-screen">
-        <div className="container mx-auto px-4 max-w-[1600px] py-6">
-          {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">
-                <span className="gradient-text">Hacktivities</span>
-              </h1>
-              <p className="text-muted">
-                Discover challenges and learning paths
-              </p>
+      <div className="lp2-root">
+        <div className="lp2-bg-top"   aria-hidden="true"/>
+        <div className="lp2-bg-right" aria-hidden="true"/>
+        <div className="lp2-grid-bg"  aria-hidden="true"/>
+
+        <div className="lp2-wrap">
+
+          {/* ── PAGE HEADER ── */}
+          <div className="lp2-header">
+            <div className="lp2-header-left">
+              <div className="lp2-header-icon"><Terminal size={22} style={{color:"#00F5FF"}}/></div>
+              <div>
+                <h1 className="lp2-h1">Hacktivities</h1>
+                <p className="lp2-sub">
+                  {loading ? "Loading challenge catalog…"
+                    : `${labs.length} hacking challenge${labs.length !== 1 ? "s" : ""} available`}
+                </p>
+              </div>
             </div>
-            {/* Mobile Filter Toggle */}
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="lg:hidden btn-primary px-4 py-2 flex items-center gap-2"
-            >
-              <Filter className="w-4 h-4" />
-              Filters
+            {/* Stats bar */}
+            <div className="lp2-header-stats">
+              {[
+                { icon: <Shield   size={14}/>, label: "Labs", val: labs.length               },
+                { icon: <Flame    size={14}/>, label: "Free",    val: labs.filter(l=>!l.isPremium).length },
+                { icon: <Crown    size={14}/>, label: "Premium", val: labs.filter(l=>l.isPremium).length },
+              ].map(({icon, label, val}) => (
+                <div key={label} className="lp2-hstat">
+                  {icon}
+                  <strong>{val}</strong>
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+            {/* Mobile filter btn */}
+            <button className="lp2-mob-btn" onClick={() => setMobileOpen(true)}>
+              <Filter size={14}/> Filters
+              {activeCount > 0 && <span className="lp2-mob-count">{activeCount}</span>}
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* LEFT SIDEBAR - Filters (25%) */}
-            <div
-              className={`lg:col-span-3 ${isSidebarOpen ? "block" : "hidden lg:block"
-                }`}
-            >
-              <div className="card p-5 sticky top-4 space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto">
-                {/* Close Button (Mobile) */}
-                <div className="flex items-center justify-between lg:hidden mb-4">
-                  <h3 className="font-bold text-lg">Filters</h3>
-                  <button onClick={() => setIsSidebarOpen(false)}>
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+          {/* ── BODY: sidebar + content ── */}
+          <div className="lp2-body">
 
-                {/* Search */}
-                <div>
-                  <label className="block text-sm font-semibold text-muted mb-2">
-                    Search
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-4 h-4" />
-                    <input
-                      placeholder="Search labs..."
-                      value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                      className="w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary labs-search-input"
-                    />
-                  </div>
-                </div>
-
-                {/* Subscription Filter */}
-                <div>
-                  <label className="block text-sm font-semibold text-muted mb-2">
-                    Subscription
-                  </label>
-                  <div className="space-y-2">
-                    {["all", "free", "premium"].map((option) => (
-                      <label
-                        key={option}
-                        className="flex items-center gap-2 cursor-pointer group"
-                      >
-                        <input
-                          type="radio"
-                          name="subscription"
-                          checked={subscriptionFilter === option}
-                          onChange={() => {
-                            setSubscriptionFilter(option);
-                            setCurrentPage(1);
-                          }}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span className="text-sm capitalize group-hover:text-primary transition-colors">
-                          {option === "all"
-                            ? "All Labs"
-                            : option === "free"
-                              ? "Free Only"
-                              : "Premium Only"}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-semibold text-muted mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => {
-                      setSelectedCategory(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary labs-dropdown"
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Type Filter */}
-                <div>
-                  <label className="block text-sm font-semibold text-muted mb-2">
-                    Type
-                  </label>
-                  <div className="space-y-2">
-                    {[
-                      { value: "all", label: "All Types", icon: null },
-                      {
-                        value: "walkthrough",
-                        label: "Walkthroughs",
-                        icon: BookOpen,
-                      },
-                      { value: "ctf", label: "CTF Challenges", icon: Trophy },
-                    ].map((option) => {
-                      const Icon = option.icon;
-                      return (
-                        <label
-                          key={option.value}
-                          className="flex items-center gap-2 cursor-pointer group"
-                        >
-                          <input
-                            type="radio"
-                            name="type"
-                            checked={selectedType === option.value}
-                            onChange={() => {
-                              setSelectedType(option.value);
-                              setCurrentPage(1);
-                            }}
-                            className="w-4 h-4 text-primary"
-                          />
-                          <div className="flex items-center gap-1.5">
-                            {Icon && (
-                              <Icon className="w-3.5 h-3.5 text-muted group-hover:text-primary" />
-                            )}
-                            <span className="text-sm group-hover:text-primary transition-colors">
-                              {option.label}
-                            </span>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Difficulty Checkboxes */}
-                <div>
-                  <label className="block text-sm font-semibold text-muted mb-2">
-                    Difficulty
-                  </label>
-                  <div className="space-y-2">
-                    {difficulties.map((difficulty) => (
-                      <label
-                        key={difficulty}
-                        className="flex items-center gap-2 cursor-pointer group"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedDifficulties.includes(difficulty)}
-                          onChange={() => toggleDifficulty(difficulty)}
-                          className="w-4 h-4 rounded text-primary"
-                        />
-                        <span className="text-sm group-hover:text-primary transition-colors">
-                          {difficulty}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tags Cloud */}
-                <div>
-                  <label className="block text-sm font-semibold text-muted mb-2">
-                    Tags
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {allTags.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => toggleTag(tag)}
-                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${selectedTags.includes(tag)
-                          ? "bg-primary/20 text-primary border border-primary/40"
-                          : "bg-white/5 text-muted hover:bg-white/10 border border-white/10"
-                          }`}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Clear Filters */}
-                <button
-                  onClick={clearFilters}
-                  className="w-full btn-ghost text-sm py-2"
-                >
-                  Clear All Filters
-                </button>
-              </div>
+            {/* Sidebar — desktop */}
+            <div className="lp2-sidebar">
+              <FilterPanel/>
             </div>
 
-            {/* MAIN CONTENT (75%) */}
-            <div className="lg:col-span-9 space-y-6">
-              {/* Featured Lab Banner */}
-              {featuredLab && (
-                <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-sm">
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10"></div>
-                  <img
-                    src={featuredLab.coverImage}
-                    alt={featuredLab.title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-30"
-                  />
-                  <div className="relative z-20 p-8 lg:p-12">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-5 h-5 text-warning" />
-                      <span className="text-sm font-semibold text-warning">
-                        Featured Challenge
-                      </span>
-                    </div>
-                    <h2 className="text-3xl lg:text-4xl font-bold text-white mb-3">
-                      {featuredLab.title}
-                    </h2>
-                    <p className="text-lg text-slate-200 mb-4 max-w-2xl">
-                      {featuredLab.description}
-                    </p>
-                    <div className="flex items-center gap-4 mb-6 text-sm text-slate-300">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {featuredLab.participants} enrolled
-                      </span>
-                      <span className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${i < Math.floor(featuredLab.rating)
-                              ? "fill-warning text-warning"
-                              : "text-slate-500"
-                              }`}
-                          />
-                        ))}
-                        <span className="ml-1">{featuredLab.rating}</span>
-                      </span>
-                    </div>
-                    <Link
-                      to={`/labs/${featuredLab.id}`}
-                      className="btn-primary px-6 py-3 text-lg inline-flex items-center gap-2"
-                    >
-                      <Play className="w-5 h-5" />
-                      Start Now
-                    </Link>
+            {/* Content */}
+            <div className="lp2-content">
+
+              {/* Toolbar */}
+              <div className="lp2-bar">
+                <p className="lp2-bar-count">
+                  {loading ? <span style={{color:"#334155"}}>Loading…</span> : (
+                    <>Showing <b style={{color:"#00F5FF"}}>{paginated.length}</b> of <b style={{color:"#00F5FF"}}>{sorted.length}</b> labs</>
+                  )}
+                  {activeCount > 0 && <span className="lp2-bar-filter-badge"> • {activeCount} filter{activeCount>1?"s":""} active</span>}
+                </p>
+                <div className="lp2-bar-right">
+                  {/* Sort */}
+                  <div className="lp2-sort">
+                    <select className="lp2-sort-sel" value={sortBy}
+                      onChange={e => { setSortBy(e.target.value); setPage(1) }}>
+                      <option value="newest">Newest</option>
+                      <option value="popular">Most Popular</option>
+                      <option value="rating">Highest Rated</option>
+                      <option value="xp">Highest XP</option>
+                      <option value="shortest">Shortest</option>
+                    </select>
+                    <ChevronDown size={13} className="lp2-sort-arr"/>
                   </div>
+                  {/* View toggle */}
+                  <div className="lp2-view">
+                    <button className={`lp2-vbtn ${viewMode === "grid" ? "lp2-vbtn--on":""}`} onClick={() => setViewMode("grid")}><Grid size={15}/></button>
+                    <button className={`lp2-vbtn ${viewMode === "list" ? "lp2-vbtn--on":""}`} onClick={() => setViewMode("list")}><List size={15}/></button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Loading skeletons */}
+              {loading && (
+                <div className={`lp2-grid ${viewMode === "list" ? "lp2-grid--list":""}`}>
+                  {Array.from({length: 6}).map((_,i) => (
+                    <div key={i} className="lp2-skel">
+                      <div className="lp2-skel-img"/>
+                      <div className="lp2-skel-bd">
+                        <div className="lp2-skel-ln lp2-skel-ln--lg"/>
+                        <div className="lp2-skel-ln"/>
+                        <div className="lp2-skel-ln lp2-skel-ln--sm"/>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Sort & View Controls */}
-              <div className="flex items-center justify-between">
-                <p className="text-muted">
-                  Showing{" "}
-                  <span className="text-primary font-semibold">
-                    {paginatedLabs.length}
-                  </span>{" "}
-                  of{" "}
-                  <span className="text-primary font-semibold">
-                    {sortedLabs.length}
-                  </span>{" "}
-                  labs
-                </p>
-                <div className="flex items-center gap-3">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary labs-dropdown text-sm"
-                  >
-                    <option value="newest">Newest</option>
-                    <option value="popular">Most Popular</option>
-                    <option value="difficulty">Difficulty</option>
-                  </select>
-                  <div className="flex bg-panel border border-card-border rounded-lg p-1">
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={`p-2 rounded-md ${viewMode === "grid"
-                        ? "bg-primary text-black"
-                        : "text-muted hover:text-text"
-                        }`}
-                    >
-                      <Grid className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={`p-2 rounded-md ${viewMode === "list"
-                        ? "bg-primary text-black"
-                        : "text-muted hover:text-text"
-                        }`}
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                  </div>
+              {/* Error */}
+              {!loading && error && (
+                <div className="lp2-state">
+                  <div className="lp2-state-icon lp2-state-icon--red"><X size={24}/></div>
+                  <h3>{error}</h3>
+                  <button className="lp2-btn lp2-btn--start" onClick={() => fetchLabs()}>Try Again</button>
                 </div>
-              </div>
+              )}
 
-              {/* Labs Grid */}
-              {paginatedLabs.length === 0 ? (
-                <div className="text-center py-16 card">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-primary" />
-                  </div>
-                  <p className="text-lg font-semibold text-text mb-2">
-                    No labs found
-                  </p>
-                  <p className="text-muted mb-4">
-                    Try adjusting your filters or search term
-                  </p>
-                  <button
-                    onClick={clearFilters}
-                    className="btn-primary px-4 py-2"
-                  >
-                    Clear Filters
-                  </button>
+              {/* Empty */}
+              {!loading && !error && sorted.length === 0 && (
+                <div className="lp2-state">
+                  <div className="lp2-state-icon"><Target size={28}/></div>
+                  <h3>No labs match your filters</h3>
+                  <p>Adjust your search or clear all filters to see all labs.</p>
+                  <button className="lp2-btn lp2-btn--start" onClick={clearAll}>Clear Filters</button>
                 </div>
-              ) : (
-                <div
-                  className={`grid gap-5 ${viewMode === "grid"
-                    ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-                    : "grid-cols-1"
-                    }`}
-                >
-                  {paginatedLabs.map((lab) => (
-                    <LabCard key={lab.id} lab={lab} />
+              )}
+
+              {/* Grid / List */}
+              {!loading && !error && sorted.length > 0 && (
+                <div className={`lp2-grid ${viewMode === "list" ? "lp2-grid--list":""}`}>
+                  {paginated.map(lab => (
+                    viewMode === "grid"
+                      ? <LabCard  key={lab.id} lab={lab} progress={userProgress[lab.id]} isPremiumUser={isPremiumUser}/>
+                      : <LabRow   key={lab.id} lab={lab} progress={userProgress[lab.id]} isPremiumUser={isPremiumUser}/>
                   ))}
                 </div>
               )}
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-4">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Previous
+              {!loading && totalPages > 1 && (
+                <div className="lp2-pages">
+                  <button className="lp2-pg-btn" disabled={page===1} onClick={() => setPage(p => Math.max(1,p-1))}>
+                    <ChevronLeft size={14}/> Prev
                   </button>
-                  <div className="flex items-center gap-1">
-                    {[...Array(totalPages)].map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className={`w-10 h-10 rounded-lg font-semibold transition-colors ${currentPage === i + 1
-                          ? "bg-primary text-black"
-                          : "bg-white/5 hover:bg-white/10 text-text"
-                          }`}
-                      >
-                        {i + 1}
+                  <div className="lp2-pg-nums">
+                    {Array.from({length: totalPages}).map((_,i) => (
+                      <button key={i} className={`lp2-pg-num ${page===i+1?"lp2-pg-num--on":""}`} onClick={()=>setPage(i+1)}>
+                        {i+1}
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next
+                  <button className="lp2-pg-btn" disabled={page===totalPages} onClick={() => setPage(p => Math.min(totalPages,p+1))}>
+                    Next <ChevronRight size={14}/>
                   </button>
                 </div>
               )}
+
             </div>
           </div>
         </div>
+
+        {/* Mobile filter drawer */}
+        {mobileOpen && (
+          <div className="lp2-overlay" onClick={() => setMobileOpen(false)}>
+            <div className="lp2-drawer" onClick={e => e.stopPropagation()}>
+              <div className="lp2-drawer-head">
+                <span style={{fontWeight:700, color:"#E2E8F0"}}>Filters</span>
+                <button className="lp2-drawer-close" onClick={() => setMobileOpen(false)}><X size={18}/></button>
+              </div>
+              <div style={{flex:1, overflowY:"auto"}}>
+                <FilterPanel/>
+              </div>
+              <button className="lp2-drawer-apply" onClick={() => setMobileOpen(false)}>
+                Apply Filters {activeCount > 0 ? `(${activeCount})` : ""}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </ProtectedRoute>
-  );
-});
+  )
+})
 
-Labs.displayName = "Labs";
-export default Labs;
+Labs.displayName = "Labs"
+export default Labs

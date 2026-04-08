@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { io } from 'socket.io-client'
 import { getUserStats } from '../services/userStats'
+import { getLeaderboard } from '../services/progress'
 import { useToast } from './toast-context'
 import { useApp } from './app-context'
 
@@ -16,7 +17,7 @@ export const useRealtime = () => {
 
 export const RealtimeProvider = ({ children }) => {
   const { levelUp, achievement, success, info, premium } = useToast()
-  const { isAuthenticated } = useApp()
+  const { isAuthenticated, user, refreshUser } = useApp()
   
   // Check if we're on admin routes - skip WebSocket for admin
   const isAdminRoute = typeof window !== 'undefined' && 
@@ -24,10 +25,18 @@ export const RealtimeProvider = ({ children }) => {
      window.location.pathname.startsWith('/admin') ||
      window.DISABLE_WEBSOCKET === true)
 
-  // Core state - only what needs to trigger re-renders
+  // Initial state from app context if available
   const [userStats, setUserStats] = useState({
-    currentStreak: 0,
-    longestStreak: 0,
+    totalXP: user?.points || 0,
+    level: user?.level || 1,
+    rank: user?.rank || 999,
+    streak: user?.currentStreak || 0,
+    skills: user?.skills || { web: 0, network: 0, linux: 0, forensics: 0, osint: 0, exploit: 0, crypto: 0 },
+    skillMatrix: [],
+    completedRooms: user?.completedRooms || 0,
+    completedLabs: user?.completedLabs || 0,
+    pointsToNextLevel: user?.pointsToNextLevel || 1000,
+    isPremium: user?.isPremium || false
   })
   const [recentActivity, setRecentActivity] = useState([])
   const [weeklyStats, setWeeklyStats] = useState({
@@ -59,48 +68,76 @@ export const RealtimeProvider = ({ children }) => {
     userStatsRef.current = userStats
   }, [userStats])
 
+  const fetchLeaderboardData = useCallback(async () => {
+    try {
+      const data = await getLeaderboard(50)
+      if (data && data.length > 0) {
+        setLeaderboardData(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch leaderboard data:', error)
+    }
+  }, [])
+
   // Stable refresh function - no dependencies to prevent loops
+  const transformSkills = useCallback((skills) => {
+    if (!skills) return []
+    const mapping = {
+      web: "Web Exploitation",
+      network: "Network Security",
+      linux: "Priv. Escalation",
+      forensics: "Forensics",
+      osint: "OSINT",
+      exploit: "Reverse Engineering",
+      crypto: "Cryptography"
+    }
+    return Object.entries(skills).map(([key, val]) => ({
+      name: mapping[key] || key,
+      category: mapping[key] || key,
+      progress: Math.round(val)
+    }))
+  }, [])
+
   const refreshUserStats = useCallback(async () => {
     // Check for token first
     const token = localStorage.getItem('token')
-    if (!token) {
-      return
-    }
+    if (!token) return
 
     // Prevent duplicate concurrent fetches
-    if (isFetchingRef.current) {
-      console.log('⏭️ Stats fetch already in progress, skipping...')
-      return
-    }
+    if (isFetchingRef.current) return
 
     isFetchingRef.current = true
     try {
-      const stats = await getUserStats()
+      const response = await getUserStats()
+      const stats = response.user || response // Handle both new nested and old flat formats
 
-      // Single state update to prevent flickering
-      setUserStats(prevStats => ({
-        ...prevStats,
-        ...stats,
-        currentStreak: stats.currentStreak || prevStats.currentStreak || 0,
-        longestStreak: stats.longestStreak || prevStats.longestStreak || 0,
-      }))
+      // Centralized transformation to ensure required fields
+      const updatedStats = {
+        totalXP: stats.points !== undefined ? stats.points : (stats.totalXP || 0),
+        level: stats.level || 1,
+        rank: stats.rank || 999,
+        streak: stats.currentStreak !== undefined ? stats.currentStreak : (stats.streak || 0),
+        skills: stats.skills || {},
+        skillMatrix: stats.skillMatrix || transformSkills(stats.skills),
+        completedRooms: stats.completedRooms || 0,
+        completedLabs: stats.completedLabs || 0,
+        pointsToNextLevel: stats.pointsToNextLevel || 1000,
+        isPremium: stats.isPremium || false,
+        name: stats.name || stats.username
+      }
 
-      // Update recent activity if it exists in the stats
-      if (stats.recentActivity) {
-        setRecentActivity(stats.recentActivity)
-      }
-      // Update weekly stats
-      if (stats.weeklyStats) {
-        setWeeklyStats(stats.weeklyStats)
-      }
+      setUserStats(updatedStats)
+
+      if (response.recentActivity) setRecentActivity(response.recentActivity)
+      if (response.weeklyStats) setWeeklyStats(response.weeklyStats)
 
       lastUpdateRef.current = Date.now()
     } catch (error) {
-      console.error('Failed to refresh user stats:', error)
+      console.error('Failed to refresh global user stats:', error)
     } finally {
       isFetchingRef.current = false
     }
-  }, []) // Empty dependencies - stable function
+  }, [])
 
   // Stable socket connection function - no dependencies to prevent reconnections
   const connectSocket = useCallback(() => {
@@ -161,96 +198,56 @@ export const RealtimeProvider = ({ children }) => {
 
     // Real-time event listeners
     socket.on('user:stats:update', (data) => {
-      console.log('📊 Received stats update:', data)
-
-      // Check for level up using Ref to avoid dependency loop
-      const oldLevel = userStatsRef.current.level || 1
-      if (data.level && data.level > oldLevel) {
-        toastRef.current.levelUp(data.level)
-      }
-
-      setUserStats(prev => ({
-        ...prev,
-        ...data
-      }))
-      lastUpdateRef.current = Date.now()
+      console.log('⚡ Realtime Stats Update:', data)
+      applyUpdate(data)
     })
 
     socket.on('leaderboard:update', (data) => {
-      console.log('🏆 Received leaderboard update:', data.length, 'users')
       setLeaderboardData(data)
       lastUpdateRef.current = Date.now()
     })
 
     socket.on('room:progress:update', (data) => {
-      console.log('🎯 Room progress updated:', data)
-
-      // Show achievement toast
       if (data.completed) {
-        toastRef.current.achievement('Room Completed!', `You earned ${data.points || 0} points`)
+        toastRef.current.achievement('Room Completed!', `You earned XP and updated your rank.`)
       }
+      refreshUserStats()
+    })
 
-      // Trigger stats refresh to get updated room count
-      // Use a small delay to prevent race conditions
-      setTimeout(() => {
-        if (!isFetchingRef.current) {
-          refreshUserStats()
-        }
-      }, 100)
+    // Badge earned — show toast immediately, independent of completion modal
+    socket.on('badge:earned', (badge) => {
+      const label = badge.badgeType === 'bonus' ? '⭐ Bonus Badge' : '🏅 Badge Unlocked'
+      toastRef.current.achievement(
+        `${label}: ${badge.name}`,
+        badge.unlockReason || badge.description || 'Awarded for completing this room'
+      )
+      // Dispatch so any page-level listener can react (e.g. Badges page)
+      window.dispatchEvent(new CustomEvent('badge:earned', { detail: badge }))
     })
 
     socket.on('notification:new', (data) => {
-      console.log('🔔 New notification:', data)
+      if (data.type === 'achievement') toastRef.current.achievement(data.title, data.message)
+      else if (data.type === 'level_up') toastRef.current.levelUp(data.title, data.message)
+      else if (data.type === 'success') toastRef.current.success(data.title, data.message)
+      else toastRef.current.info(data.title, data.message)
 
-      // Show notification as toast
-      if (data.type === 'achievement') {
-        toastRef.current.achievement(data.title, data.message)
-      } else if (data.type === 'level_up') {
-        toastRef.current.levelUp(data.title, data.message)
-      } else if (data.type === 'success') {
-        toastRef.current.success(data.title, data.message)
-      } else {
-        toastRef.current.info(data.title, data.message)
-      }
-
-      // Show browser notification if permission granted
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        new Notification(data.title, {
-          body: data.message,
-          icon: '/favicon.ico',
-          tag: data._id
-        })
+        new Notification(data.title, { body: data.message })
       }
-
-      // Trigger custom event for notification dropdown
       window.dispatchEvent(new CustomEvent('notification:new', { detail: data }))
     })
 
-    socket.on('settings:update', (data) => {
-      console.log('⚙️ Settings updated:', data)
-      // Settings sync handled by Settings page
-    })
-
     socket.on('premium:status:update', (data) => {
-      console.log('👑 Premium status updated:', data)
-
-      // Show premium toast
-      if (data.isPremium) {
-        toastRef.current.premium(`Welcome to ${data.plan || 'Premium'}!`)
-      }
-
-      setUserStats(prev => ({
-        ...prev,
-        isPremium: data.isPremium
-      }))
+      if (data.isPremium) toastRef.current.premium(`Welcome to ${data.plan || 'Premium'}!`)
+      setUserStats(prev => ({ ...prev, isPremium: data.isPremium }))
     })
+
 
     socketRef.current = socket
-  }, []) // Empty dependencies - stable function
+  }, [refreshUserStats])
 
   const disconnectSocket = useCallback(() => {
     if (socketRef.current) {
-      console.log('🔌 Disconnecting socket...')
       socketRef.current.removeAllListeners()
       socketRef.current.disconnect()
       socketRef.current = null
@@ -258,27 +255,72 @@ export const RealtimeProvider = ({ children }) => {
     }
   }, [])
 
-  // Stable trigger update function
   const triggerUpdate = useCallback(() => {
-    // Check for token first
-    const token = localStorage.getItem('token')
-    if (!token) {
-      return
-    }
-
-    // Prevent duplicate calls
-    if (isFetchingRef.current) {
-      console.log('⏭️ Update already in progress, skipping...')
-      return
-    }
-
     refreshUserStats()
-
-    // Also request via socket if connected (socket will handle the update)
     if (socketRef.current?.connected) {
       socketRef.current.emit('refresh:stats')
+      socketRef.current.emit('refresh:leaderboard')
     }
-  }, []) // Empty dependencies - uses refs
+  }, [refreshUserStats])
+
+  const applyUpdate = useCallback((data) => {
+    if (!data) return
+
+    // Handle both new nested format { user, weeklyStats } and old flat format
+    const stats = data.user || data;
+    
+    const oldLevel = userStatsRef.current.level || 1
+    const newLevel = stats.level || (stats.points !== undefined ? (Math.floor(stats.points / 1000) + 1) : oldLevel);
+    
+    if (newLevel > oldLevel) {
+      toastRef.current.levelUp(newLevel)
+    }
+
+    // Trigger full background refresh of user object (for roomProgress arrays etc)
+    if (typeof refreshUser === 'function') {
+      refreshUser();
+    }
+
+    setUserStats(prev => ({
+      ...prev,
+      ...stats,
+      totalXP: stats.points !== undefined ? stats.points : (stats.totalXP !== undefined ? stats.totalXP : prev.totalXP),
+      level: newLevel,
+      rank: stats.rank || prev.rank,
+      streak: stats.currentStreak !== undefined ? stats.currentStreak : (stats.streak !== undefined ? stats.streak : prev.streak),
+      completedRooms: stats.completedRooms !== undefined ? stats.completedRooms : prev.completedRooms,
+      completedLabs: stats.completedLabs !== undefined ? stats.completedLabs : prev.completedLabs,
+      skillMatrix: stats.skills ? transformSkills(stats.skills) : (stats.skillMatrix || prev.skillMatrix),
+      isPremium: stats.isPremium ?? prev.isPremium,
+      pointsToNextLevel: stats.pointsToNextLevel || prev.pointsToNextLevel
+    }))
+    lastUpdateRef.current = Date.now()
+  }, [transformSkills, refreshUser])
+
+  // Handle global sync triggers (e.g. from completion events)
+  useEffect(() => {
+    const onSyncTrigger = async () => {
+      console.log('🔄 Global state refresh triggered...');
+      refreshUserStats();
+      if (typeof refreshUser === 'function') refreshUser();
+      // Also refresh leaderboard
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('refresh:leaderboard');
+      } else {
+        fetchLeaderboardData();
+      }
+    };
+    
+    window.addEventListener('roomCompleted', onSyncTrigger);
+    window.addEventListener('labCompleted', onSyncTrigger);
+    window.addEventListener('user:sync:request', onSyncTrigger);
+    
+    return () => {
+      window.removeEventListener('roomCompleted', onSyncTrigger);
+      window.removeEventListener('labCompleted', onSyncTrigger);
+      window.removeEventListener('user:sync:request', onSyncTrigger);
+    };
+  }, [refreshUserStats, refreshUser, fetchLeaderboardData]);
 
   const requestLeaderboardUpdate = useCallback(() => {
     if (socketRef.current?.connected) {
@@ -288,81 +330,45 @@ export const RealtimeProvider = ({ children }) => {
 
   // Initialize when authenticated
   useEffect(() => {
-    // Skip WebSocket initialization for admin routes
-    if (isAdminRoute) {
-      console.log('🔒 Admin route detected, skipping WebSocket initialization')
-      return
-    }
+    if (isAdminRoute) return
     
-    // If not authenticated, ensure we are disconnected and return
     if (!isAuthenticated) {
       if (isInitializedRef.current) {
-        console.log('🔒 User logged out, cleaning up RealtimeProvider...')
         disconnectSocket()
         delete window.triggerRealtimeUpdate
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current)
-        }
         isInitializedRef.current = false
       }
       return
     }
 
-    if (isInitializedRef.current) {
-      return
-    }
-
-    // Double check token exists
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.log('⚠️ Authenticated but no token found, skipping initialization')
-      return
-    }
-
     isInitializedRef.current = true
-    console.log('🚀 Initializing RealtimeProvider for authenticated user...')
-
-    // Request notification permission
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-
-    // Make trigger function globally available
     window.triggerRealtimeUpdate = triggerUpdate
+    window.applyRealtimeUpdate = applyUpdate
 
-    // Initial stats fetch
     refreshUserStats()
-
-    // Connect socket
+    fetchLeaderboardData()
     connectSocket()
 
-    // Periodic fallback refresh (every 5 minutes as backup)
+    // 🔄 Auto Refresh Rule: Every 30 seconds for non-websocket fallbacks
     const interval = setInterval(() => {
       const currentToken = localStorage.getItem('token')
       if (currentToken && !isFetchingRef.current) {
         refreshUserStats()
       }
-    }, 300000)
+    }, 30000)
 
     return () => {
-      console.log('🧹 Cleaning up RealtimeProvider effect...')
       clearInterval(interval)
       disconnectSocket()
       delete window.triggerRealtimeUpdate
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
       isInitializedRef.current = false
     }
-  }, [isAuthenticated, isAdminRoute]) // Re-run when authentication status or route type changes
+  }, [isAuthenticated, isAdminRoute, triggerUpdate, refreshUserStats, connectSocket, disconnectSocket])
 
-  // Memoized context value - only re-renders when these specific values change
-  // Removed lastUpdate to prevent unnecessary re-renders
   const value = useMemo(() => {
-    // For admin routes, provide minimal context without WebSocket functionality
     if (isAdminRoute) {
       return {
-        userStats: { currentStreak: 0, longestStreak: 0 },
+        userStats: { totalXP: 0, level: 1, rank: 999, streak: 0, skillMatrix: [], completedRooms: 0, completedLabs: 0 },
         recentActivity: [],
         weeklyStats: { labsCompleted: 0, pointsEarned: 0, timeSpent: '0h', rankChange: 0 },
         refreshUserStats: () => {},
@@ -381,14 +387,15 @@ export const RealtimeProvider = ({ children }) => {
       weeklyStats,
       refreshUserStats,
       triggerUpdate,
+      applyUpdate,
       connected,
       leaderboardData,
+      fetchLeaderboardData,
       requestLeaderboardUpdate,
-      // Provide a getter for lastUpdate if needed, but don't include in dependencies
       getLastUpdate: () => lastUpdateRef.current,
       socket: socketRef.current
     }
-  }, [userStats, recentActivity, weeklyStats, connected, leaderboardData, isAdminRoute])
+  }, [userStats, recentActivity, weeklyStats, connected, leaderboardData, isAdminRoute, refreshUserStats, triggerUpdate, applyUpdate, requestLeaderboardUpdate])
 
   return (
     <RealtimeContext.Provider value={value}>

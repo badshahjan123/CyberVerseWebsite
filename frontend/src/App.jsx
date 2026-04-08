@@ -5,63 +5,13 @@ import { ActivityProvider } from './contexts/activity-context'
 import { ThemeProvider } from './contexts/theme-context'
 import { ToastProvider } from './contexts/toast-context'
 import { BookmarkProvider } from './contexts/bookmark-context'
+import { AchievementProvider } from './contexts/achievement-context'
 import Navbar from './components/navbar'
 import Footer from './components/footer'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'
 import { Suspense, lazy } from 'react'
 import './App.css'
-
-/* Lightweight Futuristic UI - Performance Optimized */
-const futuristicStyles = `
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.cyber-glow {
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-  border: 1px solid rgba(0, 255, 255, 0.5);
-}
-
-.cyber-glow:hover {
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
-  transform: translateY(-2px);
-  transition: all 0.2s ease;
-}
-
-.hover-lift {
-  transition: transform 0.2s ease;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-}
-
-.neon-text {
-  color: #00ffff;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
-}
-
-.futuristic-card {
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(100, 116, 139, 0.3);
-  transition: border-color 0.2s ease;
-}
-
-.futuristic-card:hover {
-  border-color: rgba(0, 255, 255, 0.5);
-}
-`
-
-// Inject styles safely
-if (typeof document !== 'undefined' && !document.getElementById('futuristic-styles')) {
-  const style = document.createElement('style')
-  style.id = 'futuristic-styles'
-  style.textContent = futuristicStyles
-  document.head.appendChild(style)
-}
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'))
@@ -90,6 +40,9 @@ const Rooms = lazy(() => import('./pages/rooms/Rooms'))
 const RoomDetail = lazy(() => import('./pages/rooms/RoomDetail'))
 const RoomCompleted = lazy(() => import('./pages/rooms/RoomCompleted'))
 const RoomResume = lazy(() => import('./pages/rooms/RoomResume'))
+const WebAppPentestingRoom = lazy(() => import('./pages/rooms/WebAppPentestingRoom'))
+const RestApiRoom = lazy(() => import('./pages/rooms/RestApiRoom'))
+const NetworkingFundamentalsRoom = lazy(() => import('./pages/rooms/NetworkingFundamentalsRoom'))
 
 // User pages
 const Profile = lazy(() => import('./pages/user/Profile'))
@@ -115,10 +68,10 @@ function AppContent() {
   const isAdminRoute = location.pathname.startsWith('/secure-admin') || location.pathname.startsWith('/admin')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "#0B0F1A" }}>
       {!isAdminRoute && <Navbar />}
 
-      <main className={`flex-1 ${!isAdminRoute ? 'glass' : ''}`}>
+      <main className="flex-1">
         <Suspense fallback={<PageLoader />}>
           {isAdminRoute ? (
             <Routes>
@@ -144,8 +97,11 @@ function AppContent() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
 
               <Route path="/rooms" element={<Rooms />} />
+              <Route path="/rooms/:id/completed" element={<RoomCompleted />} />
+              <Route path="/rooms/web-app-pentesting" element={<WebAppPentestingRoom />} />
+              <Route path="/rooms/rest-api-mastery" element={<RestApiRoom />} />
+              <Route path="/rooms/networking-fundamentals" element={<NetworkingFundamentalsRoom />} />
               <Route path="/rooms/:slug" element={<RoomDetail />} />
-              <Route path="/rooms/:slug/completed" element={<RoomCompleted />} />
               <Route path="/rooms/:slug/resume" element={<RoomResume />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<Profile />} />
@@ -173,7 +129,9 @@ function App() {
             <BookmarkProvider>
               <RealtimeProvider>
                 <ActivityProvider>
-                  <AppContent />
+                  <AchievementProvider>
+                    <AppContent />
+                  </AchievementProvider>
                 </ActivityProvider>
               </RealtimeProvider>
             </BookmarkProvider>

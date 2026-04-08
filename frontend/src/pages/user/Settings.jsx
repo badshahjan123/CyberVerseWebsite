@@ -35,10 +35,10 @@ const Settings = () => {
   }, [user])
 
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'account', label: 'Account', icon: Lock },
-    { id: 'subscription', label: 'Subscription', icon: CreditCard }
+    { id: 'profile', label: 'Operational ID', icon: User },
+    { id: 'security', label: 'Cypher Locks', icon: Shield },
+    { id: 'account', label: 'Core Access', icon: Lock },
+    { id: 'subscription', label: 'Service Tier', icon: CreditCard }
   ]
 
   const handleChange = (e) => {
@@ -58,9 +58,7 @@ const Settings = () => {
   const handleSaveProfile = async (e) => {
     e.preventDefault()
     setLoading(true)
-
     try {
-      const token = localStorage.getItem('token')
       const response = await apiCall('/users/profile', {
         method: 'PUT',
         body: JSON.stringify({
@@ -70,14 +68,12 @@ const Settings = () => {
           twitter: formData.twitter
         })
       })
-
       if (response) {
         updateUserProfile(response.user)
-        showSuccessToast('Profile updated successfully!')
+        showSuccessToast('Operational ID Synchronized')
       }
     } catch (error) {
-      console.error('Failed to update profile:', error)
-      showSuccessToast('Failed to update profile')
+      showSuccessToast('Sync Failed: Biometric Mismatch')
     } finally {
       setLoading(false)
     }
@@ -85,19 +81,11 @@ const Settings = () => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault()
-
     if (formData.newPassword !== formData.confirmPassword) {
-      showSuccessToast('Passwords do not match')
+      showSuccessToast('Encryption keys do not match')
       return
     }
-
-    if (formData.newPassword.length < 6) {
-      showSuccessToast('Password must be at least 6 characters')
-      return
-    }
-
     setLoading(true)
-
     try {
       await apiCall('/auth/change-password', {
         method: 'POST',
@@ -106,17 +94,10 @@ const Settings = () => {
           newPassword: formData.newPassword
         })
       })
-
-      showSuccessToast('Password updated successfully!')
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }))
+      showSuccessToast('Access Cyphers Rotated')
+      setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }))
     } catch (error) {
-      console.error('Failed to change password:', error)
-      showSuccessToast(error.message || 'Failed to change password')
+      showSuccessToast('Rotation Failed: Invalid Key')
     } finally {
       setLoading(false)
     }
@@ -125,50 +106,27 @@ const Settings = () => {
   const handleAvatarUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-
-    // Validate file
-    if (!file.type.startsWith('image/')) {
-      showSuccessToast('Please select an image file')
-      return
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      showSuccessToast('File size must be less than 2MB')
-      return
-    }
-
     setLoading(true)
-
     try {
-      const formData = new FormData()
-      formData.append('avatar', file)
-
+      const data = new FormData()
+      data.append('avatar', file)
       const response = await apiCall('/users/upload-avatar', {
         method: 'POST',
-        body: formData
+        body: data
       })
-
       if (response?.user) {
-        // Add timestamp to force image refresh (cache busting)
-        const updatedUser = {
-          ...response.user,
-          avatarTimestamp: Date.now()
-        }
-        updateUserProfile(updatedUser)
-        showSuccessToast('Avatar updated successfully!')
-        e.target.value = '' // Clear input
+        updateUserProfile({ ...response.user, avatarTimestamp: Date.now() })
+        showSuccessToast('Visual ID Updated')
       }
     } catch (error) {
-      console.error('Avatar upload error:', error)
-      showSuccessToast('Failed to upload avatar')
+      showSuccessToast('Upload Aborted')
     } finally {
       setLoading(false)
     }
   }
 
   const handleDeleteAccount = () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      // API call to delete account
+    if (window.confirm('WARNING: Initializing account erasure. All mission data will be purged. Proceed?')) {
       logout()
       navigate('/')
     }
@@ -176,314 +134,196 @@ const Settings = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="ms-root flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="page-container bg-[rgb(8,12,16)] text-text min-h-screen pb-32">
-      <div className="container mx-auto px-4 max-w-7xl py-8">
-        <h1 className="text-3xl font-bold gradient-text mb-8">Account Settings</h1>
+    <div className="ms-root">
+      <div className="ms-grid" />
+      
+      <div className="container mx-auto px-4 max-w-7xl pt-12 pb-32">
+        <header className="ms-header rcp-fade-in">
+           <h1 className="ms-title italic"><span className="gradient-text">Command</span> Console</h1>
+           <p className="ms-subtitle">Secure Administrative Directives // User: {user.name}</p>
+        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Sidebar - Tabs */}
-          <div className="lg:col-span-3">
-            <div className="glass-effect rounded-xl p-4 space-y-2 border border-white/10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* NAVIGATION SIDEBAR */}
+          <div className="lg:col-span-3 rcp-fade-in">
+            <div className="ms-nav-card">
               {tabs.map(tab => {
                 const Icon = tab.icon
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w - full flex items - center gap - 3 px - 4 py - 3 rounded - lg text - left transition - all ${activeTab === tab.id
-                      ? 'bg-primary text-white'
-                      : 'text-muted hover:bg-white/5 hover:text-text'
-                      } `}
+                    className={`ms-nav-btn ${activeTab === tab.id ? 'ms-nav-btn--active' : ''}`}
                   >
                     <Icon size={18} />
-                    <span className="font-medium">{tab.label}</span>
+                    <span>{tab.label}</span>
                   </button>
                 )
               })}
             </div>
           </div>
 
-          {/* Right Content - Form Area */}
-          <div className="lg:col-span-9">
-            <div className="glass-effect rounded-xl p-6 border border-white/10">
-              {/* Tab 1: Profile Settings */}
+          {/* CONTENT MODULE */}
+          <div className="lg:col-span-9 rcp-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="ms-content-card">
+              
+              {/* TAB 1: OPERATIONAL ID */}
               {activeTab === 'profile' && (
-                <form onSubmit={handleSaveProfile} className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-text mb-1">Profile Settings</h2>
-                    <p className="text-sm text-muted">Update your public profile information</p>
+                <form onSubmit={handleSaveProfile}>
+                  <h2 className="ms-tab-title"><User className="text-primary" /> Identity Synchronizer</h2>
+                  
+                  <div className="ms-biometric-wrap">
+                    <div className="ms-avatar-container">
+                      <img
+                        src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
+                        className="ms-avatar-img"
+                        alt="Biometric ID"
+                      />
+                      <div className="ms-avatar-overlay" onClick={() => document.getElementById('avatar-upload').click()}>
+                        <Upload size={24} className="text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                       <input type="file" id="avatar-upload" className="hidden" onChange={handleAvatarUpload} />
+                       <button type="button" onClick={() => document.getElementById('avatar-upload').click()} className="rcp-primary-btn !w-fit mb-2">
+                          Update Visual ID
+                       </button>
+                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Biometric Uplink: Active // PNG, JPG // MAX 2MB</p>
+                    </div>
                   </div>
 
-                  {/* Avatar Uploader */}
-                  <div className="border-b border-white/10 pb-6">
-                    <label className="block text-sm font-medium text-text mb-3">Profile Picture</label>
-                    <div className="flex items-center gap-6">
-                      <div className="relative group">
-                        <img
-                          src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
-                          alt="Avatar"
-                          className="w-24 h-24 rounded-full border-2 border-primary/50 object-cover"
-                        />
-                        <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => document.getElementById('avatar-upload').click()}>
-                          <Upload className="w-6 h-6 text-white" />
-                        </div>
-                      </div >
-                      <div>
-                        <input
-                          type="file"
-                          id="avatar-upload"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleAvatarUpload}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => document.getElementById('avatar-upload').click()}
-                          className="btn-ghost text-sm mb-2"
-                        >
-                          Change Avatar
-                        </button>
-                        <p className="text-xs text-muted">JPG, PNG or GIF. Max size 2MB.</p>
-                      </div>
-                    </div >
-                  </div >
-
-                  {/* Form Fields */}
-                  < div className="space-y-4" >
-                    <div>
-                      <label className="block text-sm font-medium text-text mb-2">Display Name</label>
-                      <input
-                        type="text"
-                        name="displayName"
-                        value={formData.displayName}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                      />
+                  <div className="space-y-6">
+                    <div className="ms-input-group">
+                      <label className="ms-label">Operative Alias</label>
+                      <input name="displayName" value={formData.displayName} onChange={handleChange} className="ms-input" />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-text mb-2">Bio</label>
-                      <textarea
-                        name="bio"
-                        value={formData.bio}
-                        onChange={handleChange}
-                        rows={4}
-                        placeholder="Tell us about yourself..."
-                        className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors resize-none"
-                      />
-                      <p className="mt-1 text-xs text-muted">Brief description for your profile</p>
+                    <div className="ms-input-group">
+                      <label className="ms-label">Field Dossier (Bio)</label>
+                      <textarea name="bio" value={formData.bio} onChange={handleChange} rows={3} className="ms-input resize-none" />
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Website URL</label>
-                        <input
-                          type="url"
-                          name="website"
-                          value={formData.website}
-                          onChange={handleChange}
-                          placeholder="https://example.com"
-                          className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Twitter Handle</label>
-                        <input
-                          type="text"
-                          name="twitter"
-                          value={formData.twitter}
-                          onChange={handleChange}
-                          placeholder="@username"
-                          className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                        />
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <div className="ms-input-group">
+                          <label className="ms-label">Network Node (Website)</label>
+                          <input type="url" name="website" value={formData.website} onChange={handleChange} className="ms-input" placeholder="https://..." />
+                       </div>
+                       <div className="ms-input-group">
+                          <label className="ms-label">Twitter Frequency</label>
+                          <input name="twitter" value={formData.twitter} onChange={handleChange} className="ms-input" placeholder="@alias" />
+                       </div>
                     </div>
-                  </div >
+                  </div>
 
-                  <div className="flex justify-end pt-4">
-                    <button type="submit" disabled={loading} className="btn-primary flex items-center gap-2">
-                      {loading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Check size={18} />
-                          Save Changes
-                        </>
-                      )}
+                  <div className="mt-10 flex justify-end">
+                    <button type="submit" disabled={loading} className="rcp-primary-btn !w-fit !px-10">
+                      {loading ? 'Synchronizing...' : 'Commit Changes'}
                     </button>
                   </div>
-                </form >
+                </form>
               )}
 
-              {/* Tab 2: Security & 2FA */}
-              {
-                activeTab === 'security' && (
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-text mb-1">Security Settings</h2>
-                      <p className="text-sm text-muted">Manage two-factor authentication and security options</p>
-                    </div>
+              {/* TAB 2: CYPHER LOCKS (2FA) */}
+              {activeTab === 'security' && (
+                <div>
+                  <h2 className="ms-tab-title"><Shield className="text-primary" /> Security Protocol</h2>
+                  <TwoFactorSettings user={user} onUpdate={() => updateUserProfile(user)} />
+                </div>
+              )}
 
-                    {/* Use existing TwoFactorSettings component */}
-                    <TwoFactorSettings user={user} onUpdate={() => updateUserProfile(user)} />
-                  </div>
-                )
-              }
-
-              {/* Tab 3: Account & Password */}
-              {
-                activeTab === 'account' && (
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-text mb-1">Account Security</h2>
-                      <p className="text-sm text-muted">Manage your password and account security</p>
-                    </div>
-
-                    <form onSubmit={handleChangePassword} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Current Password</label>
-                        <input
-                          type="password"
-                          name="currentPassword"
-                          value={formData.currentPassword}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">New Password</label>
-                        <input
-                          type="password"
-                          name="newPassword"
-                          value={formData.newPassword}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Confirm New Password</label>
-                        <input
-                          type="password"
-                          name="confirmPassword"
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
-                        />
-                      </div>
-
-                      <div className="flex justify-end pt-2">
-                        <button type="submit" disabled={loading} className="btn-primary">
-                          {loading ? 'Updating...' : 'Update Password'}
-                        </button>
-                      </div>
-                    </form>
-
-                    {/* Danger Zone */}
-                    <div className="mt-8 pt-6 border-t border-white/10">
-                      <div className="border-2 border-danger/30 bg-danger/5 rounded-lg p-6">
-                        <h3 className="text-lg font-bold text-danger mb-2">Danger Zone</h3>
-                        <p className="text-sm text-muted mb-4">
-                          Once you delete your account, there is no going back. Please be certain.
-                        </p>
-                        <button
-                          onClick={handleDeleteAccount}
-                          className="bg-danger hover:bg-danger/80 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                        >
-                          <Trash2 size={18} />
-                          Delete Account
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              }
-
-              {/* Tab 4: Subscription */}
-              {
-                activeTab === 'subscription' && (
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-text mb-1">Subscription</h2>
-                      <p className="text-sm text-muted">Manage your billing details and subscription</p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="p-6 bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/30 rounded-lg">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h3 className="text-xl font-bold text-text">
-                              {user.isPremium ? 'Premium Plan' : 'Free Plan'}
-                            </h3>
-                            <p className="text-sm text-muted">
-                              {user.isPremium
-                                ? 'Full access to all premium features'
-                                : 'Limited access to basic features'
-                              }
-                            </p>
+              {/* TAB 3: CORE ACCESS (PASSWORD/DELETE) */}
+              {activeTab === 'account' && (
+                <div className="space-y-12">
+                  <form onSubmit={handleChangePassword}>
+                    <h2 className="ms-tab-title"><Lock className="text-primary" /> Cypher Rotation</h2>
+                    <div className="space-y-6">
+                       <div className="ms-input-group">
+                          <label className="ms-label">Legacy Cypher</label>
+                          <input type="password" name="currentPassword" value={formData.currentPassword} onChange={handleChange} className="ms-input" />
+                       </div>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="ms-input-group">
+                             <label className="ms-label">Next-Gen Cypher</label>
+                             <input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} className="ms-input" />
                           </div>
-                          <div className="text-3xl font-bold gradient-text">
-                            {user.isPremium ? '$9.99' : '$0'}
+                          <div className="ms-input-group">
+                             <label className="ms-label">Verify New Cypher</label>
+                             <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="ms-input" />
                           </div>
+                       </div>
+                    </div>
+                    <div className="mt-8 flex justify-end">
+                       <button type="submit" disabled={loading} className="rcp-primary-btn !w-fit">
+                          Rotate Access Keys
+                       </button>
+                    </div>
+                  </form>
+
+                  <div className="ms-danger-zone">
+                     <h3 className="ms-danger-title">CRITICAL: Account Termination</h3>
+                     <p className="text-slate-500 text-xs font-bold leading-relaxed">
+                        Initializing account deletion will permanently purge your mission logs, badges, and server access. This operation is non-reversible.
+                     </p>
+                     <button onClick={handleDeleteAccount} className="ms-danger-btn">
+                        Initialize Self-Destruct
+                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: SERVICE TIER */}
+              {activeTab === 'subscription' && (
+                <div className="space-y-8">
+                  <h2 className="ms-tab-title"><CreditCard className="text-primary" /> Operational Level</h2>
+                  
+                  <div className="pp-card !p-8 animate-pulse-slow">
+                     <div className="flex justify-between items-start mb-6">
+                        <div>
+                           <h3 className="text-2xl font-black text-white italic uppercase">{user.isPremium ? 'Elite Operative' : 'Base Infiltrator'}</h3>
+                           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Status: {user.isPremium ? 'Authorized' : 'Limited Access'}</p>
                         </div>
-                        {!user.isPremium && (
-                          <button onClick={() => navigate('/premium')} className="btn-primary w-full">
-                            Upgrade to Premium
-                          </button>
-                        )}
-                      </div>
-
-                      {user.isPremium && user.premiumSubscription && (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
-                            <span className="text-sm text-muted">Status</span>
-                            <span className="text-sm font-semibold text-primary capitalize">{user.premiumSubscription.status}</span>
-                          </div>
-                          <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
-                            <span className="text-sm text-muted">Plan</span>
-                            <span className="text-sm font-semibold text-text capitalize">{user.premiumSubscription.plan}</span>
-                          </div>
-                          {user.premiumSubscription.startDate && (
-                            <div className="flex items-center justify-between p-4 glass-effect rounded-lg border border-white/10">
-                              <span className="text-sm text-muted">Member since</span>
-                              <span className="text-sm font-semibold text-text">
-                                {new Date(user.premiumSubscription.startDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                        <div className="text-4xl font-black gradient-text">{user.isPremium ? '$9.99' : '$0.00'}</div>
+                     </div>
+                     {!user.isPremium && (
+                       <button onClick={() => navigate('/premium')} className="rcp-primary-btn">
+                          Upgrade to Elite Tier
+                       </button>
+                     )}
                   </div>
-                )
-              }
-            </div >
-          </div >
-        </div >
-      </div >
 
-      {/* Toast Notification */}
-      {
-        showToast && (
-          <div className="fixed bottom-8 right-8 glass-effect border border-primary/30 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-up z-50">
-            <Check className="w-5 h-5 text-primary" />
-            <span className="font-medium text-text">{toastMessage}</span>
+                  {user.isPremium && user.premiumSubscription && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                          <div className="ms-label">Billing Status</div>
+                          <div className="text-primary font-black uppercase text-sm mt-1">{user.premiumSubscription.status}</div>
+                       </div>
+                       <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                          <div className="ms-label">Active Cycle</div>
+                          <div className="text-white font-black uppercase text-sm mt-1">{user.premiumSubscription.plan}</div>
+                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
           </div>
-        )
-      }
-    </div >
+        </div>
+      </div>
+
+      {/* TOAST SYSTEM */}
+      {showToast && (
+        <div className="ms-toast">
+           <Check size={18} className="text-primary" />
+           <span className="text-xs font-black text-white uppercase tracking-widest">{toastMessage}</span>
+        </div>
+      )}
+    </div>
   )
 }
 

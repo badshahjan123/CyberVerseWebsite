@@ -1,6 +1,8 @@
 const express = require('express');
 const User = require('../models/User');
 const Room = require('../models/Room');
+const Badge = require('../models/Badge');
+const UserBadge = require('../models/UserBadge');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -58,16 +60,50 @@ router.post('/update-streak', auth, async (req, res) => {
 });
 
 // @route   GET /api/user/badges
-// @desc    Get user's badges
+// @desc    Get user's badges — earned and locked, with type and unlock reason
 // @access  Private
 router.get('/badges', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+        const userId = req.user.id;
 
-        res.json({ badges: user.badges || [] });
+        // All non-secret badges
+        const allBadges = await Badge.find({}).lean();
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Build a fast lookup of earned badge names
+        const earnedMap = {};
+        user.badges.forEach(b => { earnedMap[b.name] = b.earnedAt; });
+
+        const badgesWithStatus = allBadges.map(badge => {
+            const isEarned = !!earnedMap[badge.name];
+            return {
+                _id:          badge._id,
+                name:         badge.name,
+                description:  (badge.isHidden && !isEarned) ? '???' : badge.description,
+                unlockReason: (badge.isHidden && !isEarned) ? 'This is a hidden achievement. Keep exploring!' : badge.unlockReason,
+                category:     badge.category,
+                badgeType:    badge.badgeType,
+                roomId:       badge.roomId,
+                bonusCondition: badge.bonusCondition,
+                difficulty:   badge.difficulty,
+                xpReward:     badge.xpReward,
+                icon:         badge.icon,
+                isHidden:     badge.isHidden,
+                earned:       isEarned,
+                earnedAt:     earnedMap[badge.name] || null
+            };
+        });
+
+        // Sort: earned first, then by difficulty weight
+        const diffWeight = { common: 0, uncommon: 1, rare: 2, legendary: 3 };
+        badgesWithStatus.sort((a, b) => {
+            if (a.earned !== b.earned) return a.earned ? -1 : 1;
+            return (diffWeight[b.difficulty] || 0) - (diffWeight[a.difficulty] || 0);
+        });
+
+        res.json({ badges: badgesWithStatus });
     } catch (error) {
         console.error('Get badges error:', error);
         res.status(500).json({ message: 'Server error' });

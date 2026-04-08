@@ -1,218 +1,333 @@
 import { Link } from "react-router-dom"
 import { useApp } from "../contexts/app-context"
-import { ModernButton } from "../components/ui-components"
-import { Shield, Zap, Users, Trophy, Lock, Terminal, Network, Code, ArrowRight, Star, Sparkles, Play, CheckCircle } from "lucide-react"
-import { memo, useMemo, useCallback } from "react"
+import {
+  Shield, Terminal, Network, Code, Trophy, Crown,
+  Zap, Lock, Star, Flame, ChevronRight, CheckCircle, Swords
+} from "lucide-react"
+import { memo, useMemo, useEffect, useRef, useState } from "react"
 
-// Memoized feature card component
-const FeatureCard = memo(({ feature, index }) => {
-  const Icon = feature.icon
+/* ─────────────────────────────────────────
+   Animated counter hook (runs once on mount)
+───────────────────────────────────────── */
+const useCounter = (target, duration = 1800, startOnMount = true) => {
+  const [count, setCount] = useState(0)
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (!startOnMount || started.current) return
+    started.current = true
+    const startTime = performance.now()
+    const step = (now) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.floor(eased * target))
+      if (progress < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [target, duration, startOnMount])
+
+  return count
+}
+
+/* ─────────────────────────────────────────
+   Stat Card
+───────────────────────────────────────── */
+const StatCard = memo(({ emoji, label, value, xp, color }) => {
+  const numericVal = parseInt(value.replace(/,/g, ""), 10)
+  const counted = useCounter(numericVal)
+
+  const formatted = counted.toLocaleString()
+
   return (
-    <div className="group h-full card p-4 flex flex-col transition-all duration-300 hover:border-primary/30">
-      <div className="will-change-transform">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
-            <Icon className="h-5 w-5 text-primary" />
-          </div>
-          <h3 className="font-semibold text-text text-sm">{feature.title}</h3>
-        </div>
-        <p className="text-sm text-muted leading-relaxed flex-1">
-          {feature.description}
-        </p>
+    <div className="cv-stat-card" style={{ "--accent-color": color }}>
+      <div className="cv-stat-icon">{emoji}</div>
+      <div className="cv-stat-value">{formatted}</div>
+      <div className="cv-stat-label">{label}</div>
+      <div className="cv-xp-bar-wrap">
+        <div className="cv-xp-bar" style={{ "--xp-pct": `${xp}%`, "--bar-color": color }} />
       </div>
+      <div className="cv-xp-label">{xp} XP Progress</div>
     </div>
   )
 })
 
-// Memoized category card component
-const CategoryCard = memo(({ category, index }) => {
-  const Icon = category.icon
-  return (
-    <Link to="/labs" className="group block h-full">
-      <div className="card p-5 text-center h-full transition-all duration-300 hover:border-primary/30">
-        <div className="mb-4 mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-          <Icon className="h-6 w-6 text-primary" />
-        </div>
-        <h3 className="mb-2 text-lg font-semibold text-text">{category.name}</h3>
-        <div className="text-2xl font-bold text-primary mb-1">{category.count}</div>
-        <p className="text-xs text-muted/70">Available Labs</p>
+/* ─────────────────────────────────────────
+   Feature Card
+───────────────────────────────────────── */
+const FeatureCard = memo(({ icon: Icon, title, description, xpBadge, color }) => (
+  <div className="cv-feature-card" style={{ "--feat-color": color }}>
+    <div className="cv-feature-header">
+      <div className="cv-feature-icon-wrap">
+        <Icon className="cv-feature-icon" size={22} />
       </div>
-    </Link>
-  )
-})
+      <span className="cv-xp-badge">{xpBadge}</span>
+    </div>
+    <h3 className="cv-feature-title">{title}</h3>
+    <p className="cv-feature-desc">{description}</p>
+  </div>
+))
 
+/* ─────────────────────────────────────────
+   Leaderboard Row
+───────────────────────────────────────── */
+const LeaderRow = memo(({ rank, name, level, xp, color }) => (
+  <div className="cv-leader-row">
+    <div className="cv-rank-badge" style={{ "--rank-color": color }}>
+      {rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉"}
+    </div>
+    <div className="cv-leader-info">
+      <span className="cv-leader-name">{name}</span>
+      <span className="cv-leader-level">Lvl {level}</span>
+    </div>
+    <div className="cv-leader-xp" style={{ color }}>
+      <Zap size={12} /> {xp.toLocaleString()} XP
+    </div>
+  </div>
+))
+
+/* ─────────────────────────────────────────
+   Dashboard Preview Card (Hero Right)
+───────────────────────────────────────── */
+const DashboardPreview = memo(() => (
+  <div className="cv-dash-card">
+    <div className="cv-dash-header">
+      <Shield size={16} className="cv-dash-icon" />
+      <span className="cv-dash-title">CyberVerse Console</span>
+      <div className="cv-dash-dots">
+        <span style={{ background: "#FF5F57" }} />
+        <span style={{ background: "#FFBD2E" }} />
+        <span style={{ background: "#28C840" }} />
+      </div>
+    </div>
+
+    <div className="cv-dash-terminal">
+      <p><span className="cv-term-prompt">$</span> <span className="cv-term-cmd">connect --lab sql-injection-advanced</span></p>
+      <p className="cv-term-success">✓ Lab environment spawned</p>
+      <p><span className="cv-term-prompt">$</span> <span className="cv-term-cmd">nmap -sV 10.10.1.42</span></p>
+      <p className="cv-term-muted">Starting Nmap 7.94...</p>
+      <p className="cv-term-info">PORT   STATE SERVICE VERSION</p>
+      <p className="cv-term-warn">80/tcp open  http    Apache 2.4.41</p>
+      <p className="cv-term-success">3306/tcp open  mysql</p>
+    </div>
+
+    <div className="cv-dash-stats-row">
+      <div className="cv-mini-stat">
+        <Trophy size={13} style={{ color: "#FACC15" }} />
+        <span>Level 5</span>
+      </div>
+      <div className="cv-mini-stat">
+        <Flame size={13} style={{ color: "#00F5FF" }} />
+        <span>7 Streak</span>
+      </div>
+      <div className="cv-mini-stat">
+        <Star size={13} style={{ color: "#39FF14" }} />
+        <span>2,450 XP</span>
+      </div>
+    </div>
+  </div>
+))
+
+/* ─────────────────────────────────────────
+   Main Home Component
+───────────────────────────────────────── */
 const Home = memo(() => {
   const { isAuthenticated } = useApp()
 
-  // Memoized data to prevent re-renders
+  const stats = useMemo(() => [
+    { emoji: "👾", label: "Active Hackers", value: "1,248", xp: 72, color: "#00F5FF" },
+    { emoji: "🧪", label: "Live Labs",      value: "86",    xp: 58, color: "#8B5CF6" },
+    { emoji: "🏆", label: "Challenges Completed", value: "23,490", xp: 89, color: "#39FF14" },
+  ], [])
+
   const features = useMemo(() => [
     {
       icon: Terminal,
       title: "Interactive Labs",
-      description: "Practice real-world cybersecurity scenarios in isolated virtual environments",
-      color: "teal"
+      description: "Practice real-world cybersecurity scenarios in isolated virtual environments with real tooling.",
+      xpBadge: "+20 XP",
+      color: "#00F5FF",
     },
     {
-      icon: Network,
+      icon: Swords,
       title: "Live Attack Rooms",
-      description: "Join collaborative hacking challenges with players worldwide",
-      color: "coral"
+      description: "Join collaborative hacking challenges with players worldwide and earn arena points.",
+      xpBadge: "+50 XP",
+      color: "#8B5CF6",
     },
     {
       icon: Trophy,
       title: "Global Leaderboard",
-      description: "Compete with hackers globally and climb the ranks",
-      color: "sunflower"
+      description: "Compete with hackers globally, climb the ranked system and earn exclusive titles.",
+      xpBadge: "Ranked",
+      color: "#FACC15",
     },
     {
-      icon: Code,
+      icon: Zap,
       title: "Skill Progression",
-      description: "Track your learning journey from beginner to expert",
-      color: "glow"
+      description: "Track your journey from beginner to elite. Unlock abilities, collect badges and level up.",
+      xpBadge: "Leveling",
+      color: "#39FF14",
     },
   ], [])
 
-  const categories = useMemo(() => [
-    { name: "Web Security", icon: Lock, count: 0, color: "coral" },
-    { name: "Network Pentesting", icon: Network, count: 0, color: "teal" },
-    { name: "Cryptography", icon: Shield, count: 0, color: "glow" },
-    { name: "Forensics", icon: Zap, count: 0, color: "glass" },
+  const leaders = useMemo(() => [
+    { rank: 1, name: "0xShadow",   level: 42, xp: 98450, color: "#FACC15" },
+    { rank: 2, name: "n1ght_cr4wl", level: 38, xp: 87220, color: "#94A3B8" },
+    { rank: 3, name: "byte_ghost",  level: 35, xp: 74100, color: "#CD7F32" },
   ], [])
 
-  // Memoized navigation handlers
-  const handleGetStarted = useCallback(() => {
-    // Add any analytics or tracking here
-  }, [])
-
-  const handleViewLabs = useCallback(() => {
-    // Add any analytics or tracking here
-  }, [])
-
   return (
-    <div className="page-container bg-[rgb(17,24,39)] text-text">
+    <div className="cv-home">
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+      {/* ══════════════ HERO ══════════════ */}
+      <section className="cv-hero">
+        {/* Background layers */}
+        <div className="cv-hero-glow" />
+        <div className="cv-hero-grid" aria-hidden="true" />
 
-        <div className="container relative mx-auto px-6 max-w-6xl">
-          <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-2 text-sm">
-              <Sparkles className="h-3 w-3 text-primary" />
-              <span className="text-primary">Next-gen security training</span>
+        <div className="cv-hero-inner">
+          {/* Left */}
+          <div className="cv-hero-left">
+            <div className="cv-hero-badge">
+              <Shield size={13} />
+              <span>Next-Gen Security Training</span>
             </div>
 
-            <h1 className="mb-4 text-3xl font-bold leading-tight md:text-5xl">
+            <h1 className="cv-hero-heading">
               Master{" "}
-              <span className="gradient-text">technical </span>
-              {" "}Skills
+              <span className="cv-gradient-animate">Cyber Security</span>
+              <br />
+              Like a Pro
             </h1>
 
-            <p className="mb-8 text-lg text-muted max-w-2xl mx-auto">
-              Learn through hands-on labs, compete in live challenges, and advance your career
+            <p className="cv-hero-sub">
+              Hack. Learn. Compete. Rise through the ranks in the world's most
+              immersive cybersecurity training arena.
             </p>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center mb-12">
-              <Link to={isAuthenticated ? "/dashboard" : "/signup"} onClick={handleGetStarted} className="btn-primary group flex items-center justify-center text-base px-6 py-3">
-                <span>{isAuthenticated ? "Go to Dashboard" : "Start Free Trial"}</span>
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform will-change-transform" />
+            <div className="cv-hero-cta">
+              <Link
+                to={isAuthenticated ? "/dashboard" : "/signup"}
+                id="hero-enter-labs"
+                className="cv-btn-primary"
+              >
+                🚀 Enter Labs
+                <ChevronRight size={16} />
               </Link>
-              <Link to="/labs" onClick={handleViewLabs} className="btn-ghost group flex items-center justify-center text-base px-6 py-3 rounded-lg">
-                View Labs
+              <Link
+                to="/leaderboard"
+                id="hero-compete-now"
+                className="cv-btn-secondary"
+              >
+                🎮 Compete Now
               </Link>
             </div>
+          </div>
 
-            {/* Compact Stats */}
-            <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">0</div>
-                <div className="text-xs text-muted/70">Learners</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-accent">0</div>
-                <div className="text-xs text-muted/70">Labs</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-accent-2">24/7</div>
-                <div className="text-xs text-muted/70">Support</div>
-              </div>
-            </div>
+          {/* Right */}
+          <div className="cv-hero-right">
+            <DashboardPreview />
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-12">
-        <div className="container mx-auto px-6 max-w-6xl">
-          <div className="mb-10 text-center">
-            <h2 className="mb-3 text-2xl font-bold text-text">Why Choose CyberVerse?</h2>
-            <p className="text-muted max-w-2xl mx-auto">Professional training with real-world scenarios</p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature, index) => (
-              <FeatureCard key={index} feature={feature} index={index} />
+      {/* ══════════════ STATS ══════════════ */}
+      <section className="cv-stats-section">
+        <div className="cv-section-inner">
+          <div className="cv-stats-grid">
+            {stats.map((s) => (
+              <StatCard key={s.label} {...s} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Categories Section */}
-      <section id="categories" className="py-12">
-        <div className="container mx-auto px-6 max-w-6xl">
-          <div className="mb-10 text-center">
-            <h2 className="mb-3 text-2xl font-bold text-text">Learning Paths</h2>
-            <p className="text-muted max-w-2xl mx-auto">Choose your specialization and advance your skills</p>
+      {/* ══════════════ FEATURES ══════════════ */}
+      <section id="features" className="cv-features-section">
+        <div className="cv-section-inner">
+          <div className="cv-section-header">
+            <h2 className="cv-section-title">Why Choose <span className="cv-gradient-text">CyberVerse?</span></h2>
+            <p className="cv-section-sub">Professional gamified training with real-world scenarios and XP rewards</p>
           </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {categories.map((category, index) => (
-              <CategoryCard key={index} category={category} index={index} />
+          <div className="cv-features-grid">
+            {features.map((f) => (
+              <FeatureCard key={f.title} {...f} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-12">
-        <div className="container mx-auto px-6 max-w-4xl">
-          <div className="card text-center p-8">
-            <div className="mb-6 mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
-              <Users className="h-7 w-7 text-white" />
+      {/* ══════════════ LEADERBOARD PREVIEW ══════════════ */}
+      <section className="cv-lb-section">
+        <div className="cv-section-inner cv-lb-inner">
+          <div className="cv-lb-left">
+            <div className="cv-section-header" style={{ textAlign: "left" }}>
+              <h2 className="cv-section-title">
+                🏆 <span className="cv-gradient-text">Top Hackers</span>
+              </h2>
+              <p className="cv-section-sub">The elite arena. Prove your skills and earn a spot on the global leaderboard.</p>
             </div>
-            <h2 className="mb-4 text-2xl font-bold text-text">
-              Join Security Professionals
-            </h2>
-            <p className="mb-8 text-muted max-w-2xl mx-auto">
-              Start your cybersecurity journey today with hands-on training and real-world scenarios
-            </p>
+            <Link to="/leaderboard" id="view-full-leaderboard" className="cv-btn-outline">
+              View Full Leaderboard <ChevronRight size={14} />
+            </Link>
+          </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-              {!isAuthenticated ? (
-                <>
-                  <Link to="/signup" className="btn-primary group flex items-center justify-center text-base px-6 py-3">
-                    <span>Get Started Free</span>
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform will-change-transform" />
-                  </Link>
-                  <Link to="/login" className="btn-ghost flex items-center justify-center text-base px-6 py-3 rounded-lg">Sign In</Link>
-                </>
-              ) : (
-                <Link to="/dashboard" className="btn-primary group flex items-center justify-center text-base px-6 py-3">
-                  <span>Go to Dashboard</span>
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform will-change-transform" />
-                </Link>
-              )}
+          <div className="cv-lb-card">
+            <div className="cv-lb-card-header">
+              <Trophy size={18} style={{ color: "#FACC15" }} />
+              <span>Global Rankings</span>
+              <span className="cv-lb-live">LIVE</span>
             </div>
-
-            <p className="text-xs text-slate-500">
-              No credit card required • Free trial • Join in seconds
-            </p>
+            {leaders.map((l) => (
+              <LeaderRow key={l.rank} {...l} />
+            ))}
           </div>
         </div>
       </section>
+
+      {/* ══════════════ PREMIUM ══════════════ */}
+      <section className="cv-premium-section">
+        <div className="cv-section-inner">
+          <div className="cv-premium-card">
+            <div className="cv-premium-glow" aria-hidden="true" />
+            <Crown size={40} className="cv-premium-crown" />
+            <h2 className="cv-premium-title">Unlock Pro Hacker Mode</h2>
+            <p className="cv-premium-sub">
+              Gain full access to exclusive labs, private attack rooms, and elite content
+              trusted by professional red teamers.
+            </p>
+
+            <div className="cv-premium-benefits">
+              {[
+                "Unlimited Lab Access & Private Rooms",
+                "Exclusive CTF Competitions & Certificates",
+                "Priority Support & Community Mentorship",
+              ].map((b) => (
+                <div key={b} className="cv-premium-benefit">
+                  <CheckCircle size={16} className="cv-benefit-check" />
+                  <span>{b}</span>
+                </div>
+              ))}
+            </div>
+
+            <Link
+              to={isAuthenticated ? "/premium" : "/signup"}
+              id="premium-upgrade-cta"
+              className="cv-btn-gold"
+            >
+              <Crown size={16} /> Upgrade to Pro
+            </Link>
+
+            <p className="cv-premium-note">Cancel anytime • 7-day money-back guarantee</p>
+          </div>
+        </div>
+      </section>
+
     </div>
   )
 })
 
-Home.displayName = 'Home'
+Home.displayName = "Home"
 export default Home

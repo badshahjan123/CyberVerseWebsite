@@ -1,0 +1,390 @@
+/* ══════════════════════════════════════════════════════════
+   BADGES PAGE — CyberVerse
+   ══════════════════════════════════════════════════════════ */
+
+.bdg-root {
+  min-height: 100vh;
+  background: #0B0F1A;
+  color: #fff;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bdg-root--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bdg-spinner {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,245,255,0.15);
+  border-top-color: #00F5FF;
+  animation: bdg-spin 0.8s linear infinite;
+}
+
+.bdg-bg-grid {
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+
+.bdg-bg-glow {
+  position: fixed; top: -150px; left: 30%;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none; z-index: 0;
+}
+
+.bdg-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+  position: relative; z-index: 1;
+}
+
+/* ── HEADER ── */
+.bdg-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.bdg-header__left {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.bdg-header__icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(250,204,21,0.1);
+  border: 1px solid rgba(250,204,21,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: #FACC15;
+  flex-shrink: 0;
+}
+
+.bdg-header__title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem; font-weight: 900;
+  color: #F0F6FC; letter-spacing: 0.02em;
+  margin-bottom: 0.25rem;
+}
+
+.bdg-header__sub {
+  font-size: 0.875rem;
+  color: #64748B;
+  max-width: 420px;
+  line-height: 1.6;
+}
+
+/* ── STATS STRIP ── */
+.bdg-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(17,24,39,0.6);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.bdg-stat { text-align: center; }
+
+.bdg-stat__val {
+  font-size: 1.5rem; font-weight: 900;
+  font-family: 'Orbitron', sans-serif;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.bdg-stat__total {
+  font-size: 0.9rem;
+  color: #475569;
+  font-family: inherit;
+}
+
+.bdg-stat__label {
+  font-size: 9px; font-weight: 900;
+  color: #475569; text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.bdg-stat-divider {
+  width: 1px; height: 36px;
+  background: rgba(255,255,255,0.06);
+}
+
+/* Progress ring */
+.bdg-ring-wrap {
+  position: relative;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.bdg-ring-pct {
+  position: absolute;
+  font-size: 10px; font-weight: 900;
+  color: #00F5FF;
+}
+
+/* ── TABS ── */
+.bdg-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.bdg-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 8px;
+  font-size: 12px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  color: #64748B; cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bdg-tab:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+.bdg-tab--active {
+  background: rgba(0,245,255,0.08) !important;
+  border-color: rgba(0,245,255,0.25) !important;
+  color: #00F5FF !important;
+}
+
+.bdg-tab__count {
+  padding: 1px 6px; border-radius: 4px;
+  background: rgba(0,245,255,0.15);
+  color: #00F5FF;
+  font-size: 10px; font-weight: 900;
+}
+
+/* ── SECTION ── */
+.bdg-section { margin-bottom: 2.5rem; }
+
+.bdg-section__header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 900;
+  color: #39FF14; text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(57,255,20,0.1);
+}
+
+.bdg-section__header--locked {
+  color: #475569;
+  border-bottom-color: rgba(255,255,255,0.05);
+}
+
+/* ── GRID ── */
+.bdg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+/* ── BADGE CARD ── */
+.bdg-card {
+  position: relative;
+  background: rgba(17,24,39,0.6);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  animation: bdg-fade-up 0.4s ease both;
+  overflow: hidden;
+}
+
+.bdg-card--earned:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0,245,255,0.2);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 20px rgba(0,245,255,0.06);
+}
+
+.bdg-card--locked {
+  opacity: 0.55;
+}
+
+/* Gold shimmer for bonus earned cards */
+.bdg-card--bonus {
+  border-color: rgba(250,204,21,0.2);
+  box-shadow: 0 0 20px rgba(250,204,21,0.06);
+}
+
+.bdg-card--bonus:hover {
+  border-color: rgba(250,204,21,0.35) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 24px rgba(250,204,21,0.1) !important;
+}
+
+/* Top accent line for bonus */
+.bdg-card__accent {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FACC15, transparent);
+}
+
+.bdg-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bdg-card__meta {
+  display: flex; flex-direction: column;
+  align-items: flex-end; gap: 6px;
+}
+
+.bdg-card__diff {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 9px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+
+.bdg-card__diff-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bdg-card__body { flex: 1; }
+
+.bdg-card__name {
+  font-size: 14px; font-weight: 800;
+  color: #F0F6FC; margin-bottom: 5px;
+  line-height: 1.3;
+}
+
+.bdg-card--locked .bdg-card__name { color: #475569; }
+
+.bdg-card__desc {
+  font-size: 11px; color: #64748B;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bdg-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.bdg-card__earned-at {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 9px; font-weight: 700;
+  color: #475569; text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.bdg-card__xp {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 900;
+  color: #FACC15;
+}
+
+.bdg-card__unlock-hint {
+  font-size: 9px; color: #334155;
+  font-weight: 600; line-height: 1.4;
+  font-style: italic;
+}
+
+/* ── EMPTY STATE ── */
+.bdg-empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 4rem 2rem;
+  text-align: center;
+  color: #334155;
+  font-size: 14px; font-weight: 600;
+}
+
+/* ── KEYFRAMES ── */
+@keyframes bdg-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes bdg-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .bdg-header { flex-direction: column; }
+  .bdg-stats  { width: 100%; justify-content: space-between; }
+  .bdg-grid   { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .bdg-header__title { font-size: 1.5rem; }
+}
+
+/* ─────────────────────────────────────────────────────────
+   GAMIFICATION ANIMATIONS
+───────────────────────────────────────────────────────── */
+
+/* ── Glow animations based on rarity ── */
+.bdg-glow-anim {
+  animation: bdg-glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes bdg-glow {
+  0% { opacity: 0.4; filter: blur(10px); }
+  100% { opacity: 0.8; filter: blur(15px); }
+}
+
+/* ── Pulse animation for Rare badges ── */
+.bdg-pulse-anim {
+  animation: bdg-pulse 2s infinite;
+}
+
+@keyframes bdg-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* ── Shine sweep animation for Legendary badges ── */
+.bdg-legendary-shield {
+  position: relative;
+  overflow: hidden;
+}
+
+.bdg-shine-path {
+  animation: bdg-sweep-shine 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes bdg-sweep-shine {
+  0% { transform: translateX(-150%) skewX(-30deg); }
+  20%, 100% { transform: translateX(150%) skewX(-30deg); }
+}
+
+/* ── Accent flash ── */
+.bdg-accent-anim {
+  animation: bdg-accent-flash 2s infinite;
+}
+
+@keyframes bdg-accent-flash {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}

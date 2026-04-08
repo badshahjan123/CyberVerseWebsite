@@ -10,12 +10,13 @@ export const joinRoom = async (roomId) => {
   })
 }
 
-export const submitExercise = async (roomId, lectureIndex, answer) => {
+export const submitExercise = async (roomId, lectureIndex, answer, points = 100) => {
   return await apiCall(`/room-progress/${roomId}/exercise`, {
     method: 'POST',
     body: JSON.stringify({
       lectureIndex,
-      answer
+      answer,
+      points
     })
   })
 }
@@ -29,12 +30,17 @@ export const submitQuiz = async (roomId, quizId, answers) => {
   })
 }
 
-export const completeRoom = async (roomId, finalScore, totalXP) => {
+export const completeRoom = async (roomId, finalScore, totalXP, totalTasks, category, noHintsUsed = false, perfectScore = false) => {
   return await apiCall(`/room-progress/${roomId}/complete`, {
     method: 'POST',
     body: JSON.stringify({
       finalScore,
-      totalXP
+      totalXP,
+      tasksCompleted: totalTasks,
+      totalTasks,
+      category,
+      noHintsUsed,
+      perfectScore
     })
   })
 }
@@ -50,3 +56,6 @@ export const resetRoomProgress = async (roomId) => {
     method: 'POST'
   })
 }
+
+// Alias used by the Replay system (same endpoint, clearer name)
+export const replayRoom = resetRoomProgress

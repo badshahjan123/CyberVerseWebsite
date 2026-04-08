@@ -9,27 +9,53 @@ const router = express.Router();
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    console.log('\n=== ADMIN LOGIN ATTEMPT ===');
+    console.log('Email:', email);
+    console.log('Password length:', password?.length);
+    console.log('Timestamp:', new Date().toISOString());
 
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     // Find admin user
+    console.log('🔍 Looking for user with email:', email);
     const user = await User.findOne({ email }).select('+password');
+    
     if (!user) {
+      console.log('❌ User NOT FOUND in database');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    
+    console.log('✅ User found:', {
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isActive: user.isActive,
+      hasPassword: !!user.password
+    });
 
     // Check if user is admin or super_admin
     if (user.role !== 'admin' && user.role !== 'super_admin') {
+      console.log('❌ User role check failed. Role:', user.role);
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
+    
+    console.log('✅ Role check passed. Role:', user.role);
 
     // Check password
+    console.log('🔐 Comparing password...');
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match result:', isMatch);
+    
     if (!isMatch) {
+      console.log('❌ Password does NOT match');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    
+    console.log('✅ Password verified successfully!');
 
     // Generate JWT
     const token = jwt.sign(

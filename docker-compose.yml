@@ -1,4 +1,3 @@
-# Assumes: Docker Desktop installed and running on Windows
 # This docker-compose.yml manages all CyberVerse lab containers
 
 version: '3.8'

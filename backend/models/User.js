@@ -64,6 +64,23 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  xp: {
+    type: Number,
+    default: 0
+  },
+  rank: {
+    type: Number,
+    default: 0
+  },
+  skills: {
+    web: { type: Number, default: 0 },
+    network: { type: Number, default: 0 },
+    linux: { type: Number, default: 0 },
+    forensics: { type: Number, default: 0 },
+    osint: { type: Number, default: 0 },
+    exploit: { type: Number, default: 0 },
+    crypto: { type: Number, default: 0 }
+  },
   welcomeBonusGiven: {
     type: Boolean,
     default: false
@@ -309,8 +326,8 @@ userSchema.methods.updateStreak = function (activityType, itemId) {
       this.currentStreak = (this.currentStreak || 0) + 1;
       this.lastStreakDate = today;
     } else if (lastStreakDateNormalized.getTime() === today.getTime()) {
-      // Same day (shouldn't happen due to check above)
-      return;
+      // Same day - streak already updated for today, just continue to trigger save
+      console.log('Same day activity - streak maintained');
     } else {
       // Streak broken, start new
       this.currentStreak = 1;
@@ -324,6 +341,28 @@ userSchema.methods.updateStreak = function (activityType, itemId) {
   }
 
   console.log(`Streak updated: ${this.currentStreak}, longest: ${this.longestStreak}`);
+};
+
+// Update skill points based on category
+userSchema.methods.updateSkill = function (category, points) {
+  const catMap = {
+    'Web Security': 'web',
+    'Web': 'web',
+    'Network Security': 'network',
+    'Networking': 'network',
+    'Forensics': 'forensics',
+    'OSINT': 'osint',
+    'Reverse Engineering': 'exploit',
+    'Cryptography': 'crypto',
+    'Development': 'web',
+    'DevOps': 'linux',
+    'Linux': 'linux'
+  };
+
+  const skillKey = catMap[category] || 'exploit';
+  if (this.skills[skillKey] !== undefined) {
+    this.skills[skillKey] = Math.min(100, this.skills[skillKey] + (points / 10)); // Normalize increase
+  }
 };
 
 // Check and update streak status
@@ -346,21 +385,30 @@ userSchema.methods.checkStreakStatus = function () {
 
 // Update completed counts and level before saving
 userSchema.pre('save', function (next) {
-  // Only update if the progress arrays were modified
-  if (this.isModified('roomProgress') && this.roomProgress) {
-    // Only count rooms that are completed AND quiz is completed
-    const uniqueCompletedRooms = this.roomProgress.filter(rp =>
-      rp.completed && rp.quizCompleted && rp.roomId
-    ).length;
-    this.completedRooms = uniqueCompletedRooms;
-  }
-  if (this.isModified('labProgress') && this.labProgress) {
-    const uniqueCompletedLabs = this.labProgress.filter(lp => lp.completed && lp.labId).length;
-    this.completedLabs = uniqueCompletedLabs;
+  // Always recalculate completion counts to ensure dashboard accuracy
+  if (this.roomProgress && this.roomProgress.length > 0) {
+    const uniqueRoomIds = new Set();
+    this.roomProgress.forEach(rp => {
+      if (rp.completed && rp.roomId) {
+        uniqueRoomIds.add(rp.roomId.toString());
+      }
+    });
+    this.completedRooms = uniqueRoomIds.size;
   }
 
-  // Auto-update level based on points
+  if (this.labProgress && this.labProgress.length > 0) {
+    const uniqueLabIds = new Set();
+    this.labProgress.forEach(lp => {
+      if (lp.completed && lp.labId) {
+        uniqueLabIds.add(lp.labId.toString());
+      }
+    });
+    this.completedLabs = uniqueLabIds.size;
+  }
+
+  // Auto-update level and XP based on points
   if (this.isModified('points')) {
+    this.xp = this.points;
     this.level = this.calculateLevel();
   }
 

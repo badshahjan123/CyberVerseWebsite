@@ -1,105 +1,121 @@
 import { Link } from 'react-router-dom'
-import { Bookmark, BookmarkX, Clock, Award, Play } from 'lucide-react'
+import { Archive, BookmarkX, Clock, Target, Beaker, ArrowUpRight, Play, Shield } from 'lucide-react'
 import { useBookmarks } from '../../contexts/bookmark-context'
 
 const SavedItems = () => {
-    const { bookmarkedItems, removeBookmark } = useBookmarks()
+    const { bookmarkedItems, removeBookmark, setBookmarkedItems } = useBookmarks()
     
     const handleUnsave = (id, type) => {
         removeBookmark(id, type)
     }
-    
-    const getDifficultyColor = (difficulty) => {
-        switch (difficulty) {
-            case 'Easy': case 'Beginner': return 'bg-success/20 text-success border-success/30'
-            case 'Medium': case 'Intermediate': return 'bg-warning/20 text-warning border-warning/30'
-            case 'Hard': case 'Insane': return 'bg-danger/20 text-danger border-danger/30'
-            default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+
+    const handleClearAll = () => {
+        if (confirm("Are you sure you want to purge all tactical archive data?")) {
+            setBookmarkedItems([])
         }
     }
-
-
-
+    
     return (
-        <div className="page-container bg-[rgb(8,12,16)] text-text min-h-screen py-8">
-        <div className="container mx-auto px-4 max-w-6xl">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-text mb-2">Saved Items</h1>
-                <p className="text-muted">Your bookmarked rooms and labs</p>
-            </div>
-
-            {bookmarkedItems.length === 0 ? (
-                <div className="card p-12 text-center">
-                    <Bookmark className="w-16 h-16 text-muted mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-text mb-2">No Saved Items</h3>
-                    <p className="text-muted mb-4">Bookmark rooms and labs to access them quickly!</p>
-                    <div className="flex gap-3 justify-center">
-                        <Link to="/rooms" className="btn-primary inline-flex items-center gap-2">
-                            <Play className="w-4 h-4" />
-                            Browse Rooms
-                        </Link>
-                        <Link to="/labs" className="btn-ghost inline-flex items-center gap-2">
-                            <Award className="w-4 h-4" />
-                            Browse Labs
-                        </Link>
+        <div className="si-root">
+            <div className="si-grid-bg" />
+            <div className="rdp-bg-glow" /> {/* Reusing the glow from RoomDetail */}
+            
+            <div className="container mx-auto px-6 max-w-7xl pt-20 pb-40 relative z-10">
+                <header className="si-hero rcp-fade-in flex flex-col md:flex-row justify-between items-end gap-8">
+                    <div>
+                        <h1 className="si-title italic">Tactical <span className="gradient-text">Archive</span></h1>
+                        <p className="si-subtitle">
+                           <Archive size={16} className="text-primary" /> 
+                           Central Intelligence Stash // Stored Directives: {bookmarkedItems.length}
+                        </p>
                     </div>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {bookmarkedItems.map((item) => (
-                        <div
-                            key={`${item.type}-${item.id}`}
-                            className="card p-6 hover:border-primary/50 transition-all group"
-                        >
-                            <div className="flex items-start justify-between mb-4">
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.type === 'room'
-                                        ? 'bg-primary/20 text-primary'
-                                        : 'bg-accent/20 text-accent'
-                                    }`}>
-                                    {item.type.toUpperCase()}
-                                </span>
-                                <button
-                                    onClick={() => handleUnsave(item.id, item.type)}
-                                    className="p-1 hover:bg-danger/10 rounded transition-colors"
-                                    title="Remove from saved"
-                                >
-                                    <BookmarkX className="w-4 h-4 text-muted hover:text-danger" />
-                                </button>
-                            </div>
+                    {bookmarkedItems.length > 0 && (
+                        <button onClick={handleClearAll} className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:bg-danger/10 hover:text-danger hover:border-danger/30 transition-all">
+                            Purge Archives
+                        </button>
+                    )}
+                </header>
 
-                            <div className="text-3xl mb-3">{item.icon || (item.type === 'room' ? '🎯' : '🧪')}</div>
-
-                            <h3 className="font-bold text-text mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                                {item.title}
-                            </h3>
-
-                            <p className="text-sm text-muted mb-4">
-                                {item.category}
-                            </p>
-
-                            <div className="flex items-center justify-between text-xs mb-4">
-                                <span className="flex items-center gap-1 text-muted">
-                                    <Clock className="w-3 h-3" />
-                                    Saved {new Date(item.bookmarkedAt).toLocaleDateString()}
-                                </span>
-                                {item.difficulty && (
-                                    <span className={`px-2 py-1 rounded text-xs font-semibold border ${getDifficultyColor(item.difficulty)}`}>
-                                        {item.difficulty}
-                                    </span>
-                                )}
-                            </div>
-
-                            <Link
-                                to={item.type === 'room' ? `/rooms/${item.slug || item.id}` : `/labs/${item.id}`}
-                                className="block w-full btn-primary text-center text-sm py-2"
-                            >
-                                View {item.type === 'room' ? 'Room' : 'Lab'}
+                {bookmarkedItems.length === 0 ? (
+                    <div className="si-empty-state rcp-fade-in max-w-4xl mx-auto backdrop-blur-md">
+                        <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-primary/20">
+                            <Archive size={40} className="text-primary opacity-50" />
+                        </div>
+                        <h3 className="text-3xl font-black text-white italic uppercase mb-3">Archive Vault Empty</h3>
+                        <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[11px] mb-12">No tactical data has been stored in your mainframe.</p>
+                        <div className="flex flex-wrap gap-4 justify-center">
+                            <Link to="/rooms" className="px-10 py-4 bg-primary text-black font-black uppercase text-sm rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(139,92,246,0.3)]">
+                                Locate Rooms
+                            </Link>
+                            <Link to="/labs" className="px-10 py-4 bg-white/5 border border-white/10 text-white font-black uppercase text-sm rounded-xl hover:bg-white/10 transition-all">
+                                Infiltrate Labs
                             </Link>
                         </div>
-                    ))}
-                </div>
-            )}
-        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {bookmarkedItems.map((item, index) => (
+                            <div
+                                key={`${item.type}-${item.id}`}
+                                className="si-card rcp-fade-in"
+                                style={{ animationDelay: `${index * 0.1}s` }}
+                            >
+                                <button
+                                    onClick={() => handleUnsave(item.id, item.type)}
+                                    className="si-unsave-btn"
+                                    title="Purge from Archive"
+                                >
+                                    <BookmarkX size={18} />
+                                </button>
+
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className={`si-type-tag ${item.type === 'room' ? 'si-type-tag--room' : 'si-type-tag--lab'}`}>
+                                        {item.type === 'room' ? <Target size={12} className="mr-2" /> : <Beaker size={12} className="mr-2" />}
+                                        {item.type}
+                                    </div>
+                                    {item.difficulty && (
+                                        <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border bg-white/5 ${item.difficulty.toLowerCase().includes('easy') ? 'text-success border-success/30' : 'text-warning border-warning/30'}`}>
+                                            {item.difficulty}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="si-item-icon mb-6">
+                                    {item.icon ? item.icon : (item.type === 'room' ? '🎯' : '🧪')}
+                                </div>
+
+                                <h3 className="si-item-title mb-3 group-hover:text-primary transition-colors">
+                                    {item.title}
+                                </h3>
+
+                                <p className="si-item-meta mb-10">
+                                    {item.category || 'Classified Intelligence'}
+                                </p>
+
+                                <div className="si-stat-row">
+                                    <div className="si-stat">
+                                        <Clock size={14} className="text-primary" />
+                                        <span>Logged: {new Date(item.bookmarkedAt).toLocaleDateString()}</span>
+                                    </div>
+                                    {item.xp && (
+                                        <div className="si-stat ml-auto">
+                                            <span className="text-warning font-black">{item.xp} XP</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Link
+                                    to={item.type === 'room' ? `/rooms/${item.slug || item.id}` : `/labs/${item.id}`}
+                                    className="w-full py-4 bg-primary text-black font-black uppercase text-sm rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
+                                >
+                                    Access Data 
+                                    <ArrowUpRight size={18} />
+                                </Link>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     )
 }

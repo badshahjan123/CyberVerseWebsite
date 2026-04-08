@@ -23,5 +23,6 @@
   "python.defaultInterpreterPath": "python",
   "security.workspace.trust.untrustedFiles": "open",
   "workbench.startupEditor": "none",
-  "extensions.autoUpdate": false
+  "extensions.autoUpdate": false,
+  "css.lint.unknownAtRules": "ignore"
 }

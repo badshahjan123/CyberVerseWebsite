@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Github,
   Twitter,
@@ -16,6 +16,7 @@ import {
 import { useApp } from "../../contexts/app-context";
 import { useRealtime } from "../../contexts/realtime-context";
 import { apiCall, API_BASE_URL } from "../../config/api";
+import BadgeIcon from "../../components/achievements/BadgeIcon";
 
 // Helper function to generate activity heatmap data for last 365 days
 const generateHeatmapData = (roomProgress = []) => {
@@ -49,73 +50,69 @@ const generateHeatmapData = (roomProgress = []) => {
 };
 
 const Profile = () => {
-  const { user } = useApp();
+  const { user, refreshUser } = useApp();
   const { userStats } = useRealtime();
   const [heatmapData, setHeatmapData] = useState([]);
   const [badges, setBadges] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userRank, setUserRank] = useState(null);
 
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!user) return;
+  // Stats merging: Prefer RealtimeContext for volatile stats, use AppContext for identity/progress
+  const ud = useMemo(() => ({
+    ...user,
+    ...userStats,
+    points: userStats?.totalXP || user?.points || 0,
+    streak: userStats?.streak || user?.currentStreak || 0,
+    longestStreak: userStats?.longestStreak || user?.longestStreak || 0,
+    rank: userStats?.rank || user?.rank || 999,
+    completedRooms: userStats?.completedRooms || user?.completedRooms || 0,
+    completedLabs: userStats?.completedLabs || user?.completedLabs || 0,
+  }), [user, userStats]);
 
-      try {
-        const token = localStorage.getItem("token");
+  const fetchProfileData = useCallback(async (bypassLoading = false) => {
+    if (!user) return;
+    if (!bypassLoading) setLoading(true);
+    
+    try {
+      const badgesResponse = await apiCall("/user/badges");
+      setBadges(badgesResponse.badges || []);
 
-        // Fetch badges
-        const badgesResponse = await apiCall("/user/badges");
-        setBadges(badgesResponse.badges || []);
+      const recentRooms = user.roomProgress
+        ?.filter((rp) => rp.completed)
+        ?.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+        ?.slice(0, 3) || [];
+      setRecentActivity(recentRooms);
 
-        // Fetch recent room completions
-        const recentRooms =
-          user.roomProgress
-            ?.filter((rp) => rp.completed)
-            ?.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
-            ?.slice(0, 3) || [];
-        setRecentActivity(recentRooms);
-
-        // Generate heatmap from room progress
-        setHeatmapData(generateHeatmapData(user.roomProgress || []));
-
-        // Calculate user rank
-        if (user.points) {
-          const rank = (await user.calculateRank?.()) || null;
-          setUserRank(rank);
-        }
-      } catch (error) {
-        console.error("Failed to fetch profile data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfileData();
+      setHeatmapData(generateHeatmapData(user.roomProgress || []));
+    } catch (error) {
+      console.error("Profile Retrieval Failure:", error);
+    } finally {
+      if (!bypassLoading) setLoading(false);
+    }
   }, [user]);
 
-  const getRankPercentage = () => {
-    if (!userRank || !userRank.totalUsers) return "0.00";
-    return ((userRank.rank / userRank.totalUsers) * 100).toFixed(2);
-  };
+  // Initial fetch
+  useEffect(() => {
+    fetchProfileData();
+  }, [fetchProfileData]);
 
-  const getRankBorder = () => {
-    const percentage = parseFloat(getRankPercentage());
-    if (percentage <= 1) return "border-yellow-400 shadow-yellow-400/50";
-    if (percentage <= 5) return "border-gray-400 shadow-gray-400/50";
-    if (percentage <= 10) return "border-orange-600 shadow-orange-600/50";
-    return "border-primary/50 shadow-primary/30";
-  };
+  // Real-time listeners for profile sync
+  useEffect(() => {
+    const handleSync = async () => {
+      console.log("🔄 Profile Sync Triggered...");
+      await refreshUser(); // This updates the 'user' object in AppContext
+      fetchProfileData(true); // Re-fetch auxiliary data (badges, recent activity)
+    };
 
-  const getHeatmapColor = (level) => {
-    if (level === 0) return "bg-background/50 border border-border/20";
-    if (level === 1) return "bg-green-900/40 border border-green-700/20";
-    if (level === 2) return "bg-green-700/60 border border-green-500/20";
-    if (level === 3) return "bg-green-500/80 border border-green-400/20";
-    return "bg-green-400 border border-green-300/20";
-  };
+    window.addEventListener("roomCompleted", handleSync);
+    window.addEventListener("labCompleted", handleSync);
+    
+    return () => {
+      window.removeEventListener("roomCompleted", handleSync);
+      window.removeEventListener("labCompleted", handleSync);
+    };
+  }, [refreshUser, fetchProfileData]);
 
-  // Group heatmap data by weeks
   const weeks = [];
   for (let i = 0; i < heatmapData.length; i += 7) {
     weeks.push(heatmapData.slice(i, i + 7));
@@ -123,243 +120,162 @@ const Profile = () => {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="up-root flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="page-container bg-[rgb(8,12,16)] text-text min-h-screen pb-32">
-      <div className="container mx-auto px-4 max-w-7xl py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Sidebar - Identity Card (Sticky) */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-20 space-y-6">
-              {/* Avatar & Basic Info */}
-              <div className="glass-effect rounded-xl p-6 text-center border border-white/10">
-                <div className="relative inline-block mb-4">
-                  <img
-                    src={
-                      user.avatar
-                        ? user.avatar.startsWith("http")
-                          ? user.avatar
-                          : `http://localhost:5000${user.avatar}`
-                        : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`
-                    }
-                    alt={user.name}
-                    className={`w-32 h-32 rounded-full border-4 ${getRankBorder()} object-cover`}
-                    key={user.avatar}
+    <div className="up-root">
+      <div className="up-grid" />
+      <div className="up-bg-glow" />
+
+      <div className="container mx-auto px-4 max-w-7xl pt-12 pb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* ── IDENTITY COLUMN ── */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24 h-fit">
+            <div className="up-identity-card rcp-fade-in">
+               <div className="up-avatar-wrap">
+                  <div className="up-avatar-ring" />
+                  <img 
+                    src={user.avatar?.startsWith('http') ? user.avatar : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`} 
+                    className="up-avatar-img"
+                    alt="Subject"
                   />
-                  {user.isPremium && (
-                    <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center border-2 border-background shadow-lg">
-                      <Crown className="w-5 h-5 text-white" />
+               </div>
+               
+               <h2 className="text-3xl font-black text-white italic tracking-tighter mb-1 uppercase">
+                  {user.name}
+               </h2>
+               <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-6">
+                  {user.email}
+               </p>
+
+               <div className="flex flex-wrap justify-center gap-2 mb-8">
+                  <div className="up-rank-tag">
+                     <Trophy size={10} className="mr-2" /> Global #{ud.rank || '---'}
+                  </div>
+                  {ud.isPremium && (
+                    <div className="up-rank-tag !text-primary !border-primary/20 !bg-primary/5">
+                       <Crown size={10} className="mr-2" /> Elite Tier
                     </div>
                   )}
-                </div>
+               </div>
 
-                <h2 className="text-2xl font-bold text-text mb-1">
-                  {user.name}
-                </h2>
-                <p className="text-muted text-sm mb-3">{user.email}</p>
+               <div className="grid grid-cols-2 gap-3">
+                  <div className="up-stat-tile">
+                     <div className="up-stat-val text-primary">{ud.completedRooms || 0}</div>
+                     <div className="up-stat-label">Operations</div>
+                  </div>
+                  <div className="up-stat-tile">
+                     <div className="up-stat-val text-white">{ud.streak || 0}</div>
+                     <div className="up-stat-label">Day Streak</div>
+                  </div>
+               </div>
 
-                <div className="flex items-center justify-center gap-2 text-xs text-muted">
-                  <Calendar className="w-4 h-4" />
-                  <span>
-                    Member since{" "}
-                    {new Date(user.createdAt).toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              {/* Rank Card */}
-              {userRank && (
-                <div className="glass-effect rounded-xl p-6 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/30 border">
-                  <div className="text-center">
-                    <div className="text-sm text-muted mb-2">Global Rank</div>
-                    <div className="text-4xl font-bold gradient-text mb-1">
-                      #{userRank.rank}
-                    </div>
-                    <div className="text-xs text-muted">
-                      Top {getRankPercentage()}% of{" "}
-                      {userRank.totalUsers.toLocaleString()} users
-                    </div>
+               <div className="mt-8 pt-8 border-t border-white/5">
+                  <div className="flex items-center justify-center gap-6 text-slate-500">
+                     <Github size={20} className="hover:text-white cursor-pointer transition-colors" />
+                     <Twitter size={20} className="hover:text-white cursor-pointer transition-colors" />
+                     <Linkedin size={20} className="hover:text-white cursor-pointer transition-colors" />
                   </div>
-                </div>
-              )}
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="glass-effect rounded-xl p-4 text-center border border-white/10 hover-lift">
-                  <Target className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-text">
-                    {user.completedRooms || 0}
-                  </div>
-                  <div className="text-xs text-muted">Rooms</div>
-                </div>
-                <div className="glass-effect rounded-xl p-4 text-center border border-white/10 hover-lift">
-                  <Shield className="w-6 h-6 text-accent mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-text">
-                    {user.completedLabs || 0}
-                  </div>
-                  <div className="text-xs text-muted">Labs</div>
-                </div>
-                <div className="glass-effect rounded-xl p-4 text-center border border-white/10 hover-lift">
-                  <Trophy className="w-6 h-6 text-warning mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-text">
-                    {user.points?.toLocaleString() || 0}
-                  </div>
-                  <div className="text-xs text-muted">Points</div>
-                </div>
-                <div className="glass-effect rounded-xl p-4 text-center border border-white/10 hover-lift">
-                  <Flame className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-text">
-                    {user.streak || 0}
-                  </div>
-                  <div className="text-xs text-muted">Day Streak</div>
-                </div>
-              </div>
+               </div>
             </div>
           </div>
 
-          {/* Right Content - Achievement Data */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Activity Heatmap */}
-            <div className="glass-effect rounded-xl p-6 border border-white/10">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-text">
-                    Activity Overview
-                  </h3>
-                  <p className="text-sm text-muted">
-                    Your learning activity over the past year
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  <span>Less</span>
-                  <div className="flex gap-1">
-                    {[0, 1, 2, 3, 4].map((level) => (
-                      <div
-                        key={level}
-                        className={`w-3 h-3 rounded-sm ${getHeatmapColor(
-                          level
-                        )}`}
-                      />
-                    ))}
-                  </div>
-                  <span>More</span>
-                </div>
-              </div>
-
-              {/* Heatmap Grid */}
-              <div className="overflow-x-auto pb-2">
-                <div className="flex gap-1" style={{ minWidth: "fit-content" }}>
-                  {weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className="flex flex-col gap-1">
-                      {week.map((day, dayIndex) => (
-                        <div
-                          key={dayIndex}
-                          className={`w-3 h-3 rounded-sm ${getHeatmapColor(
-                            day.level
-                          )} hover:ring-2 hover:ring-primary transition-all cursor-pointer`}
-                          title={`${day.date}: ${day.level} ${day.level === 1 ? "activity" : "activities"
-                            }`}
-                        />
-                      ))}
+          {/* ── ACHIEVEMENT DATA ── */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* ACTIVITY MATRIX */}
+            <div className="up-matrix-card rcp-fade-in" style={{ animationDelay: '0.1s' }}>
+               <div className="up-section-title">
+                  <Target size={20} className="text-primary" />
+                  Activity Matrix
+               </div>
+               
+               <div className="up-heatmap-grid">
+                  {weeks.map((week, wi) => (
+                    <div key={wi} className="flex flex-col gap-1">
+                       {week.map((day, di) => (
+                         <div 
+                           key={di} 
+                           className={`up-heatmap-day up-heatmap-day--${day.level}`}
+                           title={`${day.date}: ${day.level} activity`}
+                         />
+                       ))}
                     </div>
                   ))}
-                </div>
-              </div>
+               </div>
+               <div className="flex justify-between mt-4 text-[9px] font-black text-slate-600 uppercase tracking-widest">
+                  <span>Past 365 Days Operation Log</span>
+                  <div className="flex items-center gap-2">
+                     <span>Less</span>
+                     <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+                        <div className="w-2 h-2 up-heatmap-day--4 rounded-sm" />
+                     </div>
+                     <span>More</span>
+                  </div>
+               </div>
             </div>
 
-            {/* Badges Section */}
+            {/* SKILL INSIGNIAS */}
             {badges.length > 0 && (
-              <div className="glass-effect rounded-xl p-6 border border-white/10">
-                <h3 className="text-xl font-bold text-text mb-6">
-                  Earned Badges
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {badges.map((badge) => (
-                    <div
-                      key={badge._id}
-                      className="group relative p-6 rounded-lg glass-effect border border-white/10 hover:border-primary/50 transition-all cursor-pointer hover-lift"
-                    >
-                      <div className="text-center">
-                        <div className="text-4xl mb-2">
-                          {badge.icon || "🏆"}
-                        </div>
-                        <div className="text-sm font-semibold text-text">
-                          {badge.name}
-                        </div>
-                        {badge.description && (
-                          <div className="text-xs text-muted mt-1">
-                            {badge.description}
-                          </div>
-                        )}
+              <div className="up-matrix-card rcp-fade-in" style={{ animationDelay: '0.2s' }}>
+                 <div className="up-section-title">
+                    <Award size={20} className="text-purple-500" />
+                    Operational Insignias
+                 </div>
+                 <div className="up-badge-grid">
+                    {badges.map(b => (
+                      <div key={b._id} className="up-badge-item">
+                         <span className="up-badge-icon">{b.icon || '🏆'}</span>
+                         <div className="text-[11px] font-black text-white uppercase mb-1">{b.name}</div>
+                         <div className="text-[9px] font-bold text-slate-600 leading-tight">{b.description}</div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                 </div>
               </div>
             )}
 
-            {/* Recent Activity */}
-            <div className="glass-effect rounded-xl p-6 border border-white/10">
-              <h3 className="text-xl font-bold text-text mb-6">
-                Recent Completions
-              </h3>
-              {recentActivity.length === 0 ? (
-                <div className="text-center py-8">
-                  <Target className="w-12 h-12 text-muted mx-auto mb-3" />
-                  <p className="text-muted">
-                    No completed rooms yet. Start your journey!
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div
-                      key={activity.roomId || index}
-                      className="flex items-center gap-4 p-4 rounded-lg glass-effect border border-white/10 hover:border-primary/30 transition-all group hover-lift"
-                    >
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
-                        <Award className="w-6 h-6 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-text group-hover:text-primary transition-colors truncate">
-                          Room Completed
-                        </h4>
-                        <p className="text-sm text-muted">
-                          {new Date(activity.completedAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            }
-                          )}
-                        </p>
-                      </div>
-                      {activity.finalScore !== null &&
-                        activity.finalScore !== undefined && (
-                          <div className="text-right flex-shrink-0">
-                            <div className="text-lg font-bold text-primary">
-                              {activity.finalScore > 1000000000000
-                                ? "100"
-                                : activity.finalScore}
-                              %
+            {/* MISSION LOGS */}
+            <div className="up-matrix-card rcp-fade-in" style={{ animationDelay: '0.3s' }}>
+               <div className="up-section-title">
+                  <Flame size={20} className="text-danger" />
+                  Recent Mission Logs
+               </div>
+               
+               {recentActivity.length === 0 ? (
+                 <div className="text-center py-12 border border-dashed border-white/5 rounded-2xl">
+                    <p className="text-slate-600 font-bold uppercase tracking-widest text-xs">No Recent Field Activity</p>
+                 </div>
+               ) : (
+                 <div className="space-y-3">
+                    {recentActivity.map((activity, i) => (
+                      <div key={i} className="up-activity-row group">
+                         <div className="up-activity-icon">
+                            <Shield size={20} />
+                         </div>
+                         <div className="flex-1">
+                            <h4 className="font-black text-white uppercase italic group-hover:text-primary transition-colors">
+                               Room Objective Decoupled
+                            </h4>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">
+                               Detected: {new Date(activity.completedAt).toLocaleDateString()}
                             </div>
-                            <div className="text-xs text-muted">Score</div>
-                          </div>
-                        )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                         </div>
+                         <div className="text-right">
+                            <div className="text-xl font-black text-primary italic">100%</div>
+                            <div className="text-[9px] font-black text-slate-600 uppercase">Yield</div>
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+               )}
             </div>
+
           </div>
         </div>
       </div>
@@ -368,3 +284,4 @@ const Profile = () => {
 };
 
 export default Profile;
+
