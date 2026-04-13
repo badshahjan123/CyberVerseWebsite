@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Archive, BookmarkX, Clock, Target, Beaker, ArrowUpRight, Play, Shield } from 'lucide-react'
 import { useBookmarks } from '../../contexts/bookmark-context'
+import './SavedItems.css'
 
 const SavedItems = () => {
     const { bookmarkedItems, removeBookmark, setBookmarkedItems } = useBookmarks()
@@ -21,16 +22,15 @@ const SavedItems = () => {
             <div className="rdp-bg-glow" /> {/* Reusing the glow from RoomDetail */}
             
             <div className="container mx-auto px-6 max-w-7xl pt-20 pb-40 relative z-10">
-                <header className="si-hero rcp-fade-in flex flex-col md:flex-row justify-between items-end gap-8">
+                <header className="cv-page-header rcp-fade-in flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
                     <div>
-                        <h1 className="si-title italic">Tactical <span className="gradient-text">Archive</span></h1>
-                        <p className="si-subtitle">
-                           <Archive size={16} className="text-primary" /> 
-                           Central Intelligence Stash // Stored Directives: {bookmarkedItems.length}
+                        <h1 className="cv-page-title">Saved Items</h1>
+                        <p className="cv-page-subtitle">
+                           Manage your architectural intelligence and stored directives
                         </p>
                     </div>
                     {bookmarkedItems.length > 0 && (
-                        <button onClick={handleClearAll} className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:bg-danger/10 hover:text-danger hover:border-danger/30 transition-all">
+                        <button onClick={handleClearAll} className="si-purge-btn px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all flex-shrink-0">
                             Purge Archives
                         </button>
                     )}
@@ -38,22 +38,22 @@ const SavedItems = () => {
 
                 {bookmarkedItems.length === 0 ? (
                     <div className="si-empty-state rcp-fade-in max-w-4xl mx-auto backdrop-blur-md">
-                        <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-primary/20">
-                            <Archive size={40} className="text-primary opacity-50" />
+                        <div className="w-24 h-24 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-cyan-500/20">
+                            <Archive size={40} className="text-cyan-400 opacity-50" />
                         </div>
-                        <h3 className="text-3xl font-black text-white italic uppercase mb-3">Archive Vault Empty</h3>
-                        <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[11px] mb-12">No tactical data has been stored in your mainframe.</p>
+                        <h3 className="text-2xl font-bold text-white mb-2">Archive Vault Empty</h3>
+                        <p className="cv-page-subtitle mb-12">No tactical data has been stored in your mainframe.</p>
                         <div className="flex flex-wrap gap-4 justify-center">
-                            <Link to="/rooms" className="px-10 py-4 bg-primary text-black font-black uppercase text-sm rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(139,92,246,0.3)]">
+                            <Link to="/rooms" className="rcp-primary-btn !w-fit !px-8">
                                 Locate Rooms
                             </Link>
-                            <Link to="/labs" className="px-10 py-4 bg-white/5 border border-white/10 text-white font-black uppercase text-sm rounded-xl hover:bg-white/10 transition-all">
+                            <Link to="/labs" className="px-8 py-3 bg-white/5 border border-white/10 text-white font-bold text-sm rounded-xl hover:bg-white/10 transition-all">
                                 Infiltrate Labs
                             </Link>
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {bookmarkedItems.map((item, index) => (
                             <div
                                 key={`${item.type}-${item.id}`}
@@ -65,51 +65,51 @@ const SavedItems = () => {
                                     className="si-unsave-btn"
                                     title="Purge from Archive"
                                 >
-                                    <BookmarkX size={18} />
+                                    <BookmarkX size={16} />
                                 </button>
 
-                                <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center justify-between mb-5">
                                     <div className={`si-type-tag ${item.type === 'room' ? 'si-type-tag--room' : 'si-type-tag--lab'}`}>
-                                        {item.type === 'room' ? <Target size={12} className="mr-2" /> : <Beaker size={12} className="mr-2" />}
-                                        {item.type}
+                                        {item.type === 'room' ? <Target size={12} /> : <Beaker size={12} />}
+                                        <span style={{ marginLeft: '6px' }}>{item.type}</span>
                                     </div>
                                     {item.difficulty && (
-                                        <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border bg-white/5 ${item.difficulty.toLowerCase().includes('easy') ? 'text-success border-success/30' : 'text-warning border-warning/30'}`}>
+                                        <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border bg-white/5 ${item.difficulty.toLowerCase().includes('easy') || item.difficulty.toLowerCase().includes('beginner') ? 'text-emerald-400 border-emerald-500/30' : item.difficulty.toLowerCase().includes('hard') || item.difficulty.toLowerCase().includes('advanced') ? 'text-red-400 border-red-500/30' : 'text-amber-400 border-amber-500/30'}`}>
                                             {item.difficulty}
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="si-item-icon mb-6">
+                                <div className="si-item-icon mb-4">
                                     {item.icon ? item.icon : (item.type === 'room' ? '🎯' : '🧪')}
                                 </div>
 
-                                <h3 className="si-item-title mb-3 group-hover:text-primary transition-colors">
+                                <h3 className="si-item-title mb-2">
                                     {item.title}
                                 </h3>
 
-                                <p className="si-item-meta mb-10">
+                                <p className="si-item-meta mb-6">
                                     {item.category || 'Classified Intelligence'}
                                 </p>
 
                                 <div className="si-stat-row">
                                     <div className="si-stat">
-                                        <Clock size={14} className="text-primary" />
+                                        <Clock size={14} />
                                         <span>Logged: {new Date(item.bookmarkedAt).toLocaleDateString()}</span>
                                     </div>
                                     {item.xp && (
                                         <div className="si-stat ml-auto">
-                                            <span className="text-warning font-black">{item.xp} XP</span>
+                                            <span className="text-amber-400 font-black">{item.xp} XP</span>
                                         </div>
                                     )}
                                 </div>
 
                                 <Link
                                     to={item.type === 'room' ? `/rooms/${item.slug || item.id}` : `/labs/${item.id}`}
-                                    className="w-full py-4 bg-primary text-black font-black uppercase text-sm rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
+                                    className="rcp-primary-btn"
                                 >
                                     Access Data 
-                                    <ArrowUpRight size={18} />
+                                    <ArrowUpRight size={16} />
                                 </Link>
                             </div>
                         ))}

@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom"
 import { useApp } from "../contexts/app-context"
+import { useRealtime } from "../contexts/realtime-context"
+import { apiCall } from "../config/api"
+import "./Home.css"
 import {
   Shield, Terminal, Network, Code, Trophy, Crown,
   Zap, Lock, Star, Flame, ChevronRight, CheckCircle, Swords
 } from "lucide-react"
-import { memo, useMemo, useEffect, useRef, useState } from "react"
+import { memo, useMemo, useEffect, useRef, useState, useCallback } from "react"
 
 /* ─────────────────────────────────────────
    Animated counter hook (runs once on mount)
@@ -34,11 +37,8 @@ const useCounter = (target, duration = 1800, startOnMount = true) => {
 /* ─────────────────────────────────────────
    Stat Card
 ───────────────────────────────────────── */
-const StatCard = memo(({ emoji, label, value, xp, color }) => {
-  const numericVal = parseInt(value.replace(/,/g, ""), 10)
-  const counted = useCounter(numericVal)
-
-  const formatted = counted.toLocaleString()
+const StatCard = memo(({ emoji, label, value, xp, color, subLabel = "XP Progress" }) => {
+  const formatted = value?.toLocaleString() || "0";
 
   return (
     <div className="cv-stat-card" style={{ "--accent-color": color }}>
@@ -48,7 +48,7 @@ const StatCard = memo(({ emoji, label, value, xp, color }) => {
       <div className="cv-xp-bar-wrap">
         <div className="cv-xp-bar" style={{ "--xp-pct": `${xp}%`, "--bar-color": color }} />
       </div>
-      <div className="cv-xp-label">{xp} XP Progress</div>
+      <div className="cv-xp-label">{xp}% {subLabel}</div>
     </div>
   )
 })
@@ -90,56 +90,121 @@ const LeaderRow = memo(({ rank, name, level, xp, color }) => (
 /* ─────────────────────────────────────────
    Dashboard Preview Card (Hero Right)
 ───────────────────────────────────────── */
-const DashboardPreview = memo(() => (
-  <div className="cv-dash-card">
-    <div className="cv-dash-header">
-      <Shield size={16} className="cv-dash-icon" />
-      <span className="cv-dash-title">CyberVerse Console</span>
-      <div className="cv-dash-dots">
-        <span style={{ background: "#FF5F57" }} />
-        <span style={{ background: "#FFBD2E" }} />
-        <span style={{ background: "#28C840" }} />
+const DashboardPreview = memo(() => {
+  const { userStats } = useRealtime()
+  
+  return (
+    <div className="cv-dash-card">
+      <div className="cv-dash-header">
+        <Shield size={16} className="cv-dash-icon" />
+        <span className="cv-dash-title">CyberVerse Console</span>
+        <div className="cv-dash-dots">
+          <span style={{ background: "#FF5F57" }} />
+          <span style={{ background: "#FFBD2E" }} />
+          <span style={{ background: "#28C840" }} />
+        </div>
       </div>
-    </div>
 
-    <div className="cv-dash-terminal">
-      <p><span className="cv-term-prompt">$</span> <span className="cv-term-cmd">connect --lab sql-injection-advanced</span></p>
-      <p className="cv-term-success">✓ Lab environment spawned</p>
-      <p><span className="cv-term-prompt">$</span> <span className="cv-term-cmd">nmap -sV 10.10.1.42</span></p>
-      <p className="cv-term-muted">Starting Nmap 7.94...</p>
-      <p className="cv-term-info">PORT   STATE SERVICE VERSION</p>
-      <p className="cv-term-warn">80/tcp open  http    Apache 2.4.41</p>
-      <p className="cv-term-success">3306/tcp open  mysql</p>
-    </div>
+      <div className="cv-dash-terminal">
+        <p><span className="cv-term-prompt">$</span> <span className="cv-term-cmd">connect --lab sql-injection-advanced</span></p>
+        <p className="cv-term-success">✓ Lab environment spawned</p>
+        <p><span className="cv-term-prompt">$</span> <span className="cv-term-cmd">nmap -sV 10.10.1.42</span></p>
+        <p className="cv-term-muted">Starting Nmap 7.94...</p>
+        <p className="cv-term-info">PORT   STATE SERVICE VERSION</p>
+        <p className="cv-term-warn">80/tcp open  http    Apache 2.4.41</p>
+        <p className="cv-term-success">3306/tcp open  mysql</p>
+      </div>
 
-    <div className="cv-dash-stats-row">
-      <div className="cv-mini-stat">
-        <Trophy size={13} style={{ color: "#FACC15" }} />
-        <span>Level 5</span>
-      </div>
-      <div className="cv-mini-stat">
-        <Flame size={13} style={{ color: "#00F5FF" }} />
-        <span>7 Streak</span>
-      </div>
-      <div className="cv-mini-stat">
-        <Star size={13} style={{ color: "#39FF14" }} />
-        <span>2,450 XP</span>
+      <div className="cv-dash-stats-row">
+        <div className="cv-mini-stat">
+          <Trophy size={13} style={{ color: "#FACC15" }} />
+          <span>Level {userStats?.level || 1}</span>
+        </div>
+        <div className="cv-mini-stat">
+          <Flame size={13} style={{ color: "#00F5FF" }} />
+          <span>{userStats?.streak || 0} Streak</span>
+        </div>
+        <div className="cv-mini-stat">
+          <Star size={13} style={{ color: "#39FF14" }} />
+          <span>{(userStats?.totalXP || 0).toLocaleString()} XP</span>
+        </div>
       </div>
     </div>
-  </div>
-))
+  )
+})
 
 /* ─────────────────────────────────────────
    Main Home Component
 ───────────────────────────────────────── */
 const Home = memo(() => {
   const { isAuthenticated } = useApp()
+  const { leaderboardData, socket } = useRealtime()
+  const [stats, setStats] = useState([
+    { emoji: "👾", label: "Registered Hackers", value: "0", xp: 0, color: "#00F5FF", subLabel: "Global Scale" },
+    { emoji: "🏯", label: "Training Rooms", value: "0", xp: 0, color: "#39FF14", subLabel: "Live Courses" },
+    { emoji: "🧪", label: "Active Labs", value: "0", xp: 0, color: "#8B5CF6", subLabel: "Live Instances" },
+  ])
+  const [leaders, setLeaders] = useState([
+    { rank: 1, name: "Loading...", level: 0, xp: 0, color: "#FACC15" },
+    { rank: 2, name: "Loading...", level: 0, xp: 0, color: "#94A3B8" },
+    { rank: 3, name: "Loading...", level: 0, xp: 0, color: "#CD7F32" },
+  ])
 
-  const stats = useMemo(() => [
-    { emoji: "👾", label: "Active Hackers", value: "1,248", xp: 72, color: "#00F5FF" },
-    { emoji: "🧪", label: "Live Labs",      value: "86",    xp: 58, color: "#8B5CF6" },
-    { emoji: "🏆", label: "Challenges Completed", value: "23,490", xp: 89, color: "#39FF14" },
-  ], [])
+  // Fetch platform statistics
+  const fetchPlatformStats = useCallback(async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      const res = await fetch(`${API_URL}/stats/platform`)
+      const response = await res.json()
+      
+      if (response && response.data) {
+        const { totalUsers = 0, totalLabs = 0, totalRooms = 0 } = response.data
+        setStats([
+          { emoji: "👾", label: "Registered Hackers", value: Math.max(totalUsers, 1), xp: Math.min((Math.max(totalUsers, 1) / 1000) * 100, 100).toFixed(1), color: "#00F5FF", subLabel: "Global Scale" },
+          { emoji: "🏯", label: "Training Rooms", value: Math.max(totalRooms, 1), xp: Math.min((Math.max(totalRooms, 1) / 20) * 100, 100).toFixed(1), color: "#39FF14", subLabel: "Live Courses" },
+          { emoji: "🧪", label: "Active Labs", value: Math.max(totalLabs, 1), xp: Math.min((Math.max(totalLabs, 1) / 50) * 100, 100).toFixed(1), color: "#8B5CF6", subLabel: "Live Instances" },
+        ])
+      }
+    } catch (error) {
+      console.error('Failed to fetch platform stats:', error)
+    }
+  }, [])
+
+  // Update leaderboard from realtime context
+  useEffect(() => {
+    if (leaderboardData && leaderboardData.length > 0) {
+      const topThree = leaderboardData.slice(0, 3).map((user, idx) => ({
+        rank: idx + 1,
+        name: user.username || user.name || `User ${idx + 1}`,
+        level: user.level || 1,
+        xp: user.totalXP || user.points || 0,
+        color: idx === 0 ? "#FACC15" : idx === 1 ? "#94A3B8" : "#CD7F32",
+      }))
+      setLeaders(topThree)
+    }
+  }, [leaderboardData])
+
+  // Real-time stat listener
+  useEffect(() => {
+    if (!socket) return
+
+    const handlePlatformStats = (data) => {
+      console.log('📈 Live Platform Stats Update:', data)
+      setStats([
+        { emoji: "👾", label: "Registered Hackers", value: data.totalUsers, xp: Math.min((data.totalUsers / 1000) * 100, 100).toFixed(1), color: "#00F5FF", subLabel: "Global Scale" },
+        { emoji: "🏯", label: "Training Rooms", value: data.totalRooms, xp: Math.min((data.totalRooms / 20) * 100, 100).toFixed(1), color: "#39FF14", subLabel: "Live Courses" },
+        { emoji: "🧪", label: "Active Labs", value: data.activeLabs, xp: Math.min((data.activeLabs / 50) * 100, 100).toFixed(1), color: "#8B5CF6", subLabel: "Live Instances" },
+      ])
+    }
+
+    socket.on('platform:stats', handlePlatformStats)
+    return () => socket.off('platform:stats', handlePlatformStats)
+  }, [socket])
+
+  // Fetch stats on mount
+  useEffect(() => {
+    fetchPlatformStats()
+  }, [fetchPlatformStats])
 
   const features = useMemo(() => [
     {
@@ -170,12 +235,6 @@ const Home = memo(() => {
       xpBadge: "Leveling",
       color: "#39FF14",
     },
-  ], [])
-
-  const leaders = useMemo(() => [
-    { rank: 1, name: "0xShadow",   level: 42, xp: 98450, color: "#FACC15" },
-    { rank: 2, name: "n1ght_cr4wl", level: 38, xp: 87220, color: "#94A3B8" },
-    { rank: 3, name: "byte_ghost",  level: 35, xp: 74100, color: "#CD7F32" },
   ], [])
 
   return (

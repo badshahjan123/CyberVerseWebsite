@@ -1,4 +1,5 @@
 import { useState, memo } from "react"
+import "./Checkout.css"
 import { useNavigate, useLocation } from "react-router-dom"
 import { ModernButton, Badge } from "../../components/ui-components"
 import { useApp } from "../../contexts/app-context"
@@ -103,10 +104,10 @@ const CheckoutPage = memo(() => {
     }
   }
 
-  if (user?.isPremium) {
+  /* if (user?.isPremium) {
     navigate('/dashboard')
     return null
-  }
+  } */
 
   return (
     <div className="ch-root">
@@ -115,26 +116,26 @@ const CheckoutPage = memo(() => {
 
       <div className="ch-container">
         {/* HEADER */}
-        <header className="ch-header rcp-fade-in">
+        <header className="cv-page-header rcp-fade-in">
           <button 
             onClick={() => navigate('/premium')}
-            className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors mb-8 font-black text-[10px] uppercase tracking-widest"
+            className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors mb-6 font-bold text-xs"
           >
             <ArrowLeft size={16} />
-            Abort Transition
+            Back to Plans
           </button>
-          <div className="ch-subtitle">Operational Pipeline</div>
-          <h1 className="ch-title">Initialize <span className="text-primary italic">Upgrade</span></h1>
+          <p className="cv-page-subtitle">Premium Subscription</p>
+          <h1 className="cv-page-title">Complete Upgrade</h1>
         </header>
 
         <div className="ch-main-grid rcp-fade-in" style={{ animationDelay: '0.1s' }}>
           {/* LEFT: PAYMENT CONTROL */}
           <div className="ch-left-col">
             <div className="ch-card">
-              <h2 className="ch-section-title">
+              <h2 className="cv-section-title">
                 <Shield className="text-primary" size={20} />
-                Access Protocol
-                <span>STEP 01/02</span>
+                Payment Method
+                <span className="ml-auto text-[10px] text-slate-500">STEP 1/2</span>
               </h2>
 
               <div className="ch-method-grid">
@@ -156,10 +157,10 @@ const CheckoutPage = memo(() => {
                 })}
               </div>
 
-              <h2 className="ch-section-title">
+              <h2 className="cv-section-title mt-8">
                 <Lock className="text-slate-500" size={20} />
-                Secure Data Port
-                <span>STEP 02/02</span>
+                Security Details
+                <span className="ml-auto text-[10px] text-slate-500">STEP 2/2</span>
               </h2>
 
               <form onSubmit={handleSubmit}>
@@ -174,7 +175,7 @@ const CheckoutPage = memo(() => {
                 {selectedPaymentMethod === 'card' && (
                   <div className="animate-fade-in">
                     <div className="ch-input-wrap">
-                      <label className="ch-label">Card Authentication Number</label>
+                      <label className="cv-page-subtitle !text-xs !font-bold mb-1.5 block">Card Number</label>
                       <input 
                         className="ch-input"
                         name="cardNumber"
@@ -186,7 +187,7 @@ const CheckoutPage = memo(() => {
                     </div>
                     <div className="ch-form-row">
                       <div className="ch-input-wrap">
-                        <label className="ch-label">Expiration Key</label>
+                        <label className="cv-page-subtitle !text-xs !font-bold mb-1.5 block">Expiry Date</label>
                         <input 
                           className="ch-input"
                           name="expiryDate"
@@ -197,7 +198,7 @@ const CheckoutPage = memo(() => {
                         />
                       </div>
                       <div className="ch-input-wrap">
-                        <label className="ch-label">Security CVV</label>
+                        <label className="cv-page-subtitle !text-xs !font-bold mb-1.5 block">CVV</label>
                         <input 
                           className="ch-input"
                           name="cvv"
@@ -215,7 +216,7 @@ const CheckoutPage = memo(() => {
                 {(['jazzcash', 'easypaisa', 'sadapay', 'nayapay'].includes(selectedPaymentMethod)) && (
                    <div className="animate-fade-in">
                      <div className="ch-input-wrap">
-                        <label className="ch-label">Account Mobile ID</label>
+                        <label className="cv-page-subtitle !text-xs !font-bold mb-1.5 block">Mobile Number</label>
                         <input 
                           type="tel"
                           className="ch-input"
@@ -226,7 +227,7 @@ const CheckoutPage = memo(() => {
                           required
                         />
                         <p className="text-[9px] font-bold text-slate-500 uppercase mt-4">
-                          Note: A secure verification request will be dispatched to your mobile terminal.
+                          Note: A secure verification request will be sent to your mobile device.
                         </p>
                      </div>
                    </div>
@@ -236,7 +237,7 @@ const CheckoutPage = memo(() => {
                 {selectedPaymentMethod === 'bank' && (
                   <div className="animate-fade-in">
                     <div className="ch-input-wrap">
-                      <label className="ch-label">Terminal Bank</label>
+                      <label className="cv-page-subtitle !text-xs !font-bold mb-1.5 block">Select Bank</label>
                       <select 
                         className="ch-input"
                         name="selectedBank"
@@ -249,7 +250,7 @@ const CheckoutPage = memo(() => {
                       </select>
                     </div>
                     <div className="ch-input-wrap">
-                      <label className="ch-label">Account Identification / IBAN</label>
+                      <label className="cv-page-subtitle !text-xs !font-bold mb-1.5 block">Account Number / IBAN</label>
                       <input 
                         className="ch-input"
                         name="accountNumber"
@@ -263,7 +264,7 @@ const CheckoutPage = memo(() => {
                 )}
 
                 <div className="ch-input-wrap mt-8">
-                  <label className="ch-label">Communication Channel (Email)</label>
+                  <label className="cv-page-subtitle !text-xs !font-bold mb-1.5 block">Email Address</label>
                   <input 
                     type="email"
                     className="ch-input"
@@ -297,21 +298,21 @@ const CheckoutPage = memo(() => {
           <div className="ch-right-col">
             <div className="ch-summary-card">
               <div className="ch-plan-preview">
-                <div className="ch-preview-tag">SELECTED UPGRADE</div>
-                <h3 className="ch-preview-name">{selectedPlan.name}</h3>
+                <div className="text-[10px] font-bold text-slate-500 mb-1">SELECTED UPGRADE</div>
+                <h3 className="text-xl font-bold text-white mb-1">{selectedPlan.name}</h3>
                 <div className="flex items-center gap-2 text-primary font-black">
                   <Flame size={16} />
-                  <span>+500 XP INSTANT BONUS</span>
+                  <span className="text-xs font-bold">+500 XP INSTANT BONUS</span>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="ch-summary-line">
-                  <span>Base Access</span>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Standard Access</span>
                   <span className="text-white">$0.00</span>
                 </div>
                 <div className="ch-summary-line">
-                  <span>Tactical License</span>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Premium License</span>
                   <span className="text-white">{selectedPlan.price}</span>
                 </div>
                 <div className="ch-summary-line">
@@ -319,14 +320,14 @@ const CheckoutPage = memo(() => {
                   <span className="text-white">$0.00</span>
                 </div>
                 
-                <div className="ch-summary-line ch-summary-line--total">
-                  <span>Total Yield</span>
-                  <span>{selectedPlan.price}</span>
+                <div className="flex justify-between items-center py-4 border-t border-white/10 mt-4">
+                  <span className="text-white font-bold">Total Amount</span>
+                  <span className="text-2xl font-bold text-primary">{selectedPlan.price}</span>
                 </div>
               </div>
 
               <div className="mt-8 space-y-3">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Unlocked Assets</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Unlocked Assets</p>
                 {[
                   "Unlimited Lab Deployments",
                   "Elite AttackBox Hardware",

@@ -37,6 +37,9 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --cyber-blue: #00f3ff;
+  --cyber-pink: #ff00ff;
+  --cyber-yellow: #f3ff00;
 }
 
 .dark {
@@ -153,5 +156,82 @@
     text-shadow:
       0 0 10px color-mix(in oklch, var(--primary) 40%, transparent),
       0 0 20px color-mix(in oklch, var(--primary) 18%, transparent);
+  }
+}
+
+@layer components {
+  .btn-cyber-outline {
+    position: relative;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--cyber-blue);
+    background: transparent;
+    border: 1px solid var(--cyber-blue);
+    overflow: hidden;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+    cursor: pointer;
+  }
+
+  .btn-cyber-outline:hover {
+    color: #000;
+    background: var(--cyber-blue);
+    box-shadow: 0 0 30px var(--cyber-blue);
+    transform: translateY(-2px);
+  }
+
+  .btn-cyber-outline::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+  }
+
+  .btn-cyber-outline:hover::after {
+    left: 100%;
+  }
+
+  /* Animated Shine Effect */
+  @keyframes shine {
+    from { transform: translateX(-100%) skewX(-15deg); }
+    to { transform: translateX(200%) skewX(-15deg); }
+  }
+
+  .animate-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .animate-shine::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 30%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shine 3s infinite;
+  }
+
+  /* Card Hover Lift */
+  .card-premium {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .card-premium:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 195, 255, 0.2);
+    border-color: rgba(0, 195, 255, 0.4);
+  }
+
+  /* Badge Animations */
+  @keyframes bdg-pulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+  
+  .bdg-pulse-anim {
+    animation: bdg-pulse 3s infinite ease-in-out;
   }
 }

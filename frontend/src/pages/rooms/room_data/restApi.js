@@ -5,7 +5,7 @@ export const REST_API_ROOM_DATA = {
   difficulty: "Beginner",
   duration: "40 min",
   description: "Learn REST API fundamentals, HTTP methods, JSON, and build your first endpoint with Express.js.",
-  totalXP: 1300,
+  totalXP: 100,
   enrollments: 4827,
   rating: 4.8,
   creator: "CyberVerse Team",
@@ -17,7 +17,7 @@ export const REST_API_ROOM_DATA = {
       subtitle: "The bridge between systems",
       icon: "globe",
       difficulty: "Beginner",
-      xp: 100,
+      xp: 20,
       image: "/images/rooms/api-intro.png",
       scenario: {
         title: "The Digital Waiter",
@@ -57,7 +57,7 @@ export const REST_API_ROOM_DATA = {
       subtitle: "The Anatomy of Digital Communication",
       icon: "activity",
       difficulty: "Beginner",
-      xp: 200,
+      xp: 20,
       image: "/images/rooms/api-endpoint.png",
       scenario: {
         title: "The Sealed Envelope",
@@ -101,7 +101,7 @@ export const REST_API_ROOM_DATA = {
       subtitle: "JavaScript Object Notation",
       icon: "code",
       difficulty: "Beginner",
-      xp: 250,
+      xp: 20,
       image: "/images/rooms/api-intro.png",
       scenario: {
         title: "The Data Bridge",
@@ -142,7 +142,7 @@ JSON.stringify(user);` },
       subtitle: "Security and Metadata",
       icon: "lock",
       difficulty: "Beginner",
-      xp: 300,
+      xp: 20,
       image: "/images/rooms/api-endpoint.png",
       scenario: {
         title: "The VIP Pass",
@@ -179,7 +179,7 @@ Authorization: Bearer my-secret-token-123
       subtitle: "Express.js Basics",
       icon: "server",
       difficulty: "Beginner",
-      xp: 450,
+      xp: 20,
       image: "/images/rooms/api-intro.png",
       scenario: {
         title: "The Architect",

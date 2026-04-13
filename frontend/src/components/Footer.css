@@ -1,0 +1,250 @@
+/* ==========================================
+   CYBERVERSE FOOTER — CYBERPUNK REDESIGN
+   ========================================== */
+
+.cv-footer {
+  position: relative;
+  background: #080C14;
+  overflow: hidden;
+}
+
+/* Neon top border */
+.cv-footer-topline {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    #00F5FF 30%,
+    #8B5CF6 60%,
+    #39FF14 80%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+/* Static grid overlay */
+.cv-footer-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+}
+
+/* Main content wrapper */
+.cv-footer-inner {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 1.5rem;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 2.5rem;
+}
+
+/* ── Brand column ── */
+.cv-footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cv-footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.cv-footer-logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0,245,255,0.12), rgba(139,92,246,0.12));
+  border: 1px solid rgba(0,245,255,0.28);
+  flex-shrink: 0;
+}
+
+.cv-footer-logo-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #00F5FF, #8B5CF6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.06em;
+}
+
+.cv-footer-tagline {
+  color: #64748B;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  max-width: 280px;
+}
+
+/* Mini stats row */
+.cv-footer-mini-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.cv-footer-mini-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: #94A3B8;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+/* Social links */
+.cv-footer-social-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cv-footer-social-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.cv-footer-socials {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cv-footer-social-btn {
+  --social-color: #00F5FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: #94A3B8;
+  transition: color 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.cv-footer-social-btn:hover {
+  color: var(--social-color);
+  background: rgba(255,255,255,0.07);
+  border-color: var(--social-color);
+  box-shadow: 0 0 12px var(--social-color);
+  transform: translateY(-2px) scale(1.08);
+}
+
+/* ── Link columns ── */
+.cv-footer-links-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cv-footer-col-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #E2E8F0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.cv-footer-link-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.cv-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #64748B;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.cv-footer-link-arrow {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  color: #00F5FF;
+  flex-shrink: 0;
+}
+
+.cv-footer-link:hover {
+  color: #00F5FF;
+  text-shadow: 0 0 8px rgba(0,245,255,0.3);
+}
+
+.cv-footer-link:hover .cv-footer-link-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* purple variant */
+.cv-footer-link--purple:hover {
+  color: #8B5CF6;
+  text-shadow: 0 0 8px rgba(139,92,246,0.35);
+}
+.cv-footer-link--purple:hover .cv-footer-link-arrow {
+  color: #8B5CF6;
+}
+
+/* gold variant */
+.cv-footer-link--gold:hover {
+  color: #FACC15;
+  text-shadow: 0 0 8px rgba(250,204,21,0.35);
+}
+.cv-footer-link--gold:hover .cv-footer-link-arrow {
+  color: #FACC15;
+}
+
+/* ── Bottom bar ── */
+.cv-footer-bottom {
+  position: relative;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.cv-footer-bottom-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

@@ -13,4 +13,11 @@ export {
   OsiModelAnimation,
   RoutingAnimation,
   JsonParserAnimation,
+  SqliAnimation,
+  LinuxAnimation,
+  AuthAnimation,
+  OsintAnimation,
+  PickleAnimation,
+  CryptoAnimation,
+  ReAnimation,
 } from './AnimationBox';

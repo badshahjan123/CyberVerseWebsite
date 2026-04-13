@@ -1,546 +1,1213 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save, Plus, Trash2, AlertTriangle, GripVertical } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Save,
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Upload,
+  X,
+  Eye,
+  Zap,
+  Trophy,
+  CheckCircle,
+  FileWarning,
+  AlertTriangle,
+  HelpCircle,
+  Code,
+} from "lucide-react";
 
-const RoomEditor = () => {
-    const { id } = useParams()
-    const navigate = useNavigate()
-    const [loading, setLoading] = useState(true)
-    const [saving, setSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState('basic')
-    const [room, setRoom] = useState(null)
-    const [duplicateWarnings, setDuplicateWarnings] = useState([])
+const API = "http://localhost:5000/api/admin";
+const token = () => localStorage.getItem("token");
+const authHeaders = () => ({
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${token()}`,
+});
 
-    useEffect(() => {
-        fetchRoom()
-    }, [id])
+const EMPTY_TASK = () => ({
+  id: Date.now(),
+  title: "",
+  subtitle: "",
+  icon: "target",
+  image: "",
+  difficulty: "Beginner",
+  xp: 100,
+  scenario: { title: "", text: "", impact: "" },
+  content: [],
+  questions: [],
+  animation: { type: "none", data: "" },
+});
 
-    useEffect(() => {
-        if (room) {
-            checkDuplicates()
-        }
-    }, [room?.topics, room?.quizzes])
+const EMPTY_QUESTION = () => ({
+  id: Date.now(),
+  text: "",
+  answerType: "text",
+  answer: "",
+  options: [],
+  hint: "",
+});
 
-    const fetchRoom = async () => {
-        try {
-            const token = localStorage.getItem('token')
-            const response = await fetch(`http://localhost:5000/api/admin/rooms/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            })
-            if (!response.ok) throw new Error('Failed to fetch room')
-            const data = await response.json()
-            setRoom(data)
-            setLoading(false)
-        } catch (error) {
-            console.error('Failed to load room:', error)
-            alert('Failed to load room')
-            navigate('/secure-admin-dashboard')
-        }
-    }
+const EMPTY_BADGE = () => ({
+  id: Date.now(),
+  name: "",
+  icon: "award",
+  type: "milestone",
+  xpReward: 0,
+  unlockReason: "",
+});
 
-    const checkDuplicates = () => {
-        if (!room?.topics || !room?.quizzes?.[0]?.questions) return
+const EMPTY_CONTENT_BLOCK = () => ({
+  id: Date.now(),
+  type: "paragraph",
+  content: "",
+});
 
-        const taskQuestions = room.topics.map(t => t.title?.toLowerCase().trim())
-        const warnings = []
+const inp =
+  "w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:border-cyan-500 focus:outline-none";
 
-        room.quizzes[0].questions.forEach((q, idx) => {
-            const questionText = q.question_text?.toLowerCase().trim()
-            if (taskQuestions.some(tq => tq === questionText || questionText?.includes(tq))) {
-                warnings.push({
-                    quizIndex: idx,
-                    message: `Quiz question "${q.question_text}" may be duplicate of a task`
-                })
-            }
-        })
+const Field = ({ label, children, hint }) => (
+  <div>
+    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+      {label}
+    </label>
+    {children}
+    {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
+  </div>
+);
 
-        setDuplicateWarnings(warnings)
-    }
+const Tab = ({ active, onClick, children }) => (
+  <button
+    onClick={onClick}
+    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+      active
+        ? "bg-cyan-600 text-white"
+        : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+    }`}
+  >
+    {children}
+  </button>
+);
 
-    const handleSave = async () => {
-        setSaving(true)
-        try {
-            const token = localStorage.getItem('token')
-            const response = await fetch(`http://localhost:5000/api/admin/rooms/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                credentials: 'include',
-                body: JSON.stringify(room)
-            })
+// Preview Components
+const PreviewTaskHeader = ({ task }) => (
+  <div className="mb-6 space-y-2">
+    <div className="flex items-center gap-3">
+      <div className="w-12 h-12 bg-cyan-600/20 border border-cyan-500/50 rounded-lg flex items-center justify-center text-cyan-400 text-lg">
+        🎯
+      </div>
+      <div>
+        <h3 className="text-xl font-bold text-white">
+          {task.title || "Untitled Task"}
+        </h3>
+        <p className="text-sm text-slate-400">{task.subtitle}</p>
+      </div>
+    </div>
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="px-2 py-1 bg-slate-700/50 border border-slate-600 rounded text-xs font-medium text-slate-300">
+        {task.difficulty}
+      </span>
+      <span className="px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs font-medium text-yellow-400 flex items-center gap-1">
+        <Zap size={12} /> +{task.xp} XP
+      </span>
+    </div>
+  </div>
+);
 
-            if (!response.ok) throw new Error('Failed to save room')
-
-            alert('Room updated successfully!')
-            navigate('/secure-admin-dashboard')
-        } catch (error) {
-            console.error('Save error:', error)
-            alert('Failed to save room')
-        } finally {
-            setSaving(false)
-        }
-    }
-
-    const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this room? This action cannot be undone.')) return
-        
-        try {
-            const token = localStorage.getItem('token')
-            const response = await fetch(`http://localhost:5000/api/admin/rooms/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                credentials: 'include'
-            })
-
-            if (!response.ok) throw new Error('Failed to delete room')
-
-            alert('Room deleted successfully!')
-            navigate('/secure-admin-dashboard')
-        } catch (error) {
-            console.error('Delete error:', error)
-            alert('Failed to delete room')
-        }
-    }
-
-    const addTopic = () => {
-        const newTopic = {
-            id: (room.topics?.length || 0) + 1,
-            title: 'New Topic',
-            content_markdown: '## New Topic\n\nAdd your content here...'
-        }
-        setRoom({
-            ...room,
-            topics: [...(room.topics || []), newTopic]
-        })
-
-        // Add corresponding exercise
-        const newExercise = {
-            id: (room.exercises?.length || 0) + 1,
-            description_markdown: 'What is the answer?',
-            expected_flag: 'answer',
-            points: 100
-        }
-        setRoom(prev => ({
-            ...prev,
-            exercises: [...(prev.exercises || []), newExercise]
-        }))
-    }
-
-    const deleteTopic = (index) => {
-        if (!confirm('Delete this topic?')) return
-        setRoom({
-            ...room,
-            topics: room.topics.filter((_, i) => i !== index),
-            exercises: room.exercises.filter((_, i) => i !== index)
-        })
-    }
-
-    const updateTopic = (index, field, value) => {
-        const updatedTopics = [...room.topics]
-        updatedTopics[index] = { ...updatedTopics[index], [field]: value }
-        setRoom({ ...room, topics: updatedTopics })
-    }
-
-    const updateExercise = (index, field, value) => {
-        const updatedExercises = [...room.exercises]
-        updatedExercises[index] = { ...updatedExercises[index], [field]: value }
-        setRoom({ ...room, exercises: updatedExercises })
-    }
-
-    const addQuizQuestion = () => {
-        if (!room.quizzes || room.quizzes.length === 0) {
-            // Create quiz if it doesn't exist
-            setRoom({
-                ...room,
-                quizzes: [{
-                    id: 1,
-                    title: 'Final Quiz',
-                    pass_percentage: 70,
-                    questions: []
-                }]
-            })
-        }
-
-        const newQuestion = {
-            id: (room.quizzes[0]?.questions?.length || 0) + 1,
-            question_text: 'New question?',
-            type: 'single',
-            options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
-            correct_answer: 'Option 1',
-            points: 100
-        }
-
-        const updatedQuizzes = [...room.quizzes]
-        updatedQuizzes[0].questions = [...(updatedQuizzes[0].questions || []), newQuestion]
-        setRoom({ ...room, quizzes: updatedQuizzes })
-    }
-
-    const deleteQuizQuestion = (index) => {
-        if (!confirm('Delete this quiz question?')) return
-        const updatedQuizzes = [...room.quizzes]
-        updatedQuizzes[0].questions = updatedQuizzes[0].questions.filter((_, i) => i !== index)
-        setRoom({ ...room, quizzes: updatedQuizzes })
-    }
-
-    const updateQuizQuestion = (index, field, value) => {
-        const updatedQuizzes = [...room.quizzes]
-        updatedQuizzes[0].questions[index] = {
-            ...updatedQuizzes[0].questions[index],
-            [field]: value
-        }
-        setRoom({ ...room, quizzes: updatedQuizzes })
-    }
-
-    const updateQuizOption = (questionIndex, optionIndex, value) => {
-        const updatedQuizzes = [...room.quizzes]
-        updatedQuizzes[0].questions[questionIndex].options[optionIndex] = value
-        setRoom({ ...room, quizzes: updatedQuizzes })
-    }
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            </div>
-        )
-    }
-
-    return (
-        <div className="min-h-screen bg-slate-900">
-            {/* Header */}
-            <div className="bg-slate-800 border-b border-slate-700 sticky top-0 z-10">
-                <div className="container mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => navigate('/secure-admin-dashboard')}
-                                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
-                            <div>
-                                <h1 className="text-2xl font-bold text-white">Edit Room</h1>
-                                <p className="text-slate-400">{room.title || room.name}</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={handleDelete}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Delete Room
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                <Save className="w-4 h-4" />
-                                {saving ? 'Saving...' : 'Save Changes'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="container mx-auto px-6 py-8">
-                {/* Tabs */}
-                <div className="flex gap-2 mb-8 border-b border-slate-700">
-                    {['basic', 'tasks', 'quiz'].map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-6 py-3 font-medium transition-colors ${activeTab === tab
-                                ? 'text-blue-400 border-b-2 border-blue-400'
-                                : 'text-slate-400 hover:text-white'
-                                }`}
-                        >
-                            {tab === 'basic' ? 'Basic Info' : tab === 'tasks' ? 'Tasks/Topics' : 'Quiz Questions'}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Basic Info Tab */}
-                {activeTab === 'basic' && (
-                    <div className="max-w-3xl space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
-                            <input
-                                type="text"
-                                value={room.title || room.name || ''}
-                                onChange={(e) => setRoom({ ...room, title: e.target.value, name: e.target.value })}
-                                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
-                            <textarea
-                                rows={4}
-                                value={room.description || ''}
-                                onChange={(e) => setRoom({ ...room, description: e.target.value })}
-                                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Difficulty</label>
-                                <select
-                                    value={room.difficulty || 'Beginner'}
-                                    onChange={(e) => setRoom({ ...room, difficulty: e.target.value })}
-                                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                >
-                                    <option value="Beginner">Beginner</option>
-                                    <option value="Intermediate">Intermediate</option>
-                                    <option value="Advanced">Advanced</option>
-                                    <option value="Expert">Expert</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Category</label>
-                                <input
-                                    type="text"
-                                    value={room.category || ''}
-                                    onChange={(e) => setRoom({ ...room, category: e.target.value })}
-                                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Tasks Tab */}
-                {activeTab === 'tasks' && (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-white">Edit Tasks & Exercises</h2>
-                            <button
-                                onClick={addTopic}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Task
-                            </button>
-                        </div>
-
-                        {room.topics?.map((topic, index) => (
-                            <div key={index} className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <GripVertical className="w-5 h-5 text-slate-500" />
-                                        <span className="text-slate-400 font-medium">Task {index + 1}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => deleteTopic(index)}
-                                        className="p-1 text-red-400 hover:bg-red-500/20 rounded transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">Task Title</label>
-                                        <input
-                                            type="text"
-                                            value={topic.title || ''}
-                                            onChange={(e) => updateTopic(index, 'title', e.target.value)}
-                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">Content (Markdown)</label>
-                                        <textarea
-                                            rows={6}
-                                            value={topic.content_markdown || topic.content || ''}
-                                            onChange={(e) => updateTopic(index, 'content_markdown', e.target.value)}
-                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white font-mono text-sm focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    {room.exercises?.[index] && (
-                                        <>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-2">Exercise Question</label>
-                                                <input
-                                                    type="text"
-                                                    value={room.exercises[index].description_markdown || ''}
-                                                    onChange={(e) => updateExercise(index, 'description_markdown', e.target.value)}
-                                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                                />
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-300 mb-2">Correct Answer</label>
-                                                    <input
-                                                        type="text"
-                                                        value={room.exercises[index].expected_flag || ''}
-                                                        onChange={(e) => updateExercise(index, 'expected_flag', e.target.value)}
-                                                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-300 mb-2">Points</label>
-                                                    <input
-                                                        type="number"
-                                                        value={room.exercises[index].points || 100}
-                                                        onChange={(e) => updateExercise(index, 'points', parseInt(e.target.value))}
-                                                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-
-                        {(!room.topics || room.topics.length === 0) && (
-                            <div className="text-center py-12 text-slate-400">
-                                No tasks yet. Click "Add Task" to create one.
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Quiz Tab */}
-                {activeTab === 'quiz' && (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-white">Edit Quiz Questions</h2>
-                            <button
-                                onClick={addQuizQuestion}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Question
-                            </button>
-                        </div>
-
-                        {duplicateWarnings.length > 0 && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                                <div className="flex items-start gap-3">
-                                    <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h3 className="text-yellow-400 font-semibold mb-2">Duplicate Questions Detected</h3>
-                                        <ul className="text-yellow-300 text-sm space-y-1">
-                                            {duplicateWarnings.map((w, i) => (
-                                                <li key={i}>• {w.message}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {room.quizzes?.[0]?.questions?.map((question, index) => {
-                            const hasWarning = duplicateWarnings.some(w => w.quizIndex === index)
-
-                            return (
-                                <div
-                                    key={index}
-                                    className={`bg-slate-800 border rounded-xl p-6 ${hasWarning ? 'border-yellow-500/50' : 'border-slate-700'
-                                        }`}
-                                >
-                                    <div className="flex items-start justify-between mb-4">
-                                        <span className="text-slate-400 font-medium">Question {index + 1}</span>
-                                        <button
-                                            onClick={() => deleteQuizQuestion(index)}
-                                            className="p-1 text-red-400 hover:bg-red-500/20 rounded transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">Question Text</label>
-                                            <input
-                                                type="text"
-                                                value={question.question_text || ''}
-                                                onChange={(e) => updateQuizQuestion(index, 'question_text', e.target.value)}
-                                                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">Question Type</label>
-                                            <select
-                                                value={question.type || 'single'}
-                                                onChange={(e) => updateQuizQuestion(index, 'type', e.target.value)}
-                                                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                            >
-                                                <option value="single">Single Choice</option>
-                                                <option value="multi">Multiple Choice</option>
-                                                <option value="short">Short Answer</option>
-                                            </select>
-                                        </div>
-
-                                        {question.type !== 'short' && (
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-2">Options</label>
-                                                {question.options?.map((option, optIdx) => (
-                                                    <input
-                                                        key={optIdx}
-                                                        type="text"
-                                                        value={option}
-                                                        onChange={(e) => updateQuizOption(index, optIdx, e.target.value)}
-                                                        className="w-full px-3 py-2 mb-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                                        placeholder={`Option ${optIdx + 1}`}
-                                                    />
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">Correct Answer</label>
-                                            <input
-                                                type="text"
-                                                value={question.correct_answer || ''}
-                                                onChange={(e) => updateQuizQuestion(index, 'correct_answer', e.target.value)}
-                                                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                                placeholder="Enter the exact correct answer"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">Points</label>
-                                            <input
-                                                type="number"
-                                                value={question.points || 100}
-                                                onChange={(e) => updateQuizQuestion(index, 'points', parseInt(e.target.value))}
-                                                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        })}
-
-                        {(!room.quizzes || !room.quizzes[0]?.questions || room.quizzes[0].questions.length === 0) && (
-                            <div className="text-center py-12 text-slate-400">
-                                No quiz questions yet. Click "Add Question" to create one.
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+const PreviewScenario = ({ scenario }) => {
+  if (!scenario?.title) return null;
+  return (
+    <div className="mb-6 p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+      <div className="flex items-start gap-2 mb-2">
+        <FileWarning
+          size={16}
+          className="text-orange-400 flex-shrink-0 mt-0.5"
+        />
+        <div className="font-semibold text-slate-300">Mission Scenario</div>
+      </div>
+      <h4 className="font-bold text-white mb-2">{scenario.title}</h4>
+      <p className="text-sm text-slate-300 mb-3">{scenario.text}</p>
+      {scenario.impact && (
+        <div className="flex items-start gap-2 mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded">
+          <AlertTriangle
+            size={14}
+            className="text-red-400 flex-shrink-0 mt-0.5"
+          />
+          <span className="text-sm text-slate-300">{scenario.impact}</span>
         </div>
-    )
-}
+      )}
+    </div>
+  );
+};
 
-export default RoomEditor
+const PreviewQuestions = ({ questions }) => {
+  if (!questions || questions.length === 0) return null;
+  return (
+    <div className="mb-6 p-4 bg-slate-800/30 border border-slate-700 rounded-lg space-y-4">
+      <div className="flex items-center gap-2">
+        <HelpCircle size={16} className="text-slate-400" />
+        <span className="font-semibold text-slate-300">
+          Knowledge Check ({questions.length})
+        </span>
+      </div>
+      {questions.map((q, i) => (
+        <div
+          key={q.id}
+          className="p-3 bg-slate-900 rounded border border-slate-700"
+        >
+          <p className="text-sm text-slate-300">
+            <span className="text-slate-500">Q{i + 1}:</span> {q.text}
+          </p>
+          {q.hint && (
+            <p className="text-xs text-slate-500 mt-2">💡 Hint: {q.hint}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default function RoomEditor() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [openTask, setOpenTask] = useState(null);
+  const [activePreviewTask, setActivePreviewTask] = useState(0);
+  const [taskTab, setTaskTab] = useState("content");
+  const [mainTab, setMainTab] = useState("basic");
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const [basic, setBasic] = useState({
+    title: "",
+    description: "",
+    difficulty: "Beginner",
+    category: "Web",
+    duration: "60 min",
+    totalXP: 100,
+    enrollments: 0,
+    rating: 4.5,
+    creator: "CyberVerse Admin",
+    tags: "",
+    image: "",
+    passPercentage: 70,
+    quizBonusXP: 500,
+  });
+  const [tasks, setTasks] = useState([]);
+  const [badges, setBadges] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API}/rooms/${id}`, {
+      headers: authHeaders(),
+      credentials: "include",
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((room) => {
+        setBasic({
+          title: room.title || "",
+          description: room.short_description || room.description || "",
+          difficulty: room.difficulty || "Beginner",
+          category: room.category || "Web",
+          duration: room.duration || "60 min",
+          totalXP: room.totalXP || 100,
+          enrollments: room.enrollments || 0,
+          rating: room.rating || 4.5,
+          creator: room.creator || "CyberVerse Admin",
+          tags: (room.tags || []).join(", "),
+          image: room.image || "",
+          passPercentage: room.passPercentage || 70,
+          quizBonusXP: room.quizBonusXP || 500,
+        });
+
+        const mapped = (room.topics || []).map((t, i) => ({
+          id: t.id || i + 1,
+          title: t.title || "",
+          subtitle: t.subtitle || "",
+          icon: t.icon || "target",
+          image: t.image || "",
+          difficulty: t.difficulty || "Beginner",
+          xp: room.exercises?.[i]?.points || 100,
+          scenario: t.scenario || { title: "", text: "", impact: "" },
+          content: t.content || [],
+          questions: t.questions || [],
+          animation: t.animation || { type: "none", data: "" },
+        }));
+        setTasks(mapped.length ? mapped : [EMPTY_TASK()]);
+        setBadges(room.badges || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        alert("Failed to load room");
+        navigate("/secure-admin-dashboard");
+      });
+  }, [id]);
+
+  const handleImageUpload = (e, isTaskImage = false, taskIndex = null) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result;
+      if (isTaskImage && taskIndex !== null) {
+        setTask(taskIndex, "image", base64);
+      } else {
+        setBasic((p) => ({ ...p, image: base64 }));
+        setImagePreview(base64);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const setTask = (i, field, val) =>
+    setTasks((prev) =>
+      prev.map((t, idx) => (idx === i ? { ...t, [field]: val } : t)),
+    );
+  const setScenario = (i, field, val) =>
+    setTask(i, "scenario", { ...tasks[i].scenario, [field]: val });
+  const setAnimation = (i, field, val) =>
+    setTask(i, "animation", { ...tasks[i].animation, [field]: val });
+
+  const updateQuestion = (taskIdx, questionIdx, field, val) => {
+    setTasks((prev) =>
+      prev.map((t, idx) => {
+        if (idx !== taskIdx) return t;
+        const questions = [...t.questions];
+        questions[questionIdx] = { ...questions[questionIdx], [field]: val };
+        return { ...t, questions };
+      }),
+    );
+  };
+
+  const addQuestion = (taskIdx) => {
+    setTask(taskIdx, "questions", [
+      ...(tasks[taskIdx].questions || []),
+      EMPTY_QUESTION(),
+    ]);
+  };
+
+  const removeQuestion = (taskIdx, questionIdx) => {
+    const questions = tasks[taskIdx].questions.filter(
+      (_, i) => i !== questionIdx,
+    );
+    setTask(taskIdx, "questions", questions);
+  };
+
+  const addContentBlock = (taskIdx) => {
+    setTask(taskIdx, "content", [
+      ...(tasks[taskIdx].content || []),
+      EMPTY_CONTENT_BLOCK(),
+    ]);
+  };
+
+  const removeContentBlock = (taskIdx, blockIdx) => {
+    const blocks = tasks[taskIdx].content.filter((_, i) => i !== blockIdx);
+    setTask(taskIdx, "content", blocks);
+  };
+
+  const updateContentBlock = (taskIdx, blockIdx, field, val) => {
+    const blocks = [...tasks[taskIdx].content];
+    blocks[blockIdx] = { ...blocks[blockIdx], [field]: val };
+    setTask(taskIdx, "content", blocks);
+  };
+
+  const addBadge = () => setBadges([...badges, EMPTY_BADGE()]);
+  const removeBadge = (idx) => setBadges(badges.filter((_, i) => i !== idx));
+  const updateBadge = (idx, field, val) => {
+    const b = [...badges];
+    b[idx] = { ...b[idx], [field]: val };
+    setBadges(b);
+  };
+
+  const handleSave = async () => {
+    if (!basic.title.trim()) return setError("Title is required.");
+    if (!basic.description.trim()) return setError("Description is required.");
+    if (tasks.some((t) => !t.title.trim()))
+      return setError("All tasks must have a title.");
+    setError("");
+    setSaving(true);
+
+    // Extract minutes from duration string (e.g., "60 min" -> 60)
+    const durationMatch = basic.duration.match(/\d+/);
+    const estimatedMinutes = durationMatch ? parseInt(durationMatch[0]) : 60;
+
+    // Generate slug from title (convert to lowercase, replace spaces with hyphens, remove special chars)
+    const slug = basic.title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+
+    const payload = {
+      slug: slug,
+      title: basic.title,
+      short_description: basic.description,
+      long_description_markdown: basic.description,
+      difficulty: basic.difficulty,
+      category: basic.category,
+      estimated_time_minutes: estimatedMinutes,
+      creator: basic.creator,
+      tags: basic.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+      cover_image_url: basic.image,
+      isActive: true,
+      topics: tasks.map((t, i) => ({
+        id: i + 1,
+        order: i + 1,
+        title: t.title,
+        estimated_time_minutes: Math.ceil(estimatedMinutes / tasks.length),
+        content_markdown: t.subtitle || "",
+      })),
+      exercises: tasks.map((t, i) => ({
+        id: i + 1,
+        order: i + 1,
+        title: t.title,
+        description_markdown: t.title,
+        points: Number(t.xp),
+        type: "static",
+        auto_validate: true,
+      })),
+      quizzes: tasks.some((t) => t.questions.length)
+        ? [
+            {
+              id: 1,
+              title: "Final Assessment",
+              pass_percentage: Number(basic.passPercentage),
+              questions: tasks.flatMap((t, i) =>
+                t.questions.map((q, qi) => ({
+                  id: qi + 1,
+                  question_text: q.text,
+                  type: q.answerType === "multiple" ? "multiple" : "text",
+                  options: q.options.length > 0 ? q.options : [q.answer],
+                  correct_answer: q.answer,
+                  points: 10,
+                  explanation: q.hint,
+                })),
+              ),
+            },
+          ]
+        : [],
+    };
+
+    try {
+      const res = await fetch(`${API}/rooms/${id}`, {
+        method: "PUT",
+        headers: authHeaders(),
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.errors?.join(", ") || err.message || "Save failed");
+      }
+      navigate("/secure-admin-dashboard");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-500" />
+      </div>
+    );
+
+  const activeTask = tasks[activePreviewTask];
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+      {/* Header */}
+      <div className="sticky top-0 z-30 bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/secure-admin-dashboard")}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="font-bold text-white">Enhanced Room Editor</h1>
+            <p className="text-xs text-slate-400">
+              {basic.title || "Untitled"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {}}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            <Eye size={18} />
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors"
+          >
+            <Save size={15} /> {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="px-6 py-3 bg-red-500/10 border-b border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Editor Panel */}
+        <div className="flex-1 overflow-y-auto border-r border-slate-700">
+          <div className="max-w-2xl mx-auto p-8 space-y-8">
+            {/* Main Tabs */}
+            <div className="flex gap-2">
+              <Tab
+                active={mainTab === "basic"}
+                onClick={() => setMainTab("basic")}
+              >
+                Basic Info
+              </Tab>
+              <Tab
+                active={mainTab === "tasks"}
+                onClick={() => setMainTab("tasks")}
+              >
+                Tasks
+              </Tab>
+              <Tab
+                active={mainTab === "badges"}
+                onClick={() => setMainTab("badges")}
+              >
+                Badges
+              </Tab>
+              <Tab
+                active={mainTab === "quiz"}
+                onClick={() => setMainTab("quiz")}
+              >
+                Quiz Settings
+              </Tab>
+            </div>
+
+            {/* ── BASIC INFO TAB ── */}
+            {mainTab === "basic" && (
+              <div className="space-y-4">
+                <Field label="Room Title">
+                  <input
+                    className={inp}
+                    value={basic.title}
+                    onChange={(e) =>
+                      setBasic((p) => ({ ...p, title: e.target.value }))
+                    }
+                    placeholder="Room title"
+                  />
+                </Field>
+                <Field label="Description">
+                  <textarea
+                    className={inp}
+                    rows={3}
+                    value={basic.description}
+                    onChange={(e) =>
+                      setBasic((p) => ({ ...p, description: e.target.value }))
+                    }
+                    placeholder="Description"
+                  />
+                </Field>
+
+                <Field label="Room Image">
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-700 rounded-lg cursor-pointer hover:border-cyan-500 transition-colors">
+                        <Upload size={16} className="text-slate-400" />
+                        <span className="text-sm text-slate-400">Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, false)}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                    {(basic.image || imagePreview) && (
+                      <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-700">
+                        <img
+                          src={basic.image || imagePreview}
+                          alt="preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={() => {
+                            setBasic((p) => ({ ...p, image: "" }));
+                            setImagePreview(null);
+                          }}
+                          className="absolute top-1 right-1 p-1 bg-red-600 rounded hover:bg-red-700"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </Field>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Difficulty">
+                    <select
+                      className={inp}
+                      value={basic.difficulty}
+                      onChange={(e) =>
+                        setBasic((p) => ({ ...p, difficulty: e.target.value }))
+                      }
+                    >
+                      <option>Beginner</option>
+                      <option>Intermediate</option>
+                      <option>Advanced</option>
+                    </select>
+                  </Field>
+                  <Field label="Category">
+                    <select
+                      className={inp}
+                      value={basic.category}
+                      onChange={(e) =>
+                        setBasic((p) => ({ ...p, category: e.target.value }))
+                      }
+                    >
+                      <option>Web</option>
+                      <option>Networking</option>
+                      <option>Development</option>
+                      <option>DevOps</option>
+                      <option>Misc</option>
+                    </select>
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Duration">
+                    <input
+                      className={inp}
+                      value={basic.duration}
+                      onChange={(e) =>
+                        setBasic((p) => ({ ...p, duration: e.target.value }))
+                      }
+                      placeholder="e.g. 60 min"
+                    />
+                  </Field>
+                  <Field label="Total XP">
+                    <input
+                      className={inp}
+                      type="number"
+                      min={10}
+                      value={basic.totalXP}
+                      onChange={(e) =>
+                        setBasic((p) => ({ ...p, totalXP: e.target.value }))
+                      }
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Enrollments">
+                    <input
+                      className={inp}
+                      type="number"
+                      min={0}
+                      value={basic.enrollments}
+                      onChange={(e) =>
+                        setBasic((p) => ({ ...p, enrollments: e.target.value }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Rating">
+                    <input
+                      className={inp}
+                      type="number"
+                      min={0}
+                      max={5}
+                      step={0.1}
+                      value={basic.rating}
+                      onChange={(e) =>
+                        setBasic((p) => ({ ...p, rating: e.target.value }))
+                      }
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Creator">
+                  <input
+                    className={inp}
+                    value={basic.creator}
+                    onChange={(e) =>
+                      setBasic((p) => ({ ...p, creator: e.target.value }))
+                    }
+                  />
+                </Field>
+
+                <Field label="Tags (comma-separated)">
+                  <input
+                    className={inp}
+                    value={basic.tags}
+                    onChange={(e) =>
+                      setBasic((p) => ({ ...p, tags: e.target.value }))
+                    }
+                  />
+                </Field>
+              </div>
+            )}
+
+            {/* ── TASKS TAB ── */}
+            {mainTab === "tasks" && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-slate-300">
+                    Tasks ({tasks.length})
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setTasks((p) => [...p, EMPTY_TASK()]);
+                      setOpenTask(tasks.length);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors"
+                  >
+                    <Plus size={14} /> Add Task
+                  </button>
+                </div>
+
+                {tasks.map((task, i) => (
+                  <div
+                    key={task.id}
+                    className="border border-slate-700 rounded-lg overflow-hidden"
+                  >
+                    <button
+                      className="w-full flex items-center justify-between px-4 py-3 bg-slate-800 hover:bg-slate-750 text-left"
+                      onClick={() => {
+                        setOpenTask(openTask === i ? null : i);
+                        setActivePreviewTask(i);
+                        setTaskTab("content");
+                      }}
+                    >
+                      <span className="text-sm font-medium text-white">
+                        <span className="text-slate-500 mr-2">#{i + 1}</span>
+                        {task.title || "Untitled"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-cyan-400">
+                          {task.xp} XP
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {task.questions.length}Q
+                        </span>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTasks((p) => p.filter((_, idx) => idx !== i));
+                          }}
+                          className="p-1 text-red-400 hover:bg-red-500/20 rounded cursor-pointer transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </div>
+                        {openTask === i ? (
+                          <ChevronUp size={15} className="text-slate-400" />
+                        ) : (
+                          <ChevronDown size={15} className="text-slate-400" />
+                        )}
+                      </div>
+                    </button>
+
+                    {openTask === i && (
+                      <div className="px-4 py-4 bg-slate-900 space-y-4">
+                        {/* Task Tabs */}
+                        <div className="flex gap-2 border-b border-slate-700 pb-3">
+                          <Tab
+                            active={taskTab === "content"}
+                            onClick={() => setTaskTab("content")}
+                          >
+                            Content
+                          </Tab>
+                          <Tab
+                            active={taskTab === "questions"}
+                            onClick={() => setTaskTab("questions")}
+                          >
+                            Questions
+                          </Tab>
+                          <Tab
+                            active={taskTab === "animation"}
+                            onClick={() => setTaskTab("animation")}
+                          >
+                            Animation
+                          </Tab>
+                        </div>
+
+                        {taskTab === "content" && (
+                          <div className="space-y-4">
+                            <Field label="Task Title">
+                              <input
+                                className={inp}
+                                value={task.title}
+                                onChange={(e) =>
+                                  setTask(i, "title", e.target.value)
+                                }
+                                placeholder="Task title"
+                              />
+                            </Field>
+                            <Field label="Subtitle">
+                              <input
+                                className={inp}
+                                value={task.subtitle}
+                                onChange={(e) =>
+                                  setTask(i, "subtitle", e.target.value)
+                                }
+                                placeholder="Subtitle"
+                              />
+                            </Field>
+                            <div className="grid grid-cols-2 gap-4">
+                              <Field label="Icon">
+                                <input
+                                  className={inp}
+                                  value={task.icon}
+                                  onChange={(e) =>
+                                    setTask(i, "icon", e.target.value)
+                                  }
+                                  placeholder="icon name"
+                                />
+                              </Field>
+                              <Field label="Difficulty">
+                                <select
+                                  className={inp}
+                                  value={task.difficulty}
+                                  onChange={(e) =>
+                                    setTask(i, "difficulty", e.target.value)
+                                  }
+                                >
+                                  <option>Beginner</option>
+                                  <option>Intermediate</option>
+                                  <option>Advanced</option>
+                                </select>
+                              </Field>
+                            </div>
+                            <Field label="XP Points">
+                              <input
+                                className={inp}
+                                type="number"
+                                min={10}
+                                value={task.xp}
+                                onChange={(e) =>
+                                  setTask(i, "xp", e.target.value)
+                                }
+                              />
+                            </Field>
+
+                            <div className="border border-slate-700 rounded-lg p-4 space-y-3">
+                              <h4 className="text-sm font-semibold text-slate-300">
+                                Scenario
+                              </h4>
+                              <Field label="Scenario Title">
+                                <input
+                                  className={inp}
+                                  value={task.scenario.title}
+                                  onChange={(e) =>
+                                    setScenario(i, "title", e.target.value)
+                                  }
+                                />
+                              </Field>
+                              <Field label="Scenario Description">
+                                <textarea
+                                  className={inp}
+                                  rows={3}
+                                  value={task.scenario.text}
+                                  onChange={(e) =>
+                                    setScenario(i, "text", e.target.value)
+                                  }
+                                />
+                              </Field>
+                              <Field label="Impact">
+                                <input
+                                  className={inp}
+                                  value={task.scenario.impact}
+                                  onChange={(e) =>
+                                    setScenario(i, "impact", e.target.value)
+                                  }
+                                />
+                              </Field>
+                            </div>
+
+                            <div className="border border-slate-700 rounded-lg p-4 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <h4 className="text-sm font-semibold text-slate-300">
+                                  Content Blocks
+                                </h4>
+                                <button
+                                  onClick={() => addContentBlock(i)}
+                                  className="flex items-center gap-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+                                >
+                                  <Plus size={12} /> Add Block
+                                </button>
+                              </div>
+                              {task.content.map((block, bi) => (
+                                <div
+                                  key={block.id}
+                                  className="p-3 bg-slate-800 rounded space-y-2"
+                                >
+                                  <select
+                                    className={`${inp} text-xs`}
+                                    value={block.type}
+                                    onChange={(e) =>
+                                      updateContentBlock(
+                                        i,
+                                        bi,
+                                        "type",
+                                        e.target.value,
+                                      )
+                                    }
+                                  >
+                                    <option value="paragraph">Paragraph</option>
+                                    <option value="code">Code</option>
+                                    <option value="list">List</option>
+                                  </select>
+                                  <textarea
+                                    className={`${inp} text-xs`}
+                                    rows={3}
+                                    value={block.content}
+                                    onChange={(e) =>
+                                      updateContentBlock(
+                                        i,
+                                        bi,
+                                        "content",
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="Block content"
+                                  />
+                                  <button
+                                    onClick={() => removeContentBlock(i, bi)}
+                                    className="text-red-400 text-xs hover:text-red-300"
+                                  >
+                                    🗑️ Remove
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {taskTab === "questions" && (
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h4 className="text-sm font-semibold text-slate-300">
+                                Questions ({task.questions.length})
+                              </h4>
+                              <button
+                                onClick={() => addQuestion(i)}
+                                className="flex items-center gap-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+                              >
+                                <Plus size={12} /> Add Q
+                              </button>
+                            </div>
+                            {task.questions.map((q, qi) => (
+                              <div
+                                key={q.id}
+                                className="p-3 bg-slate-800 rounded space-y-2"
+                              >
+                                <div className="flex gap-2">
+                                  <input
+                                    className={`${inp} text-xs flex-1`}
+                                    value={q.text}
+                                    onChange={(e) =>
+                                      updateQuestion(
+                                        i,
+                                        qi,
+                                        "text",
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="Question text"
+                                  />
+                                  <button
+                                    onClick={() => removeQuestion(i, qi)}
+                                    className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                                <select
+                                  className={`${inp} text-xs`}
+                                  value={q.answerType}
+                                  onChange={(e) =>
+                                    updateQuestion(
+                                      i,
+                                      qi,
+                                      "answerType",
+                                      e.target.value,
+                                    )
+                                  }
+                                >
+                                  <option value="text">Text Answer</option>
+                                  <option value="multiple">
+                                    Multiple Choice
+                                  </option>
+                                </select>
+                                <input
+                                  className={`${inp} text-xs`}
+                                  value={q.answer}
+                                  onChange={(e) =>
+                                    updateQuestion(
+                                      i,
+                                      qi,
+                                      "answer",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="Correct answer"
+                                />
+                                <input
+                                  className={`${inp} text-xs`}
+                                  value={q.hint}
+                                  onChange={(e) =>
+                                    updateQuestion(
+                                      i,
+                                      qi,
+                                      "hint",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="Hint (optional)"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {taskTab === "animation" && (
+                          <div className="space-y-4">
+                            <Field label="Animation Type">
+                              <select
+                                className={inp}
+                                value={task.animation.type}
+                                onChange={(e) =>
+                                  setAnimation(i, "type", e.target.value)
+                                }
+                              >
+                                <option value="none">None</option>
+                                <option value="fadeIn">Fade In</option>
+                                <option value="slideIn">Slide In</option>
+                                <option value="pulse">Pulse</option>
+                                <option value="bounce">Bounce</option>
+                              </select>
+                            </Field>
+                            <Field
+                              label="Animation Data (JSON)"
+                              hint="Optional: Custom animation data"
+                            >
+                              <textarea
+                                className={inp}
+                                rows={4}
+                                value={task.animation.data}
+                                onChange={(e) =>
+                                  setAnimation(i, "data", e.target.value)
+                                }
+                                placeholder='{"duration": 0.5}'
+                              />
+                            </Field>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── BADGES TAB ── */}
+            {mainTab === "badges" && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-slate-300">
+                    Badges ({badges.length})
+                  </h3>
+                  <button
+                    onClick={addBadge}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors"
+                  >
+                    <Plus size={14} /> Add Badge
+                  </button>
+                </div>
+
+                {badges.map((badge, i) => (
+                  <div
+                    key={badge.id}
+                    className="p-4 bg-slate-800 rounded-lg border border-slate-700 space-y-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-medium text-white">
+                        {badge.name || "Unnamed Badge"}
+                      </h4>
+                      <button
+                        onClick={() => removeBadge(i)}
+                        className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Name">
+                        <input
+                          className={inp}
+                          value={badge.name}
+                          onChange={(e) =>
+                            updateBadge(i, "name", e.target.value)
+                          }
+                          placeholder="Badge name"
+                        />
+                      </Field>
+                      <Field label="Icon">
+                        <select
+                          className={inp}
+                          value={badge.icon}
+                          onChange={(e) =>
+                            updateBadge(i, "icon", e.target.value)
+                          }
+                        >
+                          <option value="award">Award</option>
+                          <option value="star">Star</option>
+                          <option value="shield">Shield</option>
+                          <option value="crown">Crown</option>
+                          <option value="zap">Zap</option>
+                        </select>
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Type">
+                        <select
+                          className={inp}
+                          value={badge.type}
+                          onChange={(e) =>
+                            updateBadge(i, "type", e.target.value)
+                          }
+                        >
+                          <option value="milestone">Milestone</option>
+                          <option value="achievement">Achievement</option>
+                          <option value="mastery">Mastery</option>
+                          <option value="bonus">Bonus</option>
+                        </select>
+                      </Field>
+                      <Field label="XP Reward">
+                        <input
+                          className={inp}
+                          type="number"
+                          min={0}
+                          value={badge.xpReward}
+                          onChange={(e) =>
+                            updateBadge(i, "xpReward", e.target.value)
+                          }
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Unlock Reason">
+                      <textarea
+                        className={inp}
+                        rows={2}
+                        value={badge.unlockReason}
+                        onChange={(e) =>
+                          updateBadge(i, "unlockReason", e.target.value)
+                        }
+                        placeholder="Why this badge is earned"
+                      />
+                    </Field>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── QUIZ SETTINGS TAB ── */}
+            {mainTab === "quiz" && (
+              <div className="space-y-4">
+                <Field label="Pass Percentage">
+                  <input
+                    className={inp}
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={basic.passPercentage}
+                    onChange={(e) =>
+                      setBasic((p) => ({
+                        ...p,
+                        passPercentage: e.target.value,
+                      }))
+                    }
+                  />
+                </Field>
+                <Field label="Quiz Bonus XP">
+                  <input
+                    className={inp}
+                    type="number"
+                    min={0}
+                    value={basic.quizBonusXP}
+                    onChange={(e) =>
+                      setBasic((p) => ({ ...p, quizBonusXP: e.target.value }))
+                    }
+                  />
+                </Field>
+                <div className="p-4 bg-slate-800 rounded-lg border border-slate-700">
+                  <p className="text-sm text-slate-300">📊 Quiz Statistics</p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Total Questions:{" "}
+                    {tasks.reduce((sum, t) => sum + t.questions.length, 0)}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Tasks with Questions:{" "}
+                    {tasks.filter((t) => t.questions.length > 0).length}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Preview Panel */}
+        <div className="w-96 border-l border-slate-700 bg-slate-850 overflow-y-auto">
+          <div className="p-6 space-y-4">
+            <h3 className="text-sm font-bold text-slate-300 uppercase">
+              Live Preview
+            </h3>
+
+            {activeTask && (
+              <div className="space-y-4">
+                <PreviewTaskHeader task={activeTask} />
+                <PreviewScenario scenario={activeTask.scenario} />
+                <PreviewQuestions questions={activeTask.questions} />
+
+                <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+                  <p className="text-xs font-semibold text-slate-400 uppercase mb-2">
+                    Content Blocks ({activeTask.content.length})
+                  </p>
+                  {activeTask.content.length === 0 ? (
+                    <p className="text-xs text-slate-500">
+                      No content blocks yet
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeTask.content.map((block, i) => (
+                        <div
+                          key={block.id}
+                          className="p-2 bg-slate-900 rounded text-xs text-slate-400"
+                        >
+                          <span className="font-mono">
+                            [{block.type.toUpperCase()}]
+                          </span>{" "}
+                          {block.content.substring(0, 40)}...
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

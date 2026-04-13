@@ -154,9 +154,19 @@ const SecureAdminDashboard = () => {
         const response = await fetch("http://localhost:5000/api/admin/rooms", {
           credentials: "include",
         });
+        const LOCAL_ROOMS = [
+          { _id: "local-web-app-pentesting", title: "Web App Pentesting Mastery", description: "Learn how real hackers identify, analyze, and exploit vulnerabilities in web applications.", difficulty: "Advanced", points: 250, isLocal: true },
+          { _id: "local-rest-api-mastery", title: "Introduction to RESTful APIs", description: "Learn REST API fundamentals, HTTP methods, JSON, and build your first endpoint.", difficulty: "Beginner", points: 100, isLocal: true },
+          { _id: "local-networking-fundamentals", title: "Networking Fundamentals", description: "Master the OSI model, TCP/IP, DNS, and routing fundamentals.", difficulty: "Beginner", points: 100, isLocal: true },
+        ];
         if (response.ok) {
           const data = await response.json();
-          setRooms(data.rooms || []);
+          const dbRooms = (data.rooms || []).filter(r =>
+            !LOCAL_ROOMS.some(lr => r.title === lr.title)
+          );
+          setRooms([...LOCAL_ROOMS, ...dbRooms]);
+        } else {
+          setRooms(LOCAL_ROOMS);
         }
       } else if (activeTab === "labs") {
         const response = await fetch("http://localhost:5000/api/admin/labs", {
@@ -579,8 +589,8 @@ const SecureAdminDashboard = () => {
       </header>
 
       <div className="flex">
-        <aside className="w-64 bg-gray-800 border-r border-gray-700 min-h-screen">
-          <nav className="p-4 space-y-2">
+        <aside className="w-64 bg-gray-800 border-r border-gray-700 min-h-screen flex flex-col">
+          <nav className="p-4 space-y-2 flex-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -611,7 +621,7 @@ const SecureAdminDashboard = () => {
             </button>
           </nav>
 
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="p-4">
             <div className="p-4 rounded-lg bg-gradient-to-br from-gray-700 to-gray-600 border border-cyan-500/30">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-4 h-4 text-cyan-400" />
@@ -1006,52 +1016,52 @@ const SecureAdminDashboard = () => {
                       className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg hover:shadow-cyan-500/20 hover:border-cyan-500/50 transition-all group"
                     >
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="font-semibold text-white group-hover:text-cyan-400 transition-colors">
-                          {room.title || room.name}
-                        </h3>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              navigate(`/admin/rooms/${room._id}/edit`)
-                            }
-                            className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors"
-                            title="Edit Room Content"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => openModal("room", room)}
-                            className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
-                            title="Quick Edit"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteRoom(room._id)}
-                            className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                            title="Delete Room"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <div>
+                          <h3 className="font-semibold text-white group-hover:text-cyan-400 transition-colors">
+                            {room.title || room.name}
+                          </h3>
+                          {room.isLocal && (
+                            <span className="text-xs text-amber-400 font-medium">Built-in (edit in roomRegistry.jsx)</span>
+                          )}
                         </div>
+                        {!room.isLocal && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => navigate(`/admin/rooms/${room._id}/edit`)}
+                              className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors"
+                              title="Edit Room Content"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => openModal("room", room)}
+                              className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                              title="Quick Edit"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteRoom(room._id)}
+                              className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                              title="Delete Room"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <p className="text-gray-400 text-sm mb-4 line-clamp-2">
-                        {room.description}
+                        {room.description || room.short_description}
                       </p>
                       <div className="flex justify-between items-center">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getDifficultyBadgeClass(
-                            room.difficulty
-                          )}`}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getDifficultyBadgeClass(room.difficulty)}`}
                         >
                           {room.difficulty}
                         </span>
                         <div className="flex items-center gap-2">
                           {room.isPremium && (
-                            <Crown
-                              className="w-4 h-4 text-yellow-400"
-                              title="Premium"
-                            />
+                            <Crown className="w-4 h-4 text-yellow-400" title="Premium" />
                           )}
                           <span className="text-green-400 text-sm font-medium">
                             {room.points} pts

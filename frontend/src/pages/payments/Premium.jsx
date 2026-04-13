@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../../contexts/app-context";
 import { useRealtime } from "../../contexts/realtime-context";
@@ -23,6 +23,14 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import "./Premium.css";
+
+const T = {
+  cyan: "#00F2FF",
+  purple: "#A855F7",
+  green: "#88E636",
+  danger: "#ef4444",
+};
 
 const PremiumPage = () => {
   const navigate = useNavigate();
@@ -34,7 +42,6 @@ const PremiumPage = () => {
 
   const isPremium = userStats?.isPremium || user?.isPremium || false;
 
-  // Pricing data
   const pricing = {
     monthly: { price: 10, display: "10", period: "/mo" },
     annual: {
@@ -48,7 +55,6 @@ const PremiumPage = () => {
   const currentPrice = pricing[billingCycle];
   const savings = billingCycle === "annual" ? "Save 25%" : null;
 
-  // Feature comparison data
   const features = [
     { name: "Access to Rooms", free: "10/month", premium: "Unlimited", icon: Target },
     { name: "AttackBox Access", free: "1 hr/day", premium: "Unlimited", icon: Zap },
@@ -81,38 +87,36 @@ const PremiumPage = () => {
   };
 
   return (
-    <div className="pp-root">
-      <div className="pp-grid" />
+    <div className="pp-root pt-20">
       <div className="pp-glow" />
 
-      <div className="container mx-auto px-4 max-w-7xl pb-32">
+      <div className="container mx-auto px-6 max-w-6xl pb-32 relative z-20">
         {/* ── HERO SECTION ── */}
         <header className="pp-hero">
-          <div className="pp-tag">
-            <Sparkles size={14} className="animate-pulse" />
-            <span>Operational Upgrade Available</span>
-          </div>
-          <h1 className="pp-title">
-             Level Up Your <br/>
-             <span className="gradient-text italic font-black">Cyber Arsenal</span>
-          </h1>
-          <p className="text-slate-500 max-w-2xl mx-auto text-lg font-medium leading-relaxed mb-12">
-            Unlock the full potential of CyberVerse. Gain unlimited access to premium labs, 
-            exclusive certifications, and advanced tactical resources.
-          </p>
+           <div className="pp-tag rcp-fade-in">
+             <Crown size={12} />
+             <span>Join the Elite</span>
+           </div>
+           <h1 className="cv-page-title !text-center !mb-4">
+              Unlock the Full <br/>
+              <span className="text-primary">Cyber-Training Experience</span>
+           </h1>
+           <p className="cv-page-subtitle !text-center !text-lg max-w-xl mx-auto mb-8">
+             Get unlimited access to all labs, private networks, and official certification paths without any restrictions.
+           </p>
 
-          <div className="pp-btn-toggle">
+          <div className="pp-btn-toggle rcp-fade-in" style={{ animationDelay: '0.3s' }}>
              <button 
                 onClick={() => setBillingCycle("monthly")}
                 className={`pp-toggle-opt ${billingCycle === 'monthly' ? 'pp-toggle-opt--active' : ''}`}
              >
-                Monthly Ops
+                Monthly
              </button>
              <button 
                 onClick={() => setBillingCycle("annual")}
                 className={`pp-toggle-opt ${billingCycle === 'annual' ? 'pp-toggle-opt--active' : ''}`}
              >
-                Annual Ops {savings && <span className="ml-2 text-[8px] bg-black/10 px-1.5 py-0.5 rounded text-black/60 font-black">{savings}</span>}
+                Annual {savings && <span className="ml-1 text-[9px] text-white bg-green-500 px-1.5 py-0.5 rounded font-black">{savings}</span>}
              </button>
           </div>
         </header>
@@ -120,88 +124,79 @@ const PremiumPage = () => {
         {/* ── PRICING CARDS ── */}
         <div className="pp-card-grid">
            {/* FREE PLAN */}
-           <div className="pp-card rcp-fade-in" style={{ animationDelay: '0.1s' }}>
-              <div className="mb-8">
-                 <Shield className="text-slate-600 mb-4" size={32} />
-                 <h3 className="text-xl font-black text-white uppercase tracking-widest">Base Operator</h3>
-                 <p className="text-xs font-bold text-slate-500 uppercase mt-1">Standard Entry Protocol</p>
+           <div className="pp-card rcp-fade-in">
+              <div className="mb-6">
+                 <h3 className="text-lg font-bold text-white uppercase">Free</h3>
+                 <p className="text-xs text-slate-500 font-medium">Standard Access</p>
               </div>
               <div className="pp-price-wrap">
                  <div className="pp-price">$0</div>
-                 <div className="pp-period">Forever Free</div>
+                 <div className="pp-period">Basic Protocol</div>
               </div>
               <ul className="pp-feat-list">
-                 <li className="pp-feat-item"><Check size={16} className="text-slate-600"/> 10 Labs per month</li>
-                 <li className="pp-feat-item"><Check size={16} className="text-slate-600"/> 1 hr AttackBox Access</li>
-                 <li className="pp-feat-item"><Check size={16} className="text-slate-600"/> Community Intel Access</li>
-                 <li className="pp-feat-item"><X size={16} className="text-danger/40"/> No Certifications</li>
+                 <li className="pp-feat-item"><Check size={14} className="text-slate-600"/> 10 Labs per month</li>
+                 <li className="pp-feat-item"><Check size={14} className="text-slate-600"/> 1 hr AttackBox Access</li>
+                 <li className="pp-feat-item"><X size={14} className="text-danger/40"/> No Certifications</li>
               </ul>
-              <button disabled className="rcp-secondary-btn !w-full !justify-center !bg-white/5 !border-white/10 !text-slate-500">
+              <button disabled className="rcp-secondary-btn !w-full !cursor-default opacity-50">
                  Current Tier
               </button>
            </div>
 
            {/* PREMIUM PLAN */}
            <div className="pp-card pp-card--premium rcp-fade-in">
-              <div className="absolute top-6 right-8">
-                 <div className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-black px-2 py-1 rounded uppercase tracking-widest">Highly Advised</div>
-              </div>
-              <div className="mb-8">
-                 <Crown className="text-primary mb-4" size={32} />
-                 <h3 className="text-xl font-black text-white uppercase tracking-widest">Elite Infiltrator</h3>
-                 <p className="text-xs font-bold text-primary uppercase mt-1">Advanced Tactical Plan</p>
-              </div>
+              <div className="mb-6">
+                  <h3 className="text-lg font-bold text-white">Premium</h3>
+                  <p className="text-xs text-primary font-bold uppercase tracking-wider">Most Popular</p>
+               </div>
               <div className="pp-price-wrap">
                  <div className="pp-price">
-                    <span className="text-primary">$</span>
+                    <span>$</span>
                     {currentPrice.display}
                  </div>
                  <div className="pp-period">Billed {billingCycle}ly</div>
               </div>
-              <ul className="pp-feat-list">
-                 <li className="pp-feat-item pp-feat-item--inc"><Check size={16} className="text-primary"/> Unlimited Lab Deployment</li>
-                 <li className="pp-feat-item pp-feat-item--inc"><Check size={16} className="text-primary"/> Unlimited AttackBox Ops</li>
-                 <li className="pp-feat-item pp-feat-item--inc"><Check size={16} className="text-primary"/> Private VPN Pipeline</li>
-                 <li className="pp-feat-item pp-feat-item--inc"><Check size={16} className="text-primary"/> Official Certification Labs</li>
-                 <li className="pp-feat-item pp-feat-item--inc"><Check size={16} className="text-primary"/> Priority Command Support</li>
-              </ul>
-              <button 
-                onClick={() => handleSubscribe("premium")}
-                disabled={isPremium}
-                className={`rcp-primary-btn !w-full !justify-center ${isPremium ? "!bg-slate-800 !text-slate-500 !border-slate-700" : ""}`}
-              >
-                 {isPremium ? 'Active Operation' : 'Initialize Upgrade'}
-              </button>
+               <ul className="pp-feat-list">
+                  <li className="pp-feat-item pp-feat-item--inc"><Check size={14} style={{ color: T.cyan }}/> Unlimited Lab Deployment</li>
+                  <li className="pp-feat-item pp-feat-item--inc"><Check size={14} style={{ color: T.cyan }}/> Unlimited AttackBox Ops</li>
+                  <li className="pp-feat-item pp-feat-item--inc"><Check size={14} style={{ color: T.cyan }}/> Private VPN Pipeline</li>
+                  <li className="pp-feat-item pp-feat-item--inc"><Check size={14} style={{ color: T.cyan }}/> Official Certification Labs</li>
+               </ul>
+               <button 
+                 onClick={() => handleSubscribe("premium")}
+                 className="rcp-primary-btn !w-full"
+                 style={isPremium ? { background: 'rgba(0, 242, 255, 0.1)', color: '#00F2FF', border: '1px solid rgba(0, 242, 255, 0.3)', boxShadow: 'none' } : {}}
+               >
+                  {isPremium ? 'View Plan Details' : 'Get Premium'}
+               </button>
            </div>
 
            {/* BUSINESS PLAN */}
-           <div className="pp-card rcp-fade-in" style={{ animationDelay: '0.2s' }}>
-              <div className="mb-8">
-                 <Users className="text-purple-500 mb-4" size={32} />
-                 <h3 className="text-xl font-black text-white uppercase tracking-widest">Tactical Cell</h3>
-                 <p className="text-xs font-bold text-slate-500 uppercase mt-1">Enterprise Fleet Ops</p>
+           <div className="pp-card rcp-fade-in">
+              <div className="mb-6">
+                 <h3 className="text-lg font-bold text-white uppercase">Business</h3>
+                 <p className="text-xs text-slate-500 font-medium">Enterprise Units</p>
               </div>
               <div className="pp-price-wrap">
                  <div className="pp-price">Custom</div>
-                 <div className="pp-period">For Organization Grid</div>
+                 <div className="pp-period">Group Pricing</div>
               </div>
               <ul className="pp-feat-list">
-                 <li className="pp-feat-item"><Check size={16} className="text-purple-500"/> Individual Fleet Management</li>
-                 <li className="pp-feat-item"><Check size={16} className="text-purple-500"/> Custom Training Protocols</li>
-                 <li className="pp-feat-item"><Check size={16} className="text-purple-500"/> Advanced Fleet Analytics</li>
-                 <li className="pp-feat-item"><Check size={16} className="text-purple-500"/> Dedicated Grid Liaison</li>
+                 <li className="pp-feat-item"><Check size={14} className="text-slate-600"/> Fleet Management</li>
+                 <li className="pp-feat-item"><Check size={14} className="text-slate-600"/> Custom Training</li>
+                 <li className="pp-feat-item"><Check size={14} className="text-slate-600"/> Dedicated Liaison</li>
               </ul>
-              <button onClick={() => window.open("mailto:contact@cyberverse.com")} className="rcp-secondary-btn !w-full !justify-center">
-                 Contact Command
+              <button onClick={() => window.open("mailto:contact@cyberverse.com")} className="rcp-secondary-btn !w-full">
+                 Contact Sales
               </button>
            </div>
         </div>
 
         {/* ── FEATURE COMPARISON ── */}
-        <div className="mt-40 mb-32">
-           <div className="text-center mb-16">
-              <h2 className="text-3xl font-black text-white uppercase italic mb-4 tracking-tighter">Feature Comparison Matrix</h2>
-              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.4em]">Operational Capability Breakdown</p>
+        <div className="mt-24 mb-16 rcp-fade-in" style={{ animationDelay: '0.7s' }}>
+           <div className="text-center mb-10">
+              <h2 className="text-2xl font-bold text-white mb-2">Operational Matrix</h2>
+              <p className="cv-page-subtitle !text-[10px] uppercase tracking-widest">Compare features and capabilities</p>
            </div>
 
            <div className="pp-table-wrap">
@@ -210,7 +205,7 @@ const PremiumPage = () => {
                     <tr>
                        <th>capability name</th>
                        <th className="text-center">Base Operator</th>
-                       <th className="text-center text-primary">Elite Infiltrator</th>
+                       <th className="text-center font-black italic" style={{ color: T.cyan }}>Elite Infiltrator</th>
                     </tr>
                  </thead>
                  <tbody>
@@ -221,18 +216,18 @@ const PremiumPage = () => {
                              <td>
                                 <div className="flex items-center gap-3">
                                    <Icon size={18} className="text-slate-500" />
-                                   <span className="font-bold text-white">{f.name}</span>
+                                   <span className="font-bold text-white uppercase tracking-tight text-sm">{f.name}</span>
                                 </div>
                              </td>
                              <td className="text-center">
                                 {typeof f.free === 'boolean' ? (
                                    f.free ? <Check size={18} className="text-slate-600 mx-auto"/> : <X size={18} className="text-danger/20 mx-auto"/>
-                                ) : <span className="text-slate-500 font-bold">{f.free}</span>}
+                                ) : <span className="text-slate-500 font-bold text-xs">{f.free}</span>}
                              </td>
                              <td className="text-center">
                                 {typeof f.premium === 'boolean' ? (
-                                   f.premium ? <Check size={18} className="text-primary mx-auto drop-shadow-[0_0_8px_rgba(0,245,255,0.4)]"/> : <X size={18} className="text-danger mx-auto"/>
-                                ) : <span className="text-primary font-black drop-shadow-[0_0_8px_rgba(0,245,255,0.3)]">{f.premium}</span>}
+                                   f.premium ? <Check size={18} style={{ color: T.cyan }} className="mx-auto" /> : <X size={18} style={{ color: T.danger, opacity: 0.2 }} className="mx-auto"/>
+                                ) : <span className="font-black italic text-xs" style={{ color: T.cyan }}>{f.premium}</span>}
                              </td>
                           </tr>
                        );
@@ -243,22 +238,22 @@ const PremiumPage = () => {
         </div>
 
         {/* ── FAQ SECTION ── */}
-        <div className="max-w-3xl mx-auto mb-40">
-           <div className="text-center mb-16">
-              <h2 className="text-3xl font-black text-white uppercase italic mb-4 tracking-tighter">Mission Intelligence</h2>
-              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.4em]">Frequently Asked Questions</p>
+        <div className="max-w-3xl mx-auto mb-24 rcp-fade-in" style={{ animationDelay: '0.8s' }}>
+           <div className="text-center mb-10">
+              <h2 className="text-2xl font-bold text-white mb-2">Frequently Asked Questions</h2>
+              <p className="cv-page-subtitle !text-[10px] uppercase tracking-widest">Everything you need to know</p>
            </div>
 
            <div className="space-y-4">
               {faqs.map((faq, i) => (
                  <div key={i} className="pp-faq-item">
-                    <button 
-                       onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                       className="pp-faq-trigger"
-                    >
-                       <span className="text-white font-bold">{faq.question}</span>
-                       {openFaq === i ? <ChevronUp className="text-primary"/> : <ChevronDown className="text-slate-600"/>}
-                    </button>
+                     <button 
+                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                        className="pp-faq-trigger"
+                     >
+                        <span className="text-white font-bold text-sm tracking-tight">{faq.question}</span>
+                        {openFaq === i ? <ChevronUp style={{ color: T.cyan }}/> : <ChevronDown style={{ color: 'rgba(255,255,255,0.2)' }}/>}
+                     </button>
                     {openFaq === i && (
                        <div className="pp-faq-content rcp-fade-in">
                           {faq.answer}
@@ -270,20 +265,19 @@ const PremiumPage = () => {
         </div>
 
         {/* ── FINAL CTA ── */}
-        <div className="pp-cta-box">
-           <Crown className="w-16 h-16 text-primary mx-auto mb-8 drop-shadow-[0_0_15px_rgba(0,245,255,0.4)]" />
-           <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-4 italic">Ready to transcend?</h2>
-           <p className="text-slate-500 text-lg font-medium mb-12 max-w-xl mx-auto">
-              Join the elite tier of operators mastering the CyberVerse grid. 
-              The most advanced training environment awaits your command.
-           </p>
-           <button 
-             onClick={() => handleSubscribe("premium")}
-             className="rcp-primary-btn !py-5 !px-12 !text-lg mx-auto"
-           >
-              Initialize Upgrade Sequence <ArrowRight size={20} className="ml-2"/>
-           </button>
-        </div>
+         <div className="pp-cta-box rcp-fade-in" style={{ animationDelay: '0.9s' }}>
+            <Crown size={48} style={{ color: T.cyan }} className="mx-auto mb-6 animate-pulse" />
+            <h2 className="text-3xl font-bold text-white mb-4">Start Your Journey Today</h2>
+            <p className="cv-page-subtitle !text-center !text-sm mb-10 max-w-lg mx-auto">
+               Join the elite community and master your cybersecurity skills with our premium training tools and official certification paths.
+            </p>
+            <button 
+              onClick={() => handleSubscribe("premium")}
+              className="rcp-primary-btn !py-5 !px-12 mx-auto"
+            >
+               Upgrade to Premium <ArrowRight size={20} className="ml-2"/>
+            </button>
+         </div>
       </div>
     </div>
   );

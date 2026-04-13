@@ -125,6 +125,34 @@ const ACTIVITY_TYPES = {
     LAB: 'lab',
 };
 
+// Certificate Types
+const CERTIFICATE_TYPES = {
+    ROOM_COMPLETION: 'room_completion',
+    LAB_COMPLETION: 'lab_completion',
+    COURSE_COMPLETION: 'course_completion',
+    ACHIEVEMENT: 'achievement',
+};
+
+// Badge Types
+const BADGE_TYPES = {
+    MILESTONE: 'milestone',
+    ACHIEVEMENT: 'achievement',
+    SPECIAL: 'special',
+    STREAK: 'streak',
+};
+
+// Badge Criteria
+const BADGE_CRITERIA = {
+    FIRST_LAB: { points: 0, count: 1, type: 'lab_completion' },
+    FIRST_ROOM: { points: 0, count: 1, type: 'room_completion' },
+    LABS_10: { points: 0, count: 10, type: 'lab_completion' },
+    ROOMS_10: { points: 0, count: 10, type: 'room_completion' },
+    POINTS_1000: { points: 1000, count: 0, type: 'points' },
+    POINTS_5000: { points: 5000, count: 0, type: 'points' },
+    STREAK_7: { points: 0, count: 7, type: 'streak' },
+    STREAK_30: { points: 0, count: 30, type: 'streak' },
+};
+
 // HTTP Status Codes (for consistency)
 const HTTP_STATUS = {
     OK: 200,
@@ -195,6 +223,9 @@ module.exports = {
     LAB_CATEGORIES,
     NOTIFICATION_TYPES,
     ACTIVITY_TYPES,
+    CERTIFICATE_TYPES,
+    BADGE_TYPES,
+    BADGE_CRITERIA,
     HTTP_STATUS,
     MESSAGES,
     REGEX,

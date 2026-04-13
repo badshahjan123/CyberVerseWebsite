@@ -1,27 +1,28 @@
-import { useEffect, useState, memo, useMemo, useCallback } from "react";
+import { useEffect, useState, memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/app-context";
 import { useRealTimeLeaderboard } from "../hooks/useRealTimeLeaderboard";
 import { useRealtime } from "../contexts/realtime-context";
-import {
-  Trophy,
-  Medal,
-  Award,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Crown,
-  Star,
-  Zap,
-  Target,
-  Search,
-  ChevronUp,
-  Globe,
-  ArrowRight,
-  Flame,
-  Shield
-} from "lucide-react";
-import BadgeIcon from "../components/achievements/BadgeIcon";
+import { Trophy, TrendingUp, TrendingDown, Minus, Search, Shield, Star, Medal } from "lucide-react";
+
+const SkeletonRow = () => (
+  <div className="flex items-center gap-4 px-6 py-4 animate-pulse">
+    <div className="w-8 h-5 bg-slate-200 dark:bg-slate-700 rounded" />
+    <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700" />
+    <div className="flex-1 space-y-2">
+      <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
+      <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+    </div>
+    <div className="w-16 h-5 bg-slate-200 dark:bg-slate-700 rounded" />
+    <div className="w-20 h-6 bg-slate-200 dark:bg-slate-700 rounded" />
+  </div>
+);
+
+const medalConfig = {
+  0: { label: "#1", bg: "from-amber-400 to-yellow-500", border: "border-amber-400/60", shadow: "shadow-amber-400/20", icon: <Trophy size={18} className="text-amber-400" />, textColor: "text-amber-400" },
+  1: { label: "#2", bg: "from-slate-400 to-slate-500", border: "border-slate-400/60", shadow: "shadow-slate-400/20", icon: <Medal size={18} className="text-slate-400" />, textColor: "text-slate-400" },
+  2: { label: "#3", bg: "from-orange-500 to-amber-600", border: "border-orange-500/60", shadow: "shadow-orange-500/20", icon: <Star size={18} className="text-orange-400" />, textColor: "text-orange-400" },
+};
 
 const Leaderboard = memo(() => {
   const { isAuthenticated, loading, user } = useApp();
@@ -29,326 +30,323 @@ const Leaderboard = memo(() => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("global");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showLoadingSkeleton, setShowLoadingSkeleton] = useState(false);
-  const {
-    leaderboard,
-    loading: leaderboardLoading,
-    error: leaderboardError,
-  } = useRealTimeLeaderboard();
+  const [isFiltering, setIsFiltering] = useState(false);
+  const { leaderboard, loading: leaderboardLoading, error: leaderboardError } = useRealTimeLeaderboard();
 
   const ud = {
     ...user,
     ...userStats,
     xp: userStats?.totalXP || user?.points || 0,
-    rank: userStats?.rank || user?.rank || 999
+    rank: userStats?.rank || user?.rank || 999,
   };
 
-  // Process leaderboard data
-  const leaderboardData = useMemo(() => {
-    return leaderboard.map((player) => ({
-      ...player,
-      username: player.name,
-      trend: "up",
-    }));
-  }, [leaderboard]);
+  const leaderboardData = useMemo(() =>
+    leaderboard.map((p) => ({ ...p, username: p.name })),
+    [leaderboard]
+  );
 
-  // Filter leaderboard by search query
   const filteredLeaderboard = useMemo(() => {
     if (!searchQuery) return leaderboardData;
-    return leaderboardData.filter((player) =>
-      player.username.toLowerCase().includes(searchQuery.toLowerCase())
+    return leaderboardData.filter((p) =>
+      p.username.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [leaderboardData, searchQuery]);
 
-  // Split into top 3 (champions) and rest (challengers)
-  const champions = filteredLeaderboard.slice(0, 3);
-  const challengers = filteredLeaderboard.slice(3);
+  const top3 = filteredLeaderboard.slice(0, 3);
+  const rest = filteredLeaderboard.slice(3);
 
-  // Derive user rank from leaderboard index
   const userRank = useMemo(() => {
     if (!ud.name || !leaderboardData?.length) return ud.rank || 999;
-    const pos = leaderboardData.findIndex(p => p.name === ud.name);
-    return pos !== -1 ? pos + 1 : (ud.rank || 999);
+    const pos = leaderboardData.findIndex((p) => p.name === ud.name);
+    return pos !== -1 ? pos + 1 : ud.rank || 999;
   }, [ud.name, ud.rank, leaderboardData]);
 
+  const pointsToNextRank = useMemo(() => {
+    if (!ud.xp || !userRank || userRank === 1) return null;
+    const next = leaderboardData[userRank - 2];
+    return next ? next.points - ud.xp : null;
+  }, [ud.xp, userRank, leaderboardData]);
+
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      navigate("/login");
-    }
+    if (!loading && !isAuthenticated) navigate("/login");
   }, [isAuthenticated, loading, navigate]);
 
   const handleTabSwitch = (tab) => {
+    if (tab === activeTab) return;
+    setIsFiltering(true);
     setActiveTab(tab);
-    setShowLoadingSkeleton(true);
-    setTimeout(() => setShowLoadingSkeleton(false), 400);
+    setTimeout(() => setIsFiltering(false), 600);
   };
 
-  // Calculate points to next rank
-  const pointsToNextRank = useMemo(() => {
-    if (!ud.xp || !userRank || userRank === 1) return null;
-    const nextPlayer = leaderboardData[userRank - 2];
-    if (!nextPlayer) return null;
-    return nextPlayer.points - (ud.xp || 0);
-  }, [ud.xp, userRank, leaderboardData]);
+  const handleSearch = (val) => {
+    setIsFiltering(true);
+    setSearchQuery(val);
+    setTimeout(() => setIsFiltering(false), 400);
+  };
 
   if (loading) return null;
 
+  const isLoading = leaderboardLoading || isFiltering;
+
   return (
-    <div className="lb-root">
-      <div className="lb-grid" />
-      <div className="lb-bg-glow" />
-
-      <div className="container mx-auto px-4 max-w-7xl pt-16 pb-40">
-        
-        {/* ── HEADER & SEARCH ── */}
-        <div className="lb-title-wrap">
-           <span className="text-[10px] font-black tracking-[0.4em] text-primary uppercase mb-4 block">Operation: Global Dominance</span>
-           <h1 className="lb-title-main">Leaderboard</h1>
-           
-           <div className="flex flex-col md:flex-row items-center justify-center gap-6 mt-12">
-              <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10">
-                 {["global", "weekly", "monthly"].map((tab) => (
-                    <button
-                       key={tab}
-                       onClick={() => handleTabSwitch(tab)}
-                       className={`lb-tab-btn ${activeTab === tab ? 'lb-tab-btn--active' : ''}`}
-                    >
-                       {tab}
-                    </button>
-                 ))}
-              </div>
-
-              <div className="relative w-full max-w-md">
-                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                 <input 
-                    type="text" 
-                    placeholder="Locate Subject..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-primary/40 focus:bg-white/10 transition-all font-medium"
-                 />
-              </div>
-           </div>
-        </div>
-
-        {leaderboardLoading || showLoadingSkeleton ? (
-           <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
-              <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Synchronizing Data...</span>
-           </div>
-        ) : leaderboardError ? (
-           <div className="text-center py-20 bg-danger/5 border border-danger/20 rounded-3xl">
-              <p className="text-danger font-bold uppercase tracking-widest">Connection Failure: {leaderboardError}</p>
-           </div>
-        ) : filteredLeaderboard.length === 0 ? (
-           <div className="text-center py-20">
-              <p className="text-slate-500 font-bold uppercase tracking-widest">No Intelligence Matching Filter</p>
-           </div>
-        ) : (
-           <>
-              {/* ── CHAMPIONS PODIUM ── */}
-              <div className="lb-podium">
-                 {/* RANK #2 */}
-                 {champions[1] && (
-                    <div className="lb-pod-item lb-pod-item--2 rcp-fade-in" style={{ animationDelay: '0.1s' }}>
-                       <div className="lb-avatar-ring">
-                          <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-3xl font-black text-slate-300">
-                             {champions[1].username.slice(0,1)}
-                          </div>
-                          <div className="lb-rank-badge">2</div>
-                          <Medal className="absolute -top-5 left-1/2 -translate-x-1/2 text-slate-400 drop-shadow-[0_0_8px_rgba(203,213,225,0.4)]" size={28} />
-                       </div>
-                       <h3 className="text-xl font-black text-white truncate px-2 mb-1">{champions[1].username}</h3>
-                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Elite Operator</p>
-                       <div className="flex items-center justify-center gap-2 mb-4">
-                          <Shield size={14} className="text-slate-400" />
-                          <span className="text-xs font-bold text-slate-500">LVL {champions[1].level || 1}</span>
-                       </div>
-                       <div className="lb-xp-pill border border-slate-400/30 bg-slate-400/10 text-slate-300 text-center mx-auto inline-block">
-                          {champions[1].points.toLocaleString()} XP
-                       </div>
-                    </div>
-                 )}
-
-                 {/* RANK #1 */}
-                 {champions[0] && (
-                    <div className="lb-pod-item lb-pod-item--1 rcp-fade-in">
-                       <div className="lb-avatar-ring">
-                          <div className="w-full h-full rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center text-4xl font-black text-yellow-100">
-                             {champions[0].username.slice(0,1)}
-                          </div>
-                          <div className="lb-rank-badge">1</div>
-                          <Crown className="absolute -top-8 left-1/2 -translate-x-1/2 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]" size={36} />
-                       </div>
-                       <h3 className="text-2xl font-black text-white truncate px-2 mb-1">{champions[0].username}</h3>
-                       <p className="text-[11px] font-black text-yellow-400 uppercase tracking-[0.3em] mb-3">CHAMPION</p>
-                       <div className="flex items-center justify-center gap-3 mb-5">
-                          <div className="flex items-center gap-1.5">
-                             <Trophy size={16} className="text-yellow-400" />
-                             <span className="text-xs font-bold text-yellow-500">LVL {champions[0].level || 1}</span>
-                          </div>
-                          <div className="h-4 w-px bg-yellow-500/30" />
-                          <div className="flex items-center gap-1.5">
-                             <Flame size={16} className="text-orange-400" />
-                             <span className="text-xs font-bold text-orange-400">{champions[0].streak || 0} Day</span>
-                          </div>
-                       </div>
-                       <div className="lb-xp-pill bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 text-lg py-2 px-7 shadow-[0_0_20px_rgba(250,204,21,0.2)]">
-                          {champions[0].points.toLocaleString()} XP
-                       </div>
-                    </div>
-                 )}
-
-                 {/* RANK #3 */}
-                 {champions[2] && (
-                    <div className="lb-pod-item lb-pod-item--3 rcp-fade-in" style={{ animationDelay: '0.2s' }}>
-                       <div className="lb-avatar-ring">
-                          <div className="w-full h-full rounded-full bg-gradient-to-br from-orange-700 to-orange-900 flex items-center justify-center text-3xl font-black text-orange-300">
-                             {champions[2].username.slice(0,1)}
-                          </div>
-                          <div className="lb-rank-badge">3</div>
-                          <Award className="absolute -top-5 left-1/2 -translate-x-1/2 text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" size={28} />
-                       </div>
-                       <h3 className="text-xl font-black text-white truncate px-2 mb-1">{champions[2].username}</h3>
-                       <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2">Rising Star</p>
-                       <div className="flex items-center justify-center gap-2 mb-4">
-                          <Star size={14} className="text-orange-400" />
-                          <span className="text-xs font-bold text-orange-500">LVL {champions[2].level || 1}</span>
-                       </div>
-                       <div className="lb-xp-pill border border-orange-600/30 bg-orange-600/10 text-orange-400 text-center mx-auto inline-block">
-                          {champions[2].points.toLocaleString()} XP
-                       </div>
-                    </div>
-                 )}
-              </div>
-
-              {/* ── CHALLENGERS LIST ── */}
-              <div className="lb-list-wrap rcp-fade-in" style={{ animationDelay: '0.4s' }}>
-                 <div className="flex items-center justify-between mb-6 px-6">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                       <Target size={14} className="text-primary"/> Field Challengers
-                    </span>
-                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-tighter">Verified by CyberVerse Engine</span>
-                 </div>
-
-                 {challengers.map((player, idx) => {
-                    const isUser = player.username === ud.name || player.name === ud.name;
-                    const rankChange = player.rankChange || 0;
-                    const xpProgress = ((player.points % 1000) / 1000) * 100;
-                    
-                    return (
-                       <div key={player.rank} className={`lb-row ${isUser ? 'lb-row--user shadow-[0_0_30px_rgba(0,245,255,0.08)]' : ''}`} style={{ animationDelay: `${0.5 + idx * 0.05}s` }}>
-                          <div className="lb-rank-num">#{player.rank}</div>
-                          <div className="lb-user-info">
-                             <div className="lb-user-avatar">
-                                {player.username.slice(0,2).toUpperCase()}
-                             </div>
-                             <div className="flex-1">
-                                <h4 className="font-bold text-white text-sm leading-none mb-1.5">{player.username}</h4>
-                                <div className="flex items-center gap-3">
-                                   <div className="flex items-center gap-1.5">
-                                      <Zap size={12} className="text-primary" />
-                                      <span className="text-[10px] font-bold text-slate-500 uppercase">LVL {player.level || 1}</span>
-                                   </div>
-                                   <div className="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
-                                      <div className="h-full bg-gradient-to-r from-primary to-purple-500" style={{ width: `${xpProgress}%` }} />
-                                   </div>
-                                   {player.streak > 0 && (
-                                      <div className="flex items-center gap-1">
-                                         <Flame size={12} className="text-orange-400" />
-                                         <span className="text-[10px] font-bold text-orange-400">{player.streak}</span>
-                                      </div>
-                                   )}
-                                </div>
-                             </div>
-                          </div>
-                          <div className="flex items-center justify-center">
-                             {rankChange > 0 ? (
-                                <div className="flex items-center gap-1">
-                                   <TrendingUp size={18} className="text-success" />
-                                   <span className="text-xs font-bold text-success">+{rankChange}</span>
-                                </div>
-                             ) : rankChange < 0 ? (
-                                <div className="flex items-center gap-1">
-                                   <TrendingDown size={18} className="text-danger" />
-                                   <span className="text-xs font-bold text-danger">{rankChange}</span>
-                                </div>
-                             ) : (
-                                <Minus size={18} className="text-slate-600" />
-                             )}
-                          </div>
-                          <div className="text-right">
-                             <div className="lb-xp-pill inline-block">{player.points.toLocaleString()} XP</div>
-                             {player.badges && player.badges > 0 && (
-                                <div className="flex items-center justify-end gap-1 mt-1">
-                                   <Trophy size={12} className="text-yellow-500" />
-                                   <span className="text-[10px] font-bold text-slate-500">{player.badges} badges</span>
-                                </div>
-                             )}
-                          </div>
-                       </div>
-                    );
-                 })}
-              </div>
-           </>
-        )}
+    <div className="page-root min-h-screen">
+      {/* Profile-Style Banner */}
+      <div className="cv-banner">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-400/5 rounded-full -mr-48 -mt-48 blur-3xl" />
+        <div className="cv-banner-glow" />
       </div>
 
-      {/* ── MY RANK STATUS FOOTER ── */}
-      {ud.name && userRank && (
-         <div className="lb-status-footer rcp-fade-in">
-            <div className="container mx-auto max-w-7xl flex items-center justify-between gap-4 flex-wrap">
-               <div className="flex items-center gap-6">
-                  <div className="lb-user-avatar !w-16 !h-16 !text-2xl !bg-gradient-to-br !from-primary/20 !to-purple-500/20 !border-primary/30 !text-primary !shadow-[0_0_20px_rgba(0,245,255,0.2)]">
-                     {ud.name?.slice(0,1).toUpperCase()}
-                  </div>
-                  <div>
-                     <h5 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                        <Globe size={12} className="text-primary" />
-                        Your Global Rank
-                     </h5>
-                     <div className="flex items-center gap-3">
-                        <span className="text-3xl font-black text-white italic tracking-tighter">#{userRank}</span>
-                        <div className="h-2 w-2 rounded-full bg-success animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                        <span className="text-[10px] font-bold text-success uppercase tracking-widest">Live</span>
-                     </div>
-                  </div>
-               </div>
-
-               <div className="hidden lg:flex items-center gap-12">
-                  <div className="text-right">
-                     <span className="block text-[10px] font-black text-slate-500 uppercase mb-1.5 flex items-center justify-end gap-1.5">
-                        <Zap size={12} className="text-primary" />
-                        Total XP
-                     </span>
-                     <span className="text-2xl font-black text-primary">{(ud.xp || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="h-12 w-px bg-slate-800" />
-                  <div className="text-right">
-                     <span className="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Next Rank</span>
-                     <div className="flex items-center gap-2 justify-end">
-                        <ChevronUp className="text-warning" size={18} />
-                        <span className="text-sm font-black text-warning uppercase">{pointsToNextRank > 0 ? `+${pointsToNextRank?.toLocaleString()} XP` : 'Top Rank!'}</span>
-                     </div>
-                  </div>
-                  <div className="h-12 w-px bg-slate-800" />
-                  <div className="text-right">
-                     <span className="block text-[10px] font-black text-slate-500 uppercase mb-1.5 flex items-center justify-end gap-1.5">
-                        <Trophy size={12} className="text-yellow-500" />
-                        Level
-                     </span>
-                     <span className="text-2xl font-black text-yellow-500">{ud.level || 1}</span>
-                  </div>
-               </div>
-
-               <button onClick={() => navigate("/rooms")} className="rcp-primary-btn !py-3.5 !px-8 !text-sm !bg-gradient-to-r !from-primary !to-purple-500 !text-black flex items-center gap-2 !shadow-[0_0_30px_rgba(0,245,255,0.3)] hover:!shadow-[0_0_40px_rgba(0,245,255,0.5)] hover:scale-105 transition-all">
-                  <Zap size={16} />
-                  Start Training
-                  <ArrowRight size={16}/>
-               </button>
+      <div className="container mx-auto px-6 max-w-6xl relative">
+        {/* HERO CONTENT OVERLAP */}
+        <div className="cv-hero-overlap flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/20 dark:border-slate-800 shadow-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-400/30">
+                <Trophy size={16} className="text-white" />
+              </div>
+              <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 tracking-widest uppercase">Rankings</span>
             </div>
-         </div>
-      )}
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Leaderboard</h1>
+            <p className="text-slate-500 dark:text-slate-400">Compete with the best in the CyberVerse community</p>
+          </div>
+
+          {/* Stats strip */}
+          <div className="flex items-center gap-6 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl p-6 rounded-2xl border border-white/20 dark:border-slate-800 shadow-lg mb-0.5">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{leaderboardData.length}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Total Players</p>
+            </div>
+            <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" />
+            <div className="text-center">
+              <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">Live</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Updated</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 max-w-6xl py-8">
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <div className="flex bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl p-1 gap-1">
+            {["global", "weekly", "monthly"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabSwitch(tab)}
+                className={`relative px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 capitalize ${
+                  activeTab === tab
+                    ? "bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-900 shadow-md shadow-cyan-400/30"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
+              >
+                {activeTab === tab && isFiltering && (
+                  <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-cyan-400">
+                    <span className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+                  </span>
+                )}
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            {isFiltering && searchQuery && (
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-slate-300 dark:border-slate-600 border-t-cyan-400 rounded-full animate-spin" />
+            )}
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400 transition-all"
+            />
+          </div>
+        </div>
+
+        {leaderboardError ? (
+          <div className="text-center py-16 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 rounded-2xl">
+            <p className="text-red-500 font-medium">Failed to load leaderboard</p>
+          </div>
+        ) : (
+          <>
+            {/* Top 3 Podium */}
+            {!isLoading && top3.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {[top3[1], top3[0], top3[2]].map((player, displayIdx) => {
+                  const realIdx = displayIdx === 0 ? 1 : displayIdx === 1 ? 0 : 2;
+                  if (!player) return <div key={displayIdx} />;
+                  const cfg = medalConfig[realIdx];
+                  const isFirst = realIdx === 0;
+                  return (
+                    <div
+                      key={player.rank}
+                      className={`relative bg-white dark:bg-[#111827] border ${cfg.border} rounded-2xl p-6 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${cfg.shadow} ${isFirst ? "md:order-2 ring-1 ring-cyan-400/30" : realIdx === 1 ? "md:order-1" : "md:order-3"}`}
+                    >
+                      <div className={`absolute top-0 right-0 w-28 h-28 bg-gradient-to-br ${cfg.bg} opacity-5 rounded-full -mr-10 -mt-10`} />
+                      <div className="relative">
+                        <div className="flex items-center justify-between mb-5">
+                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r ${cfg.bg} bg-opacity-10`}>
+                            {cfg.icon}
+                            <span className={`text-sm font-bold ${cfg.textColor}`}>{cfg.label}</span>
+                          </div>
+                          {isFirst && <span className="text-xs font-semibold text-cyan-500 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20 px-2 py-1 rounded-full">Top Rank</span>}
+                        </div>
+                        <div className="flex items-center gap-3 mb-5">
+                          <div className={`${isFirst ? "w-16 h-16 text-2xl" : "w-12 h-12 text-lg"} rounded-2xl bg-gradient-to-br ${cfg.bg} flex items-center justify-center font-bold text-white shadow-lg ${cfg.shadow}`}>
+                            {player.username.slice(0, 1).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className={`${isFirst ? "text-xl" : "text-base"} font-bold text-slate-900 dark:text-white truncate`}>{player.username}</h3>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Shield size={12} className="text-slate-400" />
+                              <span className="text-xs text-slate-500 dark:text-slate-400">Level {player.level || 1}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800`}>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">Total Points</span>
+                          <span className={`${isFirst ? "text-xl" : "text-base"} font-bold ${cfg.textColor}`}>{player.points.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Table */}
+            <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700/80 rounded-2xl overflow-hidden shadow-sm">
+              {/* Table Header */}
+              <div className="grid grid-cols-[48px_1fr_80px_100px] sm:grid-cols-[48px_1fr_80px_80px_110px] items-center px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">#</span>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Player</span>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:block">Level</span>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:block">Change</span>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Points</span>
+              </div>
+
+              {isLoading ? (
+                <div>
+                  {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
+                </div>
+              ) : filteredLeaderboard.length === 0 ? (
+                <div className="text-center py-16">
+                  <Search size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-500 dark:text-slate-400 font-medium">No players found</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredLeaderboard.map((player) => {
+                    const isUser = player.username === ud.name || player.name === ud.name;
+                    const rankChange = player.rankChange || 0;
+                    return (
+                      <div
+                        key={player.rank}
+                        className={`grid grid-cols-[48px_1fr_80px_100px] sm:grid-cols-[48px_1fr_80px_80px_110px] items-center px-6 py-4 transition-all duration-150 group ${
+                          isUser
+                            ? "bg-cyan-50 dark:bg-cyan-900/10 border-l-[3px] border-cyan-400"
+                            : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        }`}
+                      >
+                        <span className={`text-sm font-bold ${isUser ? "text-cyan-600 dark:text-cyan-400" : "text-slate-400 dark:text-slate-500"}`}>
+                          {player.rank <= 3 ? (
+                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold text-white bg-gradient-to-br ${
+                              player.rank === 1 ? "from-amber-400 to-yellow-500" :
+                              player.rank === 2 ? "from-slate-400 to-slate-500" :
+                              "from-orange-500 to-amber-600"
+                            }`}>{player.rank}</span>
+                          ) : `#${player.rank}`}
+                        </span>
+
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 transition-transform duration-150 group-hover:scale-105 ${
+                            isUser
+                              ? "bg-gradient-to-br from-cyan-400 to-cyan-600 text-white shadow-md shadow-cyan-400/30"
+                              : "bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 text-slate-700 dark:text-slate-200"
+                          }`}>
+                            {player.username.slice(0, 1).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-sm font-semibold truncate ${isUser ? "text-cyan-700 dark:text-cyan-300" : "text-slate-900 dark:text-white"}`}>
+                              {player.username}
+                              {isUser && <span className="ml-2 text-[10px] font-bold text-cyan-500 bg-cyan-100 dark:bg-cyan-900/30 px-1.5 py-0.5 rounded-full">You</span>}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">Lv. {player.level || 1}</span>
+
+                        <div className="hidden sm:flex items-center">
+                          {rankChange > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                              <TrendingUp size={12} /> +{rankChange}
+                            </span>
+                          ) : rankChange < 0 ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-lg">
+                              <TrendingDown size={12} /> {rankChange}
+                            </span>
+                          ) : (
+                            <Minus size={14} className="text-slate-300 dark:text-slate-600" />
+                          )}
+                        </div>
+
+                        <div className="text-right">
+                          <span className={`text-sm font-bold ${isUser ? "text-cyan-600 dark:text-cyan-400" : "text-slate-900 dark:text-white"}`}>
+                            {player.points.toLocaleString()}
+                          </span>
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500">pts</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Your Rank Footer */}
+        {ud.name && userRank && (
+          <div className="mt-6 relative bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-2xl p-6 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-purple-500/5" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-400/5 rounded-full -mr-24 -mt-24 blur-2xl" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center text-xl font-bold text-white shadow-xl shadow-cyan-400/25">
+                  {ud.name?.slice(0, 1).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Your Standing</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-bold text-slate-900 dark:text-white">#{userRank}</span>
+                    <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+                    <div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Points</p>
+                      <p className="text-base font-bold text-cyan-600 dark:text-cyan-400">{(ud.xp || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+                    <div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Level</p>
+                      <p className="text-base font-bold text-slate-900 dark:text-white">{ud.level || 1}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {pointsToNextRank > 0 && (
+                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3">
+                  <TrendingUp size={18} className="text-cyan-500" />
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">To next rank</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">+{pointsToNextRank.toLocaleString()} pts</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 });

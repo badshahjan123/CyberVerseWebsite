@@ -127,7 +127,7 @@ const NotificationDropdown = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+        className="relative p-2 text-slate-400 hover:text-cyan-400 dark:text-slate-400 dark:hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-all"
         title="Notifications"
       >
         <Bell size={20} />

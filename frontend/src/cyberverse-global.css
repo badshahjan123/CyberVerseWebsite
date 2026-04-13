@@ -1,0 +1,482 @@
+/**
+ * CyberVerse Global Design System
+ * Consistent, premium styling across all pages
+ */
+
+/* ========================================
+   GLOBAL THEME FOUNDATION
+   ======================================== */
+
+/* Dark Mode - Main Background */
+html.dark,
+html.dark body,
+html.dark #root {
+  background: #0B0F1A !important;
+  color: #FFFFFF;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Light Mode - Main Background */
+html.light,
+html.light body,
+html.light #root {
+  background: #F8FAFC !important;
+  color: #475569;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Apply to ALL page containers */
+html.dark .min-h-screen,
+html.dark [class*="root"],
+html.dark [class*="-bg"] {
+  background: #0B0F1A !important;
+  color: #FFFFFF !important;
+}
+
+html.light .min-h-screen,
+html.light [class*="root"],
+html.light [class*="-bg"] {
+  background: #F8FAFC !important;
+  color: #475569 !important;
+}
+
+/* ========================================
+   TYPOGRAPHY SYSTEM
+   ======================================== */
+
+/* Headings - Pure White (Dark) / Dark Charcoal (Light) */
+html.dark h1, html.dark h2, html.dark h3, 
+html.dark h4, html.dark h5, html.dark h6 {
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+html.light h1, html.light h2, html.light h3,
+html.light h4, html.light h5, html.light h6 {
+  color: #334155;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+/* Body Text defaults */
+html.dark p, html.dark span, html.dark div {
+  /* color managed by body or tailwind */
+}
+
+html.light p, html.light span, html.light div {
+  /* color managed by body or tailwind */
+}
+
+
+
+/* Secondary/Label Text - Slate Grey */
+html.dark label,
+html.dark [class*="label"],
+html.dark [class*="secondary"],
+html.dark small,
+html.dark .text-muted {
+  color: #94A3B8 !important;
+}
+
+html.light label,
+html.light [class*="label"],
+html.light [class*="secondary"],
+html.light small,
+html.light .text-muted {
+  color: #64748B !important;
+}
+
+/* ========================================
+   CARD SYSTEM - SHARP & PREMIUM
+   ======================================== */
+
+/* All Cards - Consistent Design */
+html.dark .db-card,
+html.dark .lp2-card,
+html.dark .rp-card,
+html.dark .cp-cert-card,
+html.dark .up-stat-tile,
+html.dark .ms-content-card,
+html.dark .si-card,
+html.dark .bg-badge-card,
+html.dark .ch-card {
+  background: #111827 !important;
+  border: 1px solid #1F2937 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+html.light .db-card,
+html.light .lp2-card,
+html.light .rp-card,
+html.light .cp-cert-card,
+html.light .up-stat-tile,
+html.light .ms-content-card,
+html.light .si-card,
+html.light .bg-badge-card,
+html.light .ch-card {
+  background: #F1F5F9 !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Card Hover States */
+html.dark .db-card:hover,
+html.dark .lp2-card:hover,
+html.dark .rp-card:hover,
+html.dark .cp-cert-card:hover,
+html.dark .up-stat-tile:hover,
+html.dark .ms-content-card:hover,
+html.dark .si-card:hover,
+html.dark .bg-badge-card:hover,
+html.dark .ch-card:hover {
+  border-color: #38BDF8 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(56, 189, 248, 0.2) !important;
+}
+
+html.light .db-card:hover,
+html.light .lp2-card:hover,
+html.light .rp-card:hover,
+html.light .cp-cert-card:hover,
+html.light .up-stat-tile:hover,
+html.light .ms-content-card:hover,
+html.light .si-card:hover,
+html.light .bg-badge-card:hover,
+html.light .ch-card:hover {
+  background: #FFFFFF !important;
+  border-color: #38BDF8 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 20px rgba(56, 189, 248, 0.15) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* ========================================
+   BUTTON SYSTEM - GLACIER BLUE ACCENT
+   ======================================== */
+
+/* Primary Buttons */
+html.dark .btn-primary,
+html.dark [class*="btn-primary"],
+html.dark button[class*="primary"] {
+  background: #38BDF8 !important;
+  color: #0B0F1A !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+html.dark .btn-primary:hover {
+  background: #0EA5E9 !important;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.5) !important;
+  transform: translateY(-2px) !important;
+}
+
+html.light .btn-primary,
+html.light [class*="btn-primary"],
+html.light button[class*="primary"] {
+  background: #38BDF8 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+html.light .btn-primary:hover {
+  background: #0EA5E9 !important;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Secondary/Ghost Buttons */
+html.dark .btn-secondary,
+html.dark .btn-ghost,
+html.dark [class*="btn-secondary"] {
+  background: transparent !important;
+  border: 1px solid #1F2937 !important;
+  color: #FFFFFF !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+html.dark .btn-secondary:hover,
+html.dark .btn-ghost:hover {
+  border-color: #38BDF8 !important;
+  background: rgba(56, 189, 248, 0.1) !important;
+}
+
+html.light .btn-secondary,
+html.light .btn-ghost,
+html.light [class*="btn-secondary"] {
+  background: transparent !important;
+  border: 1px solid #E2E8F0 !important;
+  color: #334155 !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+html.light .btn-secondary:hover,
+html.light .btn-ghost:hover {
+  border-color: #38BDF8 !important;
+  background: rgba(56, 189, 248, 0.05) !important;
+}
+
+/* ========================================
+   NAVIGATION SYSTEM
+   ======================================== */
+
+/* Navbar */
+html.dark .cv-navbar,
+html.dark nav {
+  background: rgba(17, 24, 39, 0.95) !important;
+  border-bottom: 1px solid #1F2937 !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+html.light .cv-navbar,
+html.light nav {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Nav Links - Subtle Hover */
+html.dark .cv-nav-link,
+html.dark nav a {
+  color: #94A3B8 !important;
+  transition: color 0.3s ease !important;
+}
+
+html.dark .cv-nav-link:hover,
+html.dark .cv-nav-link-active {
+  color: #38BDF8 !important;
+  background: transparent !important;
+}
+
+html.dark .cv-nav-link::after {
+  background: #38BDF8 !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+}
+
+html.light .cv-nav-link,
+html.light nav a {
+  color: #64748B !important;
+  transition: color 0.3s ease !important;
+}
+
+html.light .cv-nav-link:hover,
+html.light .cv-nav-link-active {
+  color: #38BDF8 !important;
+  background: transparent !important;
+}
+
+html.light .cv-nav-link::after {
+  background: #38BDF8 !important;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3) !important;
+}
+
+/* ========================================
+   PROGRESS BAR SYSTEM - SLIM & GLOWING
+   ======================================== */
+
+/* Progress Track */
+html.dark .db-xp-track,
+html.dark .db-progress-track,
+html.dark .rdp-prog-track,
+html.dark [class*="progress-track"] {
+  height: 4px !important;
+  background: #1F2937 !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+
+html.light .db-xp-track,
+html.light .db-progress-track,
+html.light .rdp-prog-track,
+html.light [class*="progress-track"] {
+  height: 4px !important;
+  background: #E2E8F0 !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+
+/* Progress Fill - Glowing Gradient (Dark) / Solid (Light) */
+html.dark .db-xp-fill,
+html.dark .db-progress-fill,
+html.dark .rdp-prog-fill,
+html.dark [class*="progress-fill"] {
+  height: 100% !important;
+  background: linear-gradient(90deg, #38BDF8, #7DD3FC) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
+  animation: glow-pulse 2s ease-in-out infinite !important;
+}
+
+html.light .db-xp-fill,
+html.light .db-progress-fill,
+html.light .rdp-prog-fill,
+html.light [class*="progress-fill"] {
+  height: 100% !important;
+  background: #38BDF8 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.6); }
+  50% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.9); }
+}
+
+/* ========================================
+   FORM INPUTS
+   ======================================== */
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background: #111827 !important;
+  border: 1px solid #1F2937 !important;
+  color: #FFFFFF !important;
+  border-radius: 12px !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: #38BDF8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+  outline: none !important;
+}
+
+html.light input,
+html.light textarea,
+html.light select {
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  color: #334155 !important;
+  border-radius: 12px !important;
+}
+
+html.light input:focus,
+html.light textarea:focus,
+html.light select:focus {
+  border-color: #38BDF8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1) !important;
+  outline: none !important;
+}
+
+/* ========================================
+   ACCENT COLORS - GLACIER BLUE
+   ======================================== */
+
+/* Replace all primary accent colors */
+html.dark [class*="text-primary"],
+html.dark [class*="text-cyan"],
+html.dark .text-accent {
+  color: #38BDF8 !important;
+}
+
+html.light [class*="text-primary"],
+html.light [class*="text-cyan"],
+html.light .text-accent {
+  color: #38BDF8 !important;
+}
+
+/* Active States */
+html.dark [class*="active"],
+html.dark .active {
+  color: #38BDF8 !important;
+  border-color: #38BDF8 !important;
+}
+
+html.light [class*="active"],
+html.light .active {
+  color: #38BDF8 !important;
+  border-color: #38BDF8 !important;
+}
+
+/* ========================================
+   ICONS
+   ======================================== */
+
+html.dark svg {
+  color: #94A3B8 !important;
+}
+
+html.light svg {
+  color: #64748B !important;
+}
+
+/* Accent Icons */
+html.dark svg[class*="accent"],
+html.dark .icon-accent {
+  color: #38BDF8 !important;
+}
+
+html.light svg[class*="accent"],
+html.light .icon-accent {
+  color: #38BDF8 !important;
+}
+
+/* ========================================
+   SCROLLBAR
+   ======================================== */
+
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #111827;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #1F2937;
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}
+
+html.light ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #F8FAFC;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 4px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.cyberverse-transition {
+  transition: all 0.3s ease !important;
+}
+
+.cyberverse-card {
+  border-radius: 12px !important;
+  border: 1px solid !important;
+}
+
+.cyberverse-glow {
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3) !important;
+}

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import "./Auth.css";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Shield, Eye, EyeOff, ArrowRight, Check, Loader2, Lock, Flame, Trophy, Zap

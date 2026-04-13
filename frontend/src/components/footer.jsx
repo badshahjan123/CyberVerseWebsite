@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import "./Footer.css"
 import { Shield, Github, Linkedin, Instagram, Mail, Award, Code2, Zap, Trophy, Crown, Terminal, Flame } from 'lucide-react'
 
 const Footer = () => {
@@ -56,28 +57,10 @@ const Footer = () => {
             and level&nbsp;up in a competitive hacker arena.
           </p>
 
-          {/* Mini stats */}
-          <div className="cv-footer-mini-stats">
-            <div className="cv-footer-mini-stat">
-              <Trophy size={13} style={{ color: '#FACC15' }} />
-              <span>Global Leaderboard</span>
-            </div>
-            <div className="cv-footer-mini-stat">
-              <Flame size={13} style={{ color: '#00F5FF' }} />
-              <span>Daily Challenges</span>
-            </div>
-            <div className="cv-footer-mini-stat">
-              <Terminal size={13} style={{ color: '#39FF14' }} />
-              <span>Live Labs</span>
-            </div>
-          </div>
+
 
           {/* Founder socials */}
           <div className="cv-footer-social-block">
-            <p className="cv-footer-social-label">
-              <Crown size={13} style={{ color: '#FACC15' }} />
-              Connect with the Founder
-            </p>
             <div className="cv-footer-socials">
               {socialLinks.map((s) => {
                 const Icon = s.icon
@@ -152,28 +135,16 @@ const Footer = () => {
 
       {/* ── Bottom Bar ── */}
       <div className="cv-footer-bottom">
-        <div className="cv-footer-bottom-inner">
-          <div className="cv-footer-bottom-left">
+        <div className="cv-footer-bottom-inner flex justify-between items-center py-4">
+          <div className="cv-footer-bottom-left flex items-center gap-6">
             <span className="cv-footer-version">v2.0</span>
-            <span className="cv-footer-copy">© {currentYear} CyberVerse. All rights reserved.</span>
+            <span className="cv-footer-copy text-slate-500 text-xs text-nowrap">© {currentYear} CyberVerse. All rights reserved.</span>
           </div>
 
-          <div className="cv-footer-bottom-center">
-            <div className="cv-footer-badge">
-              <Award size={13} style={{ color: '#00F5FF' }} />
-              <span>Secured by Industry Experts</span>
-            </div>
-          </div>
-
-          <div className="cv-footer-bottom-right">
-            <a href="mailto:contact@cyberverse.com" className="cv-footer-contact">
+          <div className="cv-footer-bottom-right flex items-center gap-6">
+            <a href="mailto:contact@cyberverse.com" className="cv-footer-contact text-slate-400 hover:text-primary transition-colors text-xs flex items-center gap-2">
               <Mail size={13} /> Contact Us
             </a>
-            <span className="cv-footer-divider" />
-            <span className="cv-footer-built">
-              <Shield size={13} style={{ color: '#00F5FF' }} />
-              Built with 💚 by Badshah Jan &amp; Yasir Hussain
-            </span>
           </div>
         </div>
       </div>

@@ -1,0 +1,320 @@
+/* ══════════════════════════════════════════════════════════
+   SETTINGS PAGE (ACCOUNT MANAGEMENT) — CyberVerse Premium
+   Matches THM/HTB Aesthetic
+   ══════════════════════════════════════════════════════════ */
+
+:root {
+  --ms-bg: #0a1128;
+  --ms-surface: #111a2e;
+  --ms-surface-alt: #162236;
+  --ms-border: rgba(255,255,255,0.06);
+  --ms-cyan: #00F2FF;
+  --ms-purple: #A855F7;
+  --ms-green: #88E636;
+  --ms-danger: #ef4444;
+  --ms-text: #E2E8F0;
+  --ms-text-muted: #94A3B8;
+}
+
+.ms-root {
+  background-color: var(--ms-bg);
+  min-height: 100vh;
+  color: var(--ms-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── PAGE CONTAINER ── */
+.ms-page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+  position: relative;
+  z-index: 10;
+}
+
+/* ── PAGE HEADER ── */
+.ms-page-header {
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--ms-border);
+}
+
+.ms-page-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff !important;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+}
+
+.ms-page-subtitle {
+  font-size: 0.875rem;
+  color: var(--ms-text-muted) !important;
+  font-weight: 500;
+}
+
+.ms-grid {
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+.ms-header {
+  margin-bottom: 3rem;
+  border-left: 4px solid var(--ms-cyan);
+  padding-left: 1.5rem;
+}
+
+.ms-title {
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.ms-subtitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ms-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 0.5rem;
+}
+
+/* ── NAVIGATION ── */
+.ms-nav-card {
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-border);
+  border-radius: 16px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: sticky;
+  top: 5.5rem;
+}
+
+.ms-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ms-text-muted);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.ms-nav-btn:hover {
+  background: rgba(255,255,255,0.03);
+  color: #fff;
+}
+
+.ms-nav-btn--active {
+  background: rgba(0, 242, 255, 0.08) !important;
+  border-color: rgba(0, 242, 255, 0.2) !important;
+  color: var(--ms-cyan) !important;
+  box-shadow: 0 4px 12px rgba(0, 242, 255, 0.05);
+}
+
+/* ── CONTENT ── */
+.ms-content-card {
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-border);
+  border-radius: 20px;
+  padding: 2.5rem;
+  min-height: 500px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.ms-tab-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--ms-border);
+}
+
+/* ── BIOMETRIC / AVATAR ── */
+.ms-biometric-wrap {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  padding: 1.5rem;
+  background: var(--ms-surface-alt);
+  border-radius: 16px;
+  border: 1px solid var(--ms-border);
+}
+
+@media (max-width: 640px) {
+  .ms-biometric-wrap {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.ms-avatar-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 2px solid var(--ms-cyan);
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+}
+
+.ms-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ms-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.ms-avatar-container:hover .ms-avatar-overlay {
+  opacity: 1;
+}
+
+/* ── FORMS & INPUTS ── */
+.ms-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ms-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.ms-input {
+  width: 100%;
+  background: var(--ms-surface-alt);
+  border: 1px solid var(--ms-border);
+  border-radius: 12px;
+  padding: 0.875rem 1.25rem;
+  color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.ms-input:focus {
+  border-color: var(--ms-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 242, 255, 0.1);
+  outline: none;
+}
+
+.ms-input-group {
+  margin-bottom: 1.5rem;
+}
+
+/* ── DANGER ZONE ── */
+.ms-danger-zone {
+  margin-top: 4rem;
+  padding: 2rem;
+  background: rgba(239, 68, 68, 0.03);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 16px;
+}
+
+.ms-danger-title {
+  color: var(--ms-danger);
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ms-danger-btn {
+  margin-top: 1.5rem;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--ms-danger);
+  color: var(--ms-danger);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+}
+
+.ms-danger-btn:hover {
+  background: var(--ms-danger);
+  color: #fff;
+}
+
+/* ── TOAST ── */
+.ms-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: #111a2e;
+  border: 1px solid var(--ms-cyan);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: rcp-fade-in 0.3s ease;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes rcp-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rcp-fade-in {
+  animation: rcp-fade-in 0.5s ease forwards;
+}
+
+/* Global button override for consistency */
+.rcp-primary-btn {
+  background: linear-gradient(135deg, var(--ms-cyan), #0099CC);
+  color: #0a1128;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 10px 20px;
+  transition: all 0.3s;
+}
+
+.rcp-primary-btn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+  transform: translateY(-1px);
+}

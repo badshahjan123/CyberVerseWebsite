@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  ArrowLeft, ArrowRight, Zap, Award, Trophy, CheckCircle, Clock, Users, Star, Lock,
-  FileWarning, Radio, HelpCircle, AlertTriangle, RefreshCw, X,
-  Network, CodeXml, Target, ShieldCheck, BrainCircuit, Timer, Crown, Footprints
+  ArrowLeft, ArrowRight, Zap, Award, Trophy, CheckCircle, Lock,
+  FileWarning, HelpCircle, AlertTriangle, RefreshCw, X,
+  Network, CodeXml, Target, ShieldCheck, BrainCircuit, Timer, Crown, Footprints, ChevronDown
 } from "lucide-react";
 import { KnowledgeCheck, ContentBlock } from "../../components/rooms/InteractiveRoomComponents";
 import ReplayModal from "../../components/rooms/ReplayModal";
@@ -46,7 +46,7 @@ const InteractiveRoomBase = ({
   const navigate = useNavigate();
   const { user, refreshUser } = useApp();
   const { refreshUserStats, applyUpdate } = useRealtime();
-  const [activeTask, setActiveTask] = useState(0);
+  const [activeTask, setActiveTask] = useState(null);
   const [taskProgress, setTaskProgress] = useState({});
   const [questionAnswers, setQuestionAnswers] = useState({});
   const [questionStatus, setQuestionStatus] = useState({});
@@ -55,7 +55,6 @@ const InteractiveRoomBase = ({
   const [earnedXP, setEarnedXP] = useState(0);
   const [earnedBadges, setEarnedBadges] = useState([]);
   const [showBadgeToast, setShowBadgeToast] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
@@ -77,6 +76,23 @@ const InteractiveRoomBase = ({
 
   // Keep earnedXPRef in sync with earnedXP state
   useEffect(() => { earnedXPRef.current = earnedXP; }, [earnedXP]);
+
+  // Scroll to active task when it opens
+  useEffect(() => {
+    if (activeTask !== null) {
+      // Delay specifically to wait for the previous task to collapse (0.4s transition)
+      // This prevents the "moving floor" problem where the scroll target shifts.
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`task-item-${activeTask}`);
+        if (el) {
+          const yOffset = -70; // Header offset
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 450); 
+      return () => clearTimeout(timer);
+    }
+  }, [activeTask]);
 
   // Sync with backend on mount
   useEffect(() => {
@@ -149,7 +165,7 @@ const InteractiveRoomBase = ({
     initRoom();
   }, [roomId, data.tasks, badges, data.totalXP]);
 
-  const task = data.tasks[activeTask];
+  const task = activeTask !== null ? data.tasks[activeTask] : null;
   const completedCount = useMemo(() => 
     Object.keys(taskProgress).filter(k => taskProgress[k] === 'completed').length,
     [taskProgress]
@@ -166,18 +182,22 @@ const InteractiveRoomBase = ({
     const updatedStatus = { ...questionStatus, [questionId]: isCorrect ? 'correct' : 'incorrect' };
     setQuestionStatus(updatedStatus);
 
-    if (isCorrect) {
-      // Check if ALL questions on this task are now correct using the updated status
-      const allAnswered = task.questions.every(q =>
-        updatedStatus[q.id] === 'correct'
-      );
+      if (isCorrect) {
+        // Find the specific task index from the data
+        const currentTask = task; 
+        if (!currentTask) return;
 
-      if (allAnswered) {
-        const taskId  = task.id;
-        const taskIdx = activeTask;
+        // Check if ALL questions on this task are now correct using the updated status
+        const allAnswered = currentTask.questions.every(q =>
+          updatedStatus[q.id] === 'correct'
+        );
 
-        setTaskProgress(prev => ({ ...prev, [taskId]: 'completed' }));
-        setEarnedXP(prev => prev + task.xp);
+        if (allAnswered) {
+          const taskId  = currentTask.id;
+          const taskIdx = activeTask;
+
+          setTaskProgress(prev => ({ ...prev, [taskId]: 'completed' }));
+          setEarnedXP(prev => prev + currentTask.xp);
 
         // Persist task completion to backend
         submitExercise(roomId, taskIdx, 'COMPLETED', task.xp).then((res) => {
@@ -206,8 +226,8 @@ const InteractiveRoomBase = ({
 
   const switchTask = (idx) => {
     setShowQuiz(false);
-    setActiveTask(idx);
-    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveTask(prev => prev === idx ? null : idx);
+    // Optional: add scroll logic for opening
   };
 
   const handleQuizSubmit = () => {
@@ -297,180 +317,207 @@ const InteractiveRoomBase = ({
         </div>
       )}
 
-      <nav className="wpr-topnav">
-        <div className="wpr-topnav-inner">
-          <div className="wpr-topnav-left">
-            <button onClick={() => navigate('/rooms')} className="wpr-back-btn"><ArrowLeft size={16} /> <span>Exit Room</span></button>
-            <div className="wpr-topnav-divider" />
-            <div className="wpr-topnav-info"><h4>{data.title}</h4><span>{data.category || data.tags[0]} // PROTECTED</span></div>
+      {/* ── TOP NAV ── */}
+      <nav className="irb-topnav">
+        <div className="irb-topnav-inner">
+          <div className="irb-topnav-left">
+            <button onClick={() => navigate('/rooms')} className="irb-back-btn"><ArrowLeft size={16} /> <span>Exit</span></button>
+            <div className="irb-topnav-divider" />
+            <span className="irb-room-name">{data.title}</span>
           </div>
-          <div className="wpr-topnav-progress">
-             <div className="wpr-topnav-prog-header"><span>Mission Progress</span><span className="wpr-topnav-pct">{Math.round(progressPct)}%</span></div>
-             <div className="wpr-prog-track"><div className="wpr-prog-fill" style={{ width: `${progressPct}%` }} /></div>
+          <div className="irb-topnav-center">
+            <div className="irb-prog-header"><span>Progress</span><span>{Math.round(progressPct)}%</span></div>
+            <div className="irb-prog-track"><div className="irb-prog-fill" style={{ width: `${progressPct}%` }} /></div>
           </div>
-          <div className="wpr-topnav-right">
-            <div className="wpr-xp-display"><Zap size={14} /><span>{earnedXP} <span className="wpr-xp-label">XP</span></span></div>
-            <div className="wpr-badge-count"><Award size={14} /><span>{earnedBadges.length}</span></div>
-            {/* Replay button — only shown once the room has been completed */}
+          <div className="irb-topnav-right">
+            <div className="irb-xp-chip"><Zap size={13} />{earnedXP} XP</div>
+            <div className="irb-badge-chip"><Award size={13} />{earnedBadges.length}</div>
             {allTasksCompleted && quizSubmitted && quizResults?.passed && (
-              <button
-                className="wpr-back-btn"
-                style={{ color: '#F59E0B', borderColor: 'rgba(245,158,11,0.2)' }}
-                onClick={() => setShowReplayModal(true)}
-                title="Replay this room"
-              >
+              <button className="irb-replay-btn" onClick={() => setShowReplayModal(true)} title="Replay this room">
                 <RefreshCw size={14} />
-                <span>Replay</span>
               </button>
             )}
           </div>
         </div>
       </nav>
 
-      <div className="wpr-main-layout">
-        <aside className={`wpr-sidebar ${sidebarCollapsed ? 'wpr-sidebar--collapsed' : ''}`}>
-           <div className="wpr-sidebar-header"><Radio size={14} /><span>Mission Control</span></div>
-           <div className="wpr-task-list">
-             {data.tasks.map((t, i) => (
-               <button key={t.id} className={`wpr-task-item ${activeTask === i ? 'wpr-task--active' : ''} ${taskProgress[t.id] === 'completed' ? 'wpr-task--completed' : ''}`} onClick={() => switchTask(i)}>
-                 <div className="wpr-task-indicator">{taskProgress[t.id] === 'completed' ? <CheckCircle size={14}/> : activeTask === i ? <div className="wpr-task-active-dot" /> : <span className="wpr-task-num">{i + 1}</span>}</div>
-                 <div className="wpr-task-meta"><span className="wpr-task-name">{t.title}</span><span className="wpr-task-xp">+{t.xp} XP</span></div>
-               </button>
-             ))}
-             {allTasksCompleted && (
-                <button onClick={() => {setShowQuiz(true); contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });}} className={`wpr-task-item ${showQuiz ? 'wpr-task--active' : ''}`} style={{ marginTop: '4px' }}>
-                    <div className="wpr-task-indicator" style={{ background: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.3)' }}><Trophy size={14} style={{ color: '#F59E0B' }} /></div>
-                    <div className="wpr-task-meta"><span className="wpr-task-name" style={{ color: '#F59E0B' }}>Final Quiz</span><span className="wpr-task-xp">+500 XP Bonus</span></div>
-                </button>
-             )}
-           </div>
-           <div className="wpr-sidebar-badges">
-             <div className="wpr-sidebar-header"><Award size={14} /><span>Badges</span></div>
-             <div className="wpr-badge-grid">{badges.map(b => (<div key={b.id} className={`wpr-badge ${earnedBadges.includes(b.id) ? 'wpr-badge--earned' : ''}`} title={b.name}><span>{b.icon}</span></div>))}</div>
-           </div>
-           <div className="wpr-room-stats">
-             <div className="wpr-stat-row"><Users size={12} /><span>{(data.enrollments || data.participants || 0).toLocaleString()}</span></div>
-             <div className="wpr-stat-row"><Clock size={12} /><span>{data.duration || data.estimatedTime}</span></div>
-             <div className="wpr-stat-row"><Star size={12} /><span>{data.rating} ★</span></div>
-           </div>
-        </aside>
-
-        <main className="wpr-content" ref={contentRef}>
-          {/* Replay banner — shown after a successful reset */}
-          {showReplayBanner && (
-            <div className="rpl-banner">
-              <div className="rpl-banner-icon"><RefreshCw size={16} /></div>
-              <div className="rpl-banner-text">
-                <div className="rpl-banner-title">Room progress has been reset. You can replay this room.</div>
-                <div className="rpl-banner-sub">Your XP, badges, and leaderboard rank are fully preserved.</div>
-              </div>
-              <button className="rpl-banner-dismiss" onClick={() => setShowReplayBanner(false)} aria-label="Dismiss">
-                <X size={14} />
-              </button>
+      {/* ── SINGLE-COLUMN CONTENT ── */}
+      <div className="irb-main" ref={contentRef}>
+        {/* Replay banner */}
+        {showReplayBanner && (
+          <div className="rpl-banner">
+            <div className="rpl-banner-icon"><RefreshCw size={16} /></div>
+            <div className="rpl-banner-text">
+              <div className="rpl-banner-title">Room progress has been reset. You can replay this room.</div>
+              <div className="rpl-banner-sub">Your XP, badges, and leaderboard rank are fully preserved.</div>
             </div>
-          )}
-          {showQuiz ? (
-            <div className="wpr-quiz-container">
-               <div className="wpr-task-hero" style={{ marginBottom: '2rem' }}>
-                <div className="wpr-task-hero-img" style={{ height: '180px', background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(139,92,246,0.15))' }}>
-                  <div className="wpr-task-hero-overlay" style={{ background: 'linear-gradient(to top, rgba(11,15,26,0.98), rgba(11,15,26,0.4))' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '1.5rem' }}>
-                      <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trophy size={28} style={{ color: '#F59E0B' }} /></div>
-                      <div><div style={{ fontSize: '10px', fontWeight: 900, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Final Assessment</div><div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', fontFamily: "'Orbitron', sans-serif" }}>Final Knowledge Check</div></div>
+            <button className="rpl-banner-dismiss" onClick={() => setShowReplayBanner(false)} aria-label="Dismiss"><X size={14} /></button>
+          </div>
+        )}
+
+        {/* ── ACCORDION TASK SYSTEM ── */}
+        {showQuiz ? (
+          /* ── QUIZ VIEW ── */
+          <div className="irb-card irb-fade-in">
+            <div className="irb-card-header">
+              <Trophy size={16} style={{ color: '#F59E0B' }}/>
+              <span>Mission Assessment</span>
+              <span className="irb-q-answered">{Object.keys(quizAnswers).length}/{quiz.length} answered</span>
+              <button onClick={() => setShowQuiz(false)} className="irb-back-link">← Back to Tasks</button>
+            </div>
+            <div className="irb-card-body">
+              <div className="irb-quiz-meta">
+                <span className="irb-pill" style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.2)' }}>{quiz.length} Questions</span>
+                <span className="irb-pill" style={{ background: 'rgba(0,245,255,0.08)', color: '#00F5FF', border: '1px solid rgba(0,245,255,0.2)' }}><Zap size={12}/> +500 XP Bonus</span>
+                <span className="irb-pill" style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>70% to Pass</span>
+              </div>
+              {quiz.map((q, qi) => (
+                <div key={q.id} className={`irb-quiz-question ${quizSubmitted ? (quizResults.results.find(r => r.questionId === q.id).correct ? 'irb-quiz-question--correct' : 'irb-quiz-question--incorrect') : ''}`}>
+                  <p className="irb-quiz-q-text"><span className="irb-quiz-q-num">{qi + 1}.</span> {q.question}</p>
+                  <div className="irb-quiz-options">
+                    {q.options.map((opt, oi) => (
+                      <label key={oi} className={`irb-quiz-option ${quizAnswers[q.id] === opt ? 'irb-quiz-option--selected' : ''} ${quizSubmitted ? 'irb-quiz-option--locked' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers(prev => ({ ...prev, [q.id]: opt }))}>
+                        <div className={`irb-radio ${quizAnswers[q.id] === opt ? 'irb-radio--active' : ''}`}>{quizAnswers[q.id] === opt && <div className="irb-radio-dot" />}</div>
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {quizSubmitted && (
+                    <div className={`irb-q-feedback ${quizResults.results.find(r => r.questionId === q.id).correct ? 'irb-q-feedback--correct' : 'irb-q-feedback--incorrect'}`}>
+                      {quizResults.results.find(r => r.questionId === q.id).correct ? <CheckCircle size={14} /> : <X size={14} />}
+                      <div><strong>{quizResults.results.find(r => r.questionId === q.id).correct ? 'Correct!' : 'Incorrect'}</strong><p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: '11px' }}>{q.explanation}</p></div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {!quizSubmitted ? (
+                <button onClick={handleQuizSubmit} disabled={Object.keys(quizAnswers).length < quiz.length} className="irb-submit-quiz">Submit Assessment</button>
+              ) : (
+                <div className={`irb-quiz-result ${quizResults.passed ? 'irb-quiz-result--pass' : 'irb-quiz-result--fail'}`}>
+                  <div className="irb-quiz-result-icon">{quizResults.passed ? <Trophy size={36} /> : <AlertTriangle size={36} />}</div>
+                  <h2>{quizResults.passed ? 'MISSION SUCCESSFUL' : 'MISSION FAILED'}</h2>
+                  <p className="irb-quiz-result-pct">{quizResults.percentage}% Success Rate</p>
+                  {quizResults.passed ? (
+                    <button onClick={() => navigate('/rooms')} className="irb-result-action irb-result-action--pass"><Trophy size={16} /> Return to Rooms</button>
+                  ) : (
+                    <button onClick={handleRetakeQuiz} className="irb-result-action irb-result-action--fail"><RefreshCw size={16} /> Retake</button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="irb-accordion-container">
+            {data.tasks.map((t, i) => {
+              const isActive = activeTask === i;
+              const isCompleted = taskProgress[t.id] === 'completed';
+              
+              return (
+                <div key={t.id} id={`task-item-${i}`} className={`irb-task-item ${isActive ? 'irb-task-item--active' : ''} ${isCompleted ? 'irb-task-item--completed' : ''}`}>
+                  <div className="irb-task-item-header" onClick={() => switchTask(i)}>
+                    <div className="irb-task-item-header-left">
+                      <div className="irb-task-item-number">
+                        {isCompleted ? <CheckCircle size={16} /> : <span>{i + 1}</span>}
+                      </div>
+                      <div className="irb-task-item-info">
+                        <h3 className="irb-task-item-title">{t.title}</h3>
+                        <span className="irb-task-item-subtitle">{t.subtitle}</span>
+                      </div>
+                    </div>
+                    <div className="irb-task-item-header-right">
+                      {isCompleted && <span className="irb-pill irb-pill--done" style={{ margin: 0 }}><CheckCircle size={12}/> Done</span>}
+                      <span className="irb-task-item-xp">+{t.xp} XP</span>
+                      <ChevronDown className="irb-task-item-chevron" size={18} />
+                    </div>
+                  </div>
+                  
+                  <div className="irb-task-item-content">
+                    <div className="irb-task-item-content-inner">
+                      {/* Scenario */}
+                      {t.scenario && (
+                        <div className="irb-scenario">
+                          <div className="irb-scenario-header"><FileWarning size={14} /> <span>Mission Scenario</span></div>
+                          <h4>{t.scenario.title}</h4><p>{t.scenario.text}</p>
+                          {t.scenario.impact && <div className="irb-scenario-impact"><AlertTriangle size={14} /> <span>{t.scenario.impact}</span></div>}
+                        </div>
+                      )}
+
+                      {/* Animation */}
+                      {getAnimation(t.id) && (
+                        <div className="irb-anim-section">{getAnimation(t.id)}</div>
+                      )}
+
+                      {/* Learning Content */}
+                      <div className="irb-card">
+                        <div className="irb-card-body">
+                          {t.content.map((block, bIdx) => (
+                            <ContentBlock key={bIdx} block={block} index={bIdx} animations={{ requestFlow: getAnimation(t.id) }} />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Knowledge Check */}
+                      <div className="irb-card" style={{ marginBottom: 0 }}>
+                        <div className="irb-card-header"><HelpCircle size={16} /> <span>Knowledge Check</span></div>
+                        <div className="irb-card-body">
+                          {t.questions.map((q, qi) => (
+                            <KnowledgeCheck 
+                              key={q.id} 
+                              question={q} 
+                              index={qi} 
+                              status={questionStatus[q.id]}
+                              answer={questionAnswers[q.id]}
+                              showHint={showHint[q.id]}
+                              showAnswer={showAnswer[q.id]}
+                              onAnswerChange={(qid, val) => setQuestionAnswers(prev => ({ ...prev, [qid]: val }))}
+                              onCheck={handleCheckAnswer}
+                              onToggleHint={(qid) => { setShowHint(prev => ({ ...prev, [qid]: !prev[qid] })); setHintsUsed(true); }}
+                              onToggleAnswer={(qid) => setShowAnswer(prev => ({ ...prev, [qid]: !prev[qid] }))}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Inline Next Navigation */}
+                      {i < data.tasks.length - 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+                          <button onClick={() => switchTask(i + 1)} className="irb-nav-bottom-btn irb-nav-bottom-btn--next">Next Task: {data.tasks[i+1].title} →</button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="wpr-task-hero-info">
-                  <div className="wpr-task-pills"><span className="wpr-pill" style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.2)' }}>{quiz.length} Questions</span><span className="wpr-pill wpr-pill--xp"><Zap size={12} /> +500 XP Bonus</span><span className="wpr-pill" style={{ background: 'rgba(239,68,68,0.1)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>70% to Pass</span></div>
-                  <p className="wpr-task-subtitle">Answer all questions to prove your mastery and earn the final badge.</p>
-                </div>
-              </div>
-              <div className="wpr-questions-section">
-                <div className="wpr-questions-header"><Trophy size={20} style={{ color: '#F59E0B' }} /><h3>Final Assessment</h3><span className="wpr-q-count">{Object.keys(quizAnswers).length}/{quiz.length} answered</span></div>
-                {quiz.map((q, qi) => (
-                  <div key={q.id} className={`wpr-question ${quizSubmitted ? (quizResults.results.find(r => r.questionId === q.id).correct ? 'wpr-question--correct' : 'wpr-question--incorrect') : ''}`}>
-                    <div className="wpr-q-header"><span className="wpr-q-num">{qi + 1}</span><p className="wpr-q-text">{q.question}</p></div>
-                    <div className="wpr-quiz-options">{q.options.map((opt, oi) => (<label key={oi} className={`wpr-quiz-option ${quizAnswers[q.id] === opt ? 'wpr-quiz-option--selected' : ''} ${quizSubmitted ? 'wpr-quiz-option--locked' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers(prev => ({ ...prev, [q.id]: opt }))}><div className={`wpr-quiz-radio ${quizAnswers[q.id] === opt ? 'wpr-quiz-radio--on' : ''}`}>{quizAnswers[q.id] === opt && <div className="wpr-quiz-radio-dot" />}</div><span>{opt}</span></label>))}</div>
-                    {quizSubmitted && (<div className={`wpr-q-feedback ${quizResults.results.find(r => r.questionId === q.id).correct ? 'wpr-q-feedback--correct' : 'wpr-q-feedback--incorrect'}`} style={{ marginTop: '0.75rem' }}>{quizResults.results.find(r => r.questionId === q.id).correct ? <CheckCircle size={14} /> : <X size={14} />}<div><strong>{quizResults.results.find(r => r.questionId === q.id).correct ? 'Correct!' : 'Incorrect'}</strong><p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: '11px' }}>{q.explanation}</p></div></div>)}
-                  </div>
-                ))}
-                {!quizSubmitted ? (<button onClick={handleQuizSubmit} disabled={Object.keys(quizAnswers).length < quiz.length} className="wpr-q-submit" style={{ width: '100%', padding: '16px', borderRadius: '14px', marginTop: '1rem' }}>Submit Results</button>) : (
-                  <div className={`wpr-quiz-result ${quizResults.passed ? 'wpr-quiz-result--pass' : 'wpr-quiz-result--fail'}`}>
-                    <div className="wpr-quiz-result-icon">{quizResults.passed ? <Trophy size={36} /> : <AlertTriangle size={36} />}</div>
-                    <h2>{quizResults.passed ? 'MISSION SUCCESSFUL' : 'MISSION FAILED'}</h2>
-                    <p className="wpr-quiz-result-pct">{quizResults.percentage}% Success Rate</p>
-                    {quizResults.passed ? (<button onClick={() => navigate('/rooms')} className="wpr-nav-btn wpr-nav-complete" style={{ width: '100%', justifyContent: 'center' }}><Trophy size={16} /> Return to Base</button>) : (<button onClick={handleRetakeQuiz} className="wpr-nav-btn" style={{ width: '100%', justifyContent: 'center', background: '#EF4444', color: '#fff' }}><RefreshCw size={16} /> Retake Mission</button>)}
-                  </div>
-                )}
-              </div>
+              );
+            })}
+
+            {/* Quiz Trigger Card */}
+            <div 
+              className={`irb-quiz-card-trigger ${!allTasksCompleted ? 'irb-quiz-card-trigger--locked' : ''}`}
+              onClick={() => {
+                if (allTasksCompleted) {
+                  setShowQuiz(true);
+                  contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+            >
+              <div className="irb-quiz-card-icon"><Trophy size={40} /></div>
+              <h2 className="irb-quiz-card-title">Final Assessment</h2>
+              <p className="irb-quiz-card-subtitle">
+                {!allTasksCompleted 
+                  ? `Complete all ${data.tasks.length} tasks to unlock the final quiz.`
+                  : "You've mastered the theory. Now prove your skills in the final evaluation."
+                }
+              </p>
+              <button className="irb-quiz-card-btn" disabled={!allTasksCompleted}>
+                {!allTasksCompleted ? <Lock size={14} style={{ marginRight: '8px' }} /> : <Zap size={14} style={{ marginRight: '8px' }} />}
+                {allTasksCompleted ? "Start Mission Assessment" : "Locked"}
+              </button>
             </div>
-          ) : (
-            <>
-              <div className="wpr-task-hero">
-                <div className="wpr-task-hero-img">
-                  <img src={task.image} alt={task.title} />
-                  <div className="wpr-task-hero-overlay"><div className="wpr-task-hero-badge">{getIcon(task.icon)}<span>Task {activeTask + 1} of {data.tasks.length}</span></div></div>
-                </div>
-                <div className="wpr-task-hero-info">
-                  <div className="wpr-task-pills"><span className="wpr-pill wpr-pill--difficulty">{task.difficulty}</span><span className="wpr-pill wpr-pill--xp"><Zap size={12} /> +{task.xp} XP</span></div>
-                  <h1 className="wpr-task-title">{task.title}</h1><p className="wpr-task-subtitle">{task.subtitle}</p>
-                </div>
-              </div>
-              {task.scenario && (
-                <div className="wpr-scenario">
-                  <div className="wpr-scenario-header"><FileWarning size={14} /> <span>Mission Scenario</span></div>
-                  <h4>{task.scenario.title}</h4><p>{task.scenario.text}</p>
-                  {task.scenario.impact && <div className="wpr-scenario-impact"><AlertTriangle size={14} /> <span>{task.scenario.impact}</span></div>}
-                </div>
-              )}
-              {getAnimation(task.id) && (
-                <div className="wpr-anim-section">
-                  {getAnimation(task.id)}
-                </div>
-              )}
-              <div className="wpr-content-body">
-                {task.content.map((block, idx) => (
-                  <ContentBlock 
-                    key={idx} 
-                    block={block} 
-                    index={idx} 
-                    animations={{ requestFlow: getAnimation(task.id) }} 
-                  />
-                ))}
-              </div>
-              <div className="wpr-questions-section">
-                <div className="wpr-questions-header"><HelpCircle size={20} /> <h3>Knowledge Check</h3></div>
-                {task.questions.map((q, qi) => (
-                  <KnowledgeCheck 
-                    key={q.id} 
-                    question={q} 
-                    index={qi} 
-                    status={questionStatus[q.id]}
-                    answer={questionAnswers[q.id]}
-                    showHint={showHint[q.id]}
-                    showAnswer={showAnswer[q.id]}
-                    onAnswerChange={(qid, val) => setQuestionAnswers(prev => ({ ...prev, [qid]: val }))}
-                    onCheck={handleCheckAnswer}
-                    onToggleHint={(qid) => { setShowHint(prev => ({ ...prev, [qid]: !prev[qid] })); setHintsUsed(true); }}
-                    onToggleAnswer={(qid) => setShowAnswer(prev => ({ ...prev, [qid]: !prev[qid] }))}
-                  />
-                ))}
-              </div>
-              <div className="wpr-nav-buttons">
-                <button onClick={() => switchTask(Math.max(0, activeTask - 1))} disabled={activeTask === 0} className="wpr-nav-btn wpr-nav-prev"><ArrowLeft size={16} /> Previous</button>
-                {activeTask < data.tasks.length - 1 ? (
-                  <button onClick={() => switchTask(activeTask + 1)} className="wpr-nav-btn wpr-nav-next">Next Task <ArrowRight size={16} /></button>
-                ) : allTasksCompleted ? (
-                   <button onClick={() => {setShowQuiz(true); contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });}} className="wpr-nav-btn wpr-nav-complete"><Trophy size={16} /> Start Final Assessment</button>
-                ) : (
-                  <button className="wpr-nav-btn wpr-nav-complete" disabled><Lock size={16} /> Complete All Tasks</button>
-                )}
-              </div>
-            </>
-          )}
-        </main>
+          </div>
+        )}
       </div>
 
+      {/* ── Completion Modal ── */}
       {showCompletionModal && (
         <div className="wpr-completion-overlay">
           <div className="wpr-completion-modal">
@@ -483,31 +530,14 @@ const InteractiveRoomBase = ({
               <div className="wpr-completion-stat"><span>ACCURACY</span><div className="wpr-completion-stat-val">{quizResults?.percentage}%</div></div>
             </div>
 
-            {/* Badges earned this session */}
             {newlyEarnedBadges.length > 0 && (
               <div className="wpr-completion-badges">
-                <div className="wpr-completion-badges-title">
-                  <Award size={14} style={{ color: '#FACC15' }} />
-                  Badge{newlyEarnedBadges.length > 1 ? 's' : ''} Unlocked
-                </div>
+                <div className="wpr-completion-badges-title"><Award size={14} style={{ color: '#FACC15' }} /> Badge{newlyEarnedBadges.length > 1 ? 's' : ''} Unlocked</div>
                 {newlyEarnedBadges.map((badge, i) => (
-                  <div
-                    key={i}
-                    className={`wpr-earned-badge wpr-earned-badge--${badge.badgeType}`}
-                    style={{ animationDelay: `${i * 0.12}s` }}
-                  >
-                    <div className="wpr-earned-badge__icon-wrap">
-                      <BadgeIconInline icon={badge.icon} type={badge.badgeType} />
-                    </div>
-                    <div className="wpr-earned-badge__info">
-                      <div className="wpr-earned-badge__name">{badge.name}</div>
-                      <div className="wpr-earned-badge__reason">
-                        {badge.unlockReason || 'Awarded for completing this room'}
-                      </div>
-                    </div>
-                    {badge.xpReward > 0 && (
-                      <div className="wpr-earned-badge__xp">+{badge.xpReward} XP</div>
-                    )}
+                  <div key={i} className={`wpr-earned-badge wpr-earned-badge--${badge.badgeType}`} style={{ animationDelay: `${i * 0.12}s` }}>
+                    <div className="wpr-earned-badge__icon-wrap"><BadgeIconInline icon={badge.icon} type={badge.badgeType} /></div>
+                    <div className="wpr-earned-badge__info"><div className="wpr-earned-badge__name">{badge.name}</div><div className="wpr-earned-badge__reason">{badge.unlockReason || 'Awarded for completing this room'}</div></div>
+                    {badge.xpReward > 0 && <div className="wpr-earned-badge__xp">+{badge.xpReward} XP</div>}
                   </div>
                 ))}
               </div>
@@ -516,26 +546,15 @@ const InteractiveRoomBase = ({
               <button onClick={() => navigate('/rooms')} className="wpr-nav-btn wpr-nav-prev" style={{ flex: 1, justifyContent: 'center' }}>To Archive</button>
               <button onClick={() => navigate('/dashboard')} className="wpr-nav-btn wpr-nav-next" style={{ flex: 1, justifyContent: 'center', background: '#FACC15', color: '#000' }}>Dashboard</button>
             </div>
-            {/* Replay option inside completion modal */}
-            <button
-              onClick={() => { setShowCompletionModal(false); setShowReplayModal(true); }}
-              className="wpr-nav-btn"
-              style={{ width: '100%', justifyContent: 'center', marginTop: '0.75rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B' }}
-            >
+            <button onClick={() => { setShowCompletionModal(false); setShowReplayModal(true); }} className="wpr-nav-btn" style={{ width: '100%', justifyContent: 'center', marginTop: '0.75rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B' }}>
               <RefreshCw size={14} /> Replay Room
             </button>
           </div>
         </div>
       )}
 
-      {/* Replay confirmation modal */}
       {showReplayModal && (
-        <ReplayModal
-          roomId={roomId}
-          roomTitle={data.title}
-          onConfirm={handleReplayConfirm}
-          onClose={() => setShowReplayModal(false)}
-        />
+        <ReplayModal roomId={roomId} roomTitle={data.title} onConfirm={handleReplayConfirm} onClose={() => setShowReplayModal(false)} />
       )}
     </div>
   );

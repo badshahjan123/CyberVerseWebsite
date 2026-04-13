@@ -71,6 +71,32 @@ const labSchema = new mongoose.Schema({
       enum: ['video', 'article', 'tool', 'documentation']
     }
   }],
+  // Docker configuration
+  dockerId: {
+    type: String, // e.g. 'linux-forensics' — used as key in dockerManager
+    trim: true
+  },
+  dockerImage: {
+    type: String, // full image name e.g. 'cyberverseweb-main-linux-forensics-lab:latest'
+    trim: true
+  },
+  dockerPort: {
+    type: Number  // host port exposed to browser
+  },
+  dockerInternalPort: {
+    type: Number,
+    default: 7681
+  },
+  // Structured tasks with answers
+  tasks: [{
+    id: { type: Number },
+    title: { type: String, required: true },
+    instructions: { type: String, required: true },
+    commands: [String],
+    question: { type: String },
+    hint: { type: String },
+    correctAnswer: { type: String }
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

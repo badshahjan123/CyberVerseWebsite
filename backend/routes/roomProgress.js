@@ -2,6 +2,7 @@ const express = require('express');
 const User = require('../models/User');
 const Room = require('../models/Room');
 const RealtimeHelper = require('../utils/realtimeHelper');
+const WeeklyStats = require('../models/WeeklyStats');
 const { awardRoomBadges, checkMilestoneBadges } = require('../utils/badgeHelper');
 const { auth } = require('../middleware/auth');
 const router = express.Router();
@@ -169,6 +170,9 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
       user.points = (user.points || 0) + pointsEarned;
       roomProgress.totalPointsEarned += pointsEarned;
 
+      // Record activity for weekly stats
+      await WeeklyStats.recordActivity(user._id, 'room', pointsEarned, false);
+
       console.log('✅ Task completed - points awarded:', pointsEarned, '| Total XP:', user.points);
     } else {
       // Clear any existing progress for this task
@@ -310,6 +314,9 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
     user.points = (user.points || 0) + newQuizPoints;
     roomProgress.totalPointsEarned += newQuizPoints;
 
+    // Record quiz points for weekly stats
+    await WeeklyStats.recordActivity(user._id, 'room', newQuizPoints, false);
+
     // Update quiz score tracking
     roomProgress.quizScore = {
       pointsEarned: newQuizPoints,
@@ -327,8 +334,11 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
       roomProgress.completedAt = new Date();
       roomProgress.quizCompleted = true;
 
-      // Update streak using the proper method (handles duplicate checks and consecutive day validation)
+      // Update streak using the proper method
       user.updateStreak('room', roomId);
+
+      // Record first-time room completion for weekly stats
+      await WeeklyStats.recordActivity(user._id, 'room', 0, true);
 
       console.log(`✅ Room marked complete for FIRST TIME (quiz passed with ${score}%), streak: ${user.currentStreak}`);
 
@@ -456,6 +466,9 @@ router.post('/:roomId/complete', auth, async (req, res) => {
       // Award skill points based on category
       const totalPoints = totalXP || roomProgress.totalPointsEarned || 500;
       user.updateSkill(roomCategory, totalPoints);
+
+      // Record first-time room completion for weekly stats
+      await WeeklyStats.recordActivity(user._id, 'room', 0, true);
 
       await user.save();
 

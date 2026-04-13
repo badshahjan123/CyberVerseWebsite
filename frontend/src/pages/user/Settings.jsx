@@ -4,6 +4,14 @@ import { useApp } from '../../contexts/app-context'
 import { apiCall, API_BASE_URL } from '../../config/api'
 import { useNavigate } from 'react-router-dom'
 import TwoFactorSettings from '../../components/two-factor/TwoFactorSettings'
+import './Settings.css'
+
+const T = {
+  cyan: "#00F2FF",
+  purple: "#A855F7",
+  green: "#88E636",
+  danger: "#ef4444",
+};
 
 const Settings = () => {
   const { user, updateUserProfile, logout } = useApp()
@@ -135,7 +143,7 @@ const Settings = () => {
   if (!user) {
     return (
       <div className="ms-root flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/5 border-t-cyan-400"></div>
       </div>
     )
   }
@@ -144,10 +152,10 @@ const Settings = () => {
     <div className="ms-root">
       <div className="ms-grid" />
       
-      <div className="container mx-auto px-4 max-w-7xl pt-12 pb-32">
-        <header className="ms-header rcp-fade-in">
-           <h1 className="ms-title italic"><span className="gradient-text">Command</span> Console</h1>
-           <p className="ms-subtitle">Secure Administrative Directives // User: {user.name}</p>
+      <div className="ms-page-container">
+        <header className="ms-page-header rcp-fade-in">
+           <h1 className="ms-page-title">Account Settings</h1>
+           <p className="ms-page-subtitle">Manage your profile, security protocols, and service tier</p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -176,8 +184,8 @@ const Settings = () => {
               
               {/* TAB 1: OPERATIONAL ID */}
               {activeTab === 'profile' && (
-                <form onSubmit={handleSaveProfile}>
-                  <h2 className="ms-tab-title"><User className="text-primary" /> Identity Synchronizer</h2>
+                <form onSubmit={handleSaveProfile} className="rcp-fade-in">
+                  <h2 className="cv-section-title"><User size={20} className="text-primary" /> Profile Identity</h2>
                   
                   <div className="ms-biometric-wrap">
                     <div className="ms-avatar-container">
@@ -195,7 +203,7 @@ const Settings = () => {
                        <button type="button" onClick={() => document.getElementById('avatar-upload').click()} className="rcp-primary-btn !w-fit mb-2">
                           Update Visual ID
                        </button>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Biometric Uplink: Active // PNG, JPG // MAX 2MB</p>
+                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supports PNG, JPG (MAX 2MB)</p>
                     </div>
                   </div>
 
@@ -230,17 +238,17 @@ const Settings = () => {
 
               {/* TAB 2: CYPHER LOCKS (2FA) */}
               {activeTab === 'security' && (
-                <div>
-                  <h2 className="ms-tab-title"><Shield className="text-primary" /> Security Protocol</h2>
+                <div className="rcp-fade-in">
+                  <h2 className="cv-section-title"><Shield size={20} className="text-emerald-500" /> Security Protocol</h2>
                   <TwoFactorSettings user={user} onUpdate={() => updateUserProfile(user)} />
                 </div>
               )}
 
               {/* TAB 3: CORE ACCESS (PASSWORD/DELETE) */}
               {activeTab === 'account' && (
-                <div className="space-y-12">
+                <div className="space-y-12 rcp-fade-in">
                   <form onSubmit={handleChangePassword}>
-                    <h2 className="ms-tab-title"><Lock className="text-primary" /> Cypher Rotation</h2>
+                    <h2 className="cv-section-title"><Lock size={20} className="text-purple-500" /> Password Management</h2>
                     <div className="space-y-6">
                        <div className="ms-input-group">
                           <label className="ms-label">Legacy Cypher</label>
@@ -265,7 +273,7 @@ const Settings = () => {
                   </form>
 
                   <div className="ms-danger-zone">
-                     <h3 className="ms-danger-title">CRITICAL: Account Termination</h3>
+                     <h3 className="cv-section-title !text-red-500">Danger Zone: Account Deletion</h3>
                      <p className="text-slate-500 text-xs font-bold leading-relaxed">
                         Initializing account deletion will permanently purge your mission logs, badges, and server access. This operation is non-reversible.
                      </p>
@@ -278,20 +286,25 @@ const Settings = () => {
 
               {/* TAB 4: SERVICE TIER */}
               {activeTab === 'subscription' && (
-                <div className="space-y-8">
-                  <h2 className="ms-tab-title"><CreditCard className="text-primary" /> Operational Level</h2>
+                <div className="space-y-8 rcp-fade-in">
+                  <h2 className="cv-section-title"><CreditCard size={20} className="text-primary" /> Service Tier</h2>
                   
-                  <div className="pp-card !p-8 animate-pulse-slow">
+                  <div className="p-8 rounded-2xl relative overflow-hidden" 
+                    style={{ background: `linear-gradient(135deg, ${T.cyan}10, transparent)`, border: `1px solid rgba(0,242,255,0.2)` }}>
                      <div className="flex justify-between items-start mb-6">
                         <div>
-                           <h3 className="text-2xl font-black text-white italic uppercase">{user.isPremium ? 'Elite Operative' : 'Base Infiltrator'}</h3>
-                           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Status: {user.isPremium ? 'Authorized' : 'Limited Access'}</p>
+                           <h3 className="text-2xl font-bold text-white mb-1" style={{ color: user.isPremium ? T.cyan : '#fff' }}>
+                             {user.isPremium ? 'Elite Operative' : 'Standard Member'}
+                           </h3>
+                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                             STATUS: {user.isPremium ? 'FULL ACCESS' : 'RESTRICTED ACCESS'}
+                           </p>
                         </div>
-                        <div className="text-4xl font-black gradient-text">{user.isPremium ? '$9.99' : '$0.00'}</div>
+                        <div className="text-4xl font-black italic" style={{ color: T.cyan }}>{user.isPremium ? '$9.99' : '$0.00'}</div>
                      </div>
                      {!user.isPremium && (
-                       <button onClick={() => navigate('/premium')} className="rcp-primary-btn">
-                          Upgrade to Elite Tier
+                       <button onClick={() => navigate('/premium')} className="rcp-primary-btn !px-8">
+                          Request Elite Access Override
                        </button>
                      )}
                   </div>
@@ -319,8 +332,8 @@ const Settings = () => {
       {/* TOAST SYSTEM */}
       {showToast && (
         <div className="ms-toast">
-           <Check size={18} className="text-primary" />
-           <span className="text-xs font-black text-white uppercase tracking-widest">{toastMessage}</span>
+           <Check size={18} style={{ color: T.cyan }} />
+           <span className="text-[10px] font-black text-white uppercase tracking-widest">{toastMessage}</span>
         </div>
       )}
     </div>

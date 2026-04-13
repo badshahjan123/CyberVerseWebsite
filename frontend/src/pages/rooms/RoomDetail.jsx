@@ -41,19 +41,24 @@ import {
   Circle,
   CircleDot,
   Check,
-  Copy
+  Copy,
 } from "lucide-react";
 import { clearQuizCache } from "../../utils/clearQuizCache";
 import { shuffleCompleteQuiz } from "../../utils/shuffleQuestions";
+import "./RoomModule.css";
 
 const CAT_IMG = {
   Web: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=800",
-  Networking: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=800",
-  Development: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&q=80&w=800",
-  DevOps: "https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?auto=format&fit=crop&q=80&w=800",
+  Networking:
+    "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=800",
+  Development:
+    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&q=80&w=800",
+  DevOps:
+    "https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?auto=format&fit=crop&q=80&w=800",
   Misc: "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=800",
 };
-const ULTIMATE_FALLBACK = "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800";
+const ULTIMATE_FALLBACK =
+  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800";
 
 /**
  * VISUAL REPRESENTATION BLOCKS
@@ -71,7 +76,9 @@ const FlowDiagram = ({ steps }) => (
     {steps.map((step, idx) => (
       <Fragment key={idx}>
         <div className="rdp-flow-step">{step}</div>
-        {idx < steps.length - 1 && <ArrowRight size={16} className="rdp-flow-arrow" />}
+        {idx < steps.length - 1 && (
+          <ArrowRight size={16} className="rdp-flow-arrow" />
+        )}
       </Fragment>
     ))}
   </div>
@@ -98,7 +105,7 @@ const HierarchyTree = ({ data }) => {
 const TerminalBlock = ({ code }) => {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
-    const cleanCode = code.replace(/^\$ /gm, '');
+    const cleanCode = code.replace(/^\$ /gm, "");
     navigator.clipboard.writeText(cleanCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -112,14 +119,18 @@ const TerminalBlock = ({ code }) => {
           <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
         </div>
         <button onClick={handleCopy} className="rdp-copy-btn">
-          {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+          {copied ? (
+            <Check size={14} className="text-success" />
+          ) : (
+            <Copy size={14} />
+          )}
         </button>
       </div>
       <div className="rdp-terminal-body">
-        {code.split('\n').map((line, lidx) => (
+        {code.split("\n").map((line, lidx) => (
           <div key={lidx}>
             <span className="rdp-terminal-prompt">$</span>
-            {line.replace(/^\$ /, '')}
+            {line.replace(/^\$ /, "")}
           </div>
         ))}
       </div>
@@ -131,25 +142,41 @@ const EnhancedContentRenderer = ({ content, title }) => {
   if (!content) return null;
 
   const renderText = (text) => {
-    if (typeof text !== 'string') return text;
+    if (typeof text !== "string") return text;
     const html = text
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-black">$1</strong>')
+      .replace(
+        /\*\*(.*?)\*\*/g,
+        '<strong class="text-white font-black">$1</strong>',
+      )
       .replace(/\*(.*?)\*/g, '<em class="text-primary italic">$1</em>')
-      .replace(/`(.*?)`/g, '<code class="bg-white/10 px-1.5 py-0.5 rounded text-primary font-mono text-[0.9em]">$1</code>');
+      .replace(
+        /`(.*?)`/g,
+        '<code class="bg-white/10 px-1.5 py-0.5 rounded text-primary font-mono text-[0.9em]">$1</code>',
+      );
     return <span dangerouslySetInnerHTML={{ __html: html }} />;
   };
 
-  const blocks = content.split('\n\n');
+  const blocks = content.split("\n\n");
   const items = [];
   let smartVisualInjected = false;
 
   // Detect Smart Visual based on task title or content keywords
   let smartVisual = null;
-  const taskTitle = title?.toLowerCase() || '';
-  if (taskTitle.includes('api') || taskTitle.includes('http')) {
-    smartVisual = { url: '/api-flow.png', caption: 'API Request / Response Cycle' };
-  } else if (taskTitle.includes('domain') || taskTitle.includes('dns') || taskTitle.includes('hierarchy')) {
-    smartVisual = { url: '/domain-hierarchy.png', caption: 'Domain Hierarchy Structure' };
+  const taskTitle = title?.toLowerCase() || "";
+  if (taskTitle.includes("api") || taskTitle.includes("http")) {
+    smartVisual = {
+      url: "/api-flow.png",
+      caption: "API Request / Response Cycle",
+    };
+  } else if (
+    taskTitle.includes("domain") ||
+    taskTitle.includes("dns") ||
+    taskTitle.includes("hierarchy")
+  ) {
+    smartVisual = {
+      url: "/domain-hierarchy.png",
+      caption: "Domain Hierarchy Structure",
+    };
   }
 
   blocks.forEach((block, idx) => {
@@ -157,56 +184,84 @@ const EnhancedContentRenderer = ({ content, title }) => {
     if (!trimmed) return;
 
     // 1. Terminal / Code Detection
-    if (trimmed.startsWith('[TERMINAL]') || trimmed.startsWith('$ ')) {
-      const code = trimmed.replace('[TERMINAL]', '').trim();
+    if (trimmed.startsWith("[TERMINAL]") || trimmed.startsWith("$ ")) {
+      const code = trimmed.replace("[TERMINAL]", "").trim();
       items.push(<TerminalBlock key={idx} code={code} />);
       return;
     }
 
     // 2. Flow marker
-    if (trimmed.startsWith('[FLOW]')) {
-      const steps = trimmed.replace('[FLOW]', '').split('|').map(s => s.trim());
+    if (trimmed.startsWith("[FLOW]")) {
+      const steps = trimmed
+        .replace("[FLOW]", "")
+        .split("|")
+        .map((s) => s.trim());
       items.push(<FlowDiagram key={idx} steps={steps} />);
       return;
     }
 
     // 3. Diagram marker
-    if (trimmed.startsWith('[DIAGRAM]')) {
-      const [url, caption] = trimmed.replace('[DIAGRAM]', '').split('|').map(s => s.trim());
+    if (trimmed.startsWith("[DIAGRAM]")) {
+      const [url, caption] = trimmed
+        .replace("[DIAGRAM]", "")
+        .split("|")
+        .map((s) => s.trim());
       items.push(<VisualCard key={idx} url={url} caption={caption} />);
       return;
     }
 
     // 4. Tree marker
-    if (trimmed.startsWith('[TREE]')) {
-      const parts = trimmed.replace('[TREE]', '').split('|');
+    if (trimmed.startsWith("[TREE]")) {
+      const parts = trimmed.replace("[TREE]", "").split("|");
       const rootName = parts[0]?.trim();
-      const children = parts[1]?.split(',').map(c => ({ name: c.trim() })) || [];
-      items.push(<HierarchyTree key={idx} data={{ name: rootName, children }} />);
+      const children =
+        parts[1]?.split(",").map((c) => ({ name: c.trim() })) || [];
+      items.push(
+        <HierarchyTree key={idx} data={{ name: rootName, children }} />,
+      );
       return;
     }
 
     // 5. Headings (Simple detection)
-    if (trimmed.startsWith('### ') || trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
-      const cleanH = trimmed.replace(/^#+ /, '');
-      items.push(<h3 key={idx} className="text-xl font-black text-white mt-8 mb-6 italic tracking-tight">{renderText(cleanH)}</h3>);
-      
+    if (
+      trimmed.startsWith("### ") ||
+      trimmed.startsWith("## ") ||
+      trimmed.startsWith("# ")
+    ) {
+      const cleanH = trimmed.replace(/^#+ /, "");
+      items.push(
+        <h3
+          key={idx}
+          className="text-xl font-black text-white mt-8 mb-6 italic tracking-tight"
+        >
+          {renderText(cleanH)}
+        </h3>,
+      );
+
       // Auto-inject visual after the first heading
       if (!smartVisualInjected && smartVisual) {
-        items.push(<VisualCard key={`sv-${idx}`} url={smartVisual.url} caption={smartVisual.caption} />);
+        items.push(
+          <VisualCard
+            key={`sv-${idx}`}
+            url={smartVisual.url}
+            caption={smartVisual.caption}
+          />,
+        );
         smartVisualInjected = true;
       }
       return;
     }
 
     // 6. Default Paragraph
-    items.push(<p key={idx} className="mb-4 leading-relaxed">{renderText(trimmed)}</p>);
+    items.push(
+      <p key={idx} className="mb-4 leading-relaxed">
+        {renderText(trimmed)}
+      </p>,
+    );
   });
 
   return <div className="rdp-prose">{items}</div>;
 };
-
-
 
 const CodeSection = ({ code, language }) => {
   const [copied, setCopied] = useState(false);
@@ -224,10 +279,14 @@ const CodeSection = ({ code, language }) => {
             <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50" />
             <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
           </div>
-          <span className="rdp-code-lang">{language || 'terminal'}</span>
+          <span className="rdp-code-lang">{language || "terminal"}</span>
         </div>
         <button onClick={handleCopy} className="rdp-copy-btn">
-           {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+          {copied ? (
+            <Check size={14} className="text-success" />
+          ) : (
+            <Copy size={14} />
+          )}
         </button>
       </div>
       <div className="rdp-code-body">
@@ -238,7 +297,7 @@ const CodeSection = ({ code, language }) => {
 };
 
 const RoomDetail = () => {
-  const { slug: roomId } = useParams();
+  const { id: roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useApp();
   const { userStats, applyUpdate, requestLeaderboardUpdate } = useRealtime();
@@ -283,7 +342,7 @@ const RoomDetail = () => {
             exitedAt: new Date().toISOString(),
             progress: userProgress.completedTasks.length,
             total: room?.tasks?.length || 0,
-          })
+          }),
         );
       }
     };
@@ -347,36 +406,52 @@ const RoomDetail = () => {
         }
 
         setRoom(roomData);
-        setHeroImg(roomData.cover_image_url || CAT_IMG[roomData.category] || ULTIMATE_FALLBACK);
+        setHeroImg(
+          roomData.cover_image_url ||
+            CAT_IMG[roomData.category] ||
+            ULTIMATE_FALLBACK,
+        );
 
         // Shuffle quiz questions for this user (if user is authenticated and quiz exists)
         const userId = user?.id || user?._id;
-        console.log('🔍 Checking shuffle conditions:', {
+        console.log("🔍 Checking shuffle conditions:", {
           hasUser: !!user,
           userId: userId,
           hasQuizzes: !!(roomData.quizzes && roomData.quizzes.length > 0),
-          quizCount: roomData.quizzes?.length || 0
+          quizCount: roomData.quizzes?.length || 0,
         });
 
         if (userId && roomData.quizzes && roomData.quizzes.length > 0) {
           const quiz = roomData.quizzes[0];
-          console.log('🎯 Quiz data:', {
+          console.log("🎯 Quiz data:", {
             quizId: quiz.id,
-            questionCount: quiz.questions?.length || 0
+            questionCount: quiz.questions?.length || 0,
           });
 
           if (quiz.questions && quiz.questions.length > 0) {
-            const shuffled = shuffleCompleteQuiz(quiz.questions, userId, roomId);
+            const shuffled = shuffleCompleteQuiz(
+              quiz.questions,
+              userId,
+              roomId,
+            );
             setShuffledQuestions(shuffled);
-            console.log(`🔀 ✅ Shuffled ${shuffled.length} quiz questions for user ${userId.toString().substring(0, 8)}...`);
-            console.log('📋 Original question order:', quiz.questions.map(q => q.id));
-            console.log('🔄 Shuffled question order:', shuffled.map(q => q.id));
+            console.log(
+              `🔀 ✅ Shuffled ${shuffled.length} quiz questions for user ${userId.toString().substring(0, 8)}...`,
+            );
+            console.log(
+              "📋 Original question order:",
+              quiz.questions.map((q) => q.id),
+            );
+            console.log(
+              "🔄 Shuffled question order:",
+              shuffled.map((q) => q.id),
+            );
           } else {
-            console.log('⚠️ No quiz questions found to shuffle');
+            console.log("⚠️ No quiz questions found to shuffle");
           }
         } else {
-          console.log('⚠️ Skipping shuffle:', {
-            reason: !userId ? 'No user ID' : 'No quizzes'
+          console.log("⚠️ Skipping shuffle:", {
+            reason: !userId ? "No user ID" : "No quizzes",
           });
         }
 
@@ -390,7 +465,7 @@ const RoomDetail = () => {
             console.log("📥 Progress data from backend:", progressData);
             console.log(
               "👤 User joined status:",
-              progressData.progress?.joined
+              progressData.progress?.joined,
             );
 
             // If backend returns the default object (no real progress), keep joined as false
@@ -432,12 +507,12 @@ const RoomDetail = () => {
 
             console.log(
               "🎯 Final joined state:",
-              progressData.progress?.joined === true ? true : false
+              progressData.progress?.joined === true ? true : false,
             );
             console.log(
               "✅ All tasks complete:",
               allTasksComplete,
-              `(${completedTasks.length}/${totalTasks})`
+              `(${completedTasks.length}/${totalTasks})`,
             );
             console.log("❓ Has quiz:", hasQuiz);
             console.log("🧪 Quiz completed:", quizCompleted);
@@ -456,7 +531,7 @@ const RoomDetail = () => {
 
             // FIX: Validate quiz cache - only restore if tasks are complete
             const savedQuizData = localStorage.getItem(
-              `quiz_results_${roomId}`
+              `quiz_results_${roomId}`,
             );
             if (savedQuizData) {
               try {
@@ -503,11 +578,12 @@ const RoomDetail = () => {
   }, [roomId, user]);
 
   // Calculate progress percentage
-  const totalComponents = (room?.tasks?.length || 0) + (room?.quizzes?.length > 0 ? 1 : 0);
-  const completedComponents = userProgress.completedTasks.length + (userProgress.roomCompleted ? 1 : 0);
-  const progressPercentage = totalComponents > 0
-    ? (completedComponents / totalComponents) * 100
-    : 0;
+  const totalComponents =
+    (room?.tasks?.length || 0) + (room?.quizzes?.length > 0 ? 1 : 0);
+  const completedComponents =
+    userProgress.completedTasks.length + (userProgress.roomCompleted ? 1 : 0);
+  const progressPercentage =
+    totalComponents > 0 ? (completedComponents / totalComponents) * 100 : 0;
 
   // Handle Join Room
   const handleJoinRoom = async () => {
@@ -578,7 +654,7 @@ const RoomDetail = () => {
         if (response.userStats) {
           applyUpdate(response.userStats);
         }
-        
+
         // Invalidate leaderboard data
         requestLeaderboardUpdate();
 
@@ -586,10 +662,11 @@ const RoomDetail = () => {
         try {
           toast({
             title: `+${pointsEarned} XP`,
-            description: `Correct Answer! ${response.userStats?.points
-              ? `Total: ${response.userStats.points} pts`
-              : ""
-              }`,
+            description: `Correct Answer! ${
+              response.userStats?.points
+                ? `Total: ${response.userStats.points} pts`
+                : ""
+            }`,
           });
         } catch (e) {
           // toast is optional; ignore if not available
@@ -611,18 +688,18 @@ const RoomDetail = () => {
             } else {
               // No quiz - room completed after last task
               const finalXP = (userProgress.totalXP || 0) + pointsEarned;
-              
+
               // Persist completion to backend
               completeRoom(roomId, 100, finalXP)
-                .then(res => {
+                .then((res) => {
                   if (res.userStats) applyUpdate(res.userStats);
                   requestLeaderboardUpdate();
                   console.log("✅ Room marked complete (no quiz path)");
                 })
-                .catch(err => {
+                .catch((err) => {
                   console.error("Delayed completion failure:", err);
                 });
- 
+
               const updatedProgress = {
                 ...userProgress,
                 roomCompleted: true,
@@ -631,7 +708,7 @@ const RoomDetail = () => {
                 completedAt: new Date().toISOString(),
               };
               setUserProgress(updatedProgress);
- 
+
               // Refresh global stats via Realtime fallback
               if (window.triggerRealtimeUpdate) window.triggerRealtimeUpdate();
 
@@ -642,7 +719,7 @@ const RoomDetail = () => {
                     roomId,
                     totalXP: finalXP,
                   },
-                })
+                }),
               );
 
               // Navigate to completion screen
@@ -663,14 +740,14 @@ const RoomDetail = () => {
         setSubmissionStatus((prev) => ({ ...prev, [taskId]: "error" }));
         try {
           toast({ title: "Incorrect", description: "Try again!" });
-        } catch (e) { }
+        } catch (e) {}
       }
     } catch (error) {
       console.error("Failed to submit task:", error);
       setSubmissionStatus((prev) => ({ ...prev, [taskId]: "error" }));
       try {
         toast({ title: "Submission failed", description: "Please try again." });
-      } catch (e) { }
+      } catch (e) {}
     }
   };
 
@@ -733,7 +810,7 @@ const RoomDetail = () => {
           results: response,
           submitted: true,
           answers: quizAnswers,
-        })
+        }),
       );
 
       // If passed, complete the room
@@ -749,10 +826,10 @@ const RoomDetail = () => {
             "❌ Cannot complete room - not all tasks done:",
             userProgress.completedTasks.length,
             "/",
-            room.tasks.length
+            room.tasks.length,
           );
           alert(
-            "Error: Quiz passed but not all tasks are complete. Please contact support."
+            "Error: Quiz passed but not all tasks are complete. Please contact support.",
           );
           return;
         }
@@ -760,9 +837,13 @@ const RoomDetail = () => {
         setTimeout(async () => {
           // Call backend to mark room as complete and update leaderboard
           try {
-            const completeResponse = await completeRoom(roomId, response.percentage, finalTotalXP);
+            const completeResponse = await completeRoom(
+              roomId,
+              response.percentage,
+              finalTotalXP,
+            );
             if (completeResponse.userStats) {
-               applyUpdate(completeResponse.userStats);
+              applyUpdate(completeResponse.userStats);
             }
             requestLeaderboardUpdate();
             console.log("✅ Room marked complete on backend");
@@ -789,7 +870,7 @@ const RoomDetail = () => {
                 totalXP: finalTotalXP,
                 score: response.percentage,
               },
-            })
+            }),
           );
 
           // Navigate to completion screen
@@ -815,20 +896,27 @@ const RoomDetail = () => {
   /* ── Topic Icons Helper ── */
   const getTopicIcon = (title) => {
     const t = title.toLowerCase();
-    if (t.includes('web') || t.includes('http')) return <Zap size={14} />;
-    if (t.includes('net') || t.includes('ip') || t.includes('port')) return <Shield size={14} />;
-    if (t.includes('dev') || t.includes('code') || t.includes('api')) return <Terminal size={14} />;
-    if (t.includes('hack') || t.includes('vuln') || t.includes('exp')) return <Target size={14} />;
+    if (t.includes("web") || t.includes("http")) return <Zap size={14} />;
+    if (t.includes("net") || t.includes("ip") || t.includes("port"))
+      return <Shield size={14} />;
+    if (t.includes("dev") || t.includes("code") || t.includes("api"))
+      return <Terminal size={14} />;
+    if (t.includes("hack") || t.includes("vuln") || t.includes("exp"))
+      return <Target size={14} />;
     return <BookOpen size={14} />;
   };
 
   /* ── Topic Image Helper ── */
   const getTopicImg = (title, category) => {
     const t = title.toLowerCase();
-    if (t.includes('web')) return "https://images.unsplash.com/photo-1547658719-da2b51169166?auto=format&fit=crop&q=80&w=800";
-    if (t.includes('network')) return "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=800";
-    if (t.includes('linux')) return "https://images.unsplash.com/photo-1629654297299-c8506221ca97?auto=format&fit=crop&q=80&w=800";
-    if (t.includes('code') || t.includes('api')) return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800";
+    if (t.includes("web"))
+      return "https://images.unsplash.com/photo-1547658719-da2b51169166?auto=format&fit=crop&q=80&w=800";
+    if (t.includes("network"))
+      return "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=800";
+    if (t.includes("linux"))
+      return "https://images.unsplash.com/photo-1629654297299-c8506221ca97?auto=format&fit=crop&q=80&w=800";
+    if (t.includes("code") || t.includes("api"))
+      return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800";
     return "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800";
   };
 
@@ -836,7 +924,9 @@ const RoomDetail = () => {
     return (
       <div className="rdp-root flex items-center justify-center p-20">
         <div className="text-center">
-          <p className="text-slate-400 mb-6">Room not found or failed to load</p>
+          <p className="text-slate-400 mb-6">
+            Room not found or failed to load
+          </p>
           <button onClick={() => navigate("/rooms")} className="rdp-back-btn">
             <ArrowLeft size={16} /> Back to Rooms
           </button>
@@ -846,395 +936,388 @@ const RoomDetail = () => {
   }
 
   const activeTaskId = expandedTasks[0] || 1;
-  const activeTask = room.tasks?.find(t => t.id === activeTaskId) || room.tasks?.[0];
-  const activeTaskIndex = room.tasks?.findIndex(t => t.id === activeTaskId) ?? 0;
+  const activeTask =
+    room.tasks?.find((t) => t.id === activeTaskId) || room.tasks?.[0];
+  const activeTaskIndex =
+    room.tasks?.findIndex((t) => t.id === activeTaskId) ?? 0;
 
   return (
     <div className="rdp-root">
-      <div className="rdp-bg-glow" />
-
-      {/* ── STICKY NAV ── */}
-      <nav className="rdp-nav">
-        <div className="rdp-nav-content">
-          <div className="rdp-nav-left">
-            <button onClick={() => navigate("/rooms")} className="rdp-back-btn">
-              <ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span>
-            </button>
-            <div className="h-6 w-px bg-slate-800 hidden sm:block" />
-            <div className="flex flex-col">
-              <h4 className="font-bold text-white text-xs lg:text-sm truncate max-w-[200px] leading-tight">{room.title}</h4>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">{room.category} // SYSTEM_READY</span>
-            </div>
-          </div>
-
-          <div className="rdp-prog-wrap">
-            <div className="flex justify-between items-center mb-1">
-              <span className="rdp-prog-text">Your Progress</span>
-              <span className="text-[10px] font-bold text-slate-500">{Math.round(progressPercentage)}%</span>
-            </div>
-            <div className="rdp-prog-track">
-              <div className="rdp-prog-fill" style={{ width: `${progressPercentage}%` }} />
-            </div>
-          </div>
-
+      {/* ── TOP NAV ── */}
+      <nav className="rdp-nav-v2">
+        <div className="rdp-nav-inner">
           <div className="flex items-center gap-3">
-             <div className="hidden md:flex flex-col items-end">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total XP</span>
-                <span className="text-primary font-bold">{userStats.totalXP}</span>
-             </div>
-             <button className="rdp-back-btn p-2"><Share2 size={16}/></button>
+            <button
+              onClick={() => navigate("/rooms")}
+              className="p-2 text-slate-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="h-4 w-px bg-slate-800" />
+            <span className="text-xs font-black text-white uppercase tracking-tighter truncate max-w-[300px]">
+              {room.title}
+            </span>
+          </div>
+
+          <div className="flex-1 max-w-md mx-8 hidden md:block">
+            <div className="flex justify-between text-[9px] font-bold text-slate-500 uppercase mb-1">
+              <span>Progress</span>
+              <span>{Math.round(progressPercentage)}%</span>
+            </div>
+            <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-500"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+              <div className="text-[9px] font-bold text-slate-500 uppercase">
+                Total XP
+              </div>
+              <div className="text-xs font-black text-primary leading-none">
+                {userStats.totalXP}
+              </div>
+            </div>
+            <button
+              onClick={() => {}}
+              className="p-2 text-slate-400 hover:text-white transition-colors"
+            >
+              <Share2 size={16} />
+            </button>
           </div>
         </div>
       </nav>
 
-      <div className="rdp-wrap">
-        {/* ── HERO ── */}
-        <section className="rdp-hero rdp-fade-in">
-          <div className="rdp-hero-info">
-            <div className="rdp-cat-pill" style={{ background: 'rgba(139,92,246,0.1)', color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.2)' }}>
-              <Shield size={14} /> {room.category}
+      <div className="rdp-main-wrap rdp-fade-in">
+        {/* ── ROOM HEADER ── */}
+        <header className="rdp-header-v2">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              {room.category}
             </div>
-            <h1 className="rdp-title">{room.title}</h1>
-            <p className="rdp-desc">{room.description}</p>
-            
-            <div className="rdp-meta">
-              <div className="rdp-m-item">
-                <div className="flex flex-col">
-                  <span className="rdp-m-lbl text-success">Difficulty</span>
-                  <div className="flex items-center gap-2">
-                    <Shield size={12} className="text-success" />
-                    <span className="rdp-m-val">{room.difficulty}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="rdp-m-item">
-                <div className="flex flex-col">
-                  <span className="rdp-m-lbl">Duration</span>
-                  <span className="rdp-m-val">{room.estimatedTime || room.estimated_time_minutes + "m"}</span>
-                </div>
-              </div>
-              <div className="rdp-m-item">
-                <div className="flex flex-col">
-                  <span className="rdp-m-lbl">Points</span>
-                  <span className="rdp-m-val text-primary">{room.points} XP</span>
-                </div>
-              </div>
+            <div className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest">
+              {room.difficulty}
+            </div>
+            <div className="ml-auto flex items-center gap-3">
+              <span className="text-[10px] font-bold text-slate-500">
+                ★ {room.rating || "4.8"}
+              </span>
+              <span className="text-[10px] font-bold text-slate-500">
+                {room.tasks?.length || 0} TASKS
+              </span>
             </div>
           </div>
+          <h1 className="text-3xl font-black text-white leading-tight mb-2 uppercase tracking-tighter italic">
+            {room.title}
+          </h1>
+          <p className="text-sm text-slate-500 max-w-3xl leading-relaxed">
+            {room.description}
+          </p>
+        </header>
 
-          <div className="rdp-hero-card">
-            <div className="rdp-hero-img-wrap">
-              <img
-                src={heroImg}
-                className="rdp-hero-img"
-                alt=""
-                onError={() => {
-                  const fallback = CAT_IMG[room.category] || ULTIMATE_FALLBACK;
-                  if (heroImg !== fallback) setHeroImg(fallback);
+        {/* ── COMPLETION BANNER ── */}
+        {userProgress.roomCompleted && (
+          <div className="p-4 rounded-xl bg-success/5 border border-success/20 flex items-center justify-between rdp-fade-in">
+            <div className="flex items-center gap-3">
+              <Trophy className="text-success" size={20} />
+              <div>
+                <h4 className="text-xs font-black text-white uppercase">
+                  Sector Clear
+                </h4>
+                <p className="text-[10px] text-success/70 font-bold uppercase">
+                  {userStats.totalXP} XP Collected
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="text-[10px] font-black text-white px-3 py-1.5 rounded bg-success/20 border border-success/20"
+            >
+              Dashboard →
+            </button>
+          </div>
+        )}
+
+        {/* ── TASK SELECTOR BAR ── */}
+        {!showQuiz && userProgress.joined && (
+          <div className="rdp-task-bar">
+            <div className="rdp-task-bar-left">
+              <select
+                className="rdp-task-select"
+                value={activeTaskId}
+                onChange={(e) => {
+                  setShowQuiz(false);
+                  toggleTask(Number(e.target.value));
                 }}
-              />
-              <div className="rdp-hero-overlay" />
+              >
+                {room.tasks?.map((t, idx) => (
+                  <option key={t.id} value={t.id}>
+                    {userProgress.completedTasks.includes(idx)
+                      ? "✓"
+                      : `${idx + 1}.`}{" "}
+                    {t.title}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="rdp-hero-actions">
-              {!userProgress.joined ? (
-                <button onClick={handleJoinRoom} className="rdp-main-btn">
-                  <Play size={18} fill="currentColor" /> Start Challenge
-                </button>
-              ) : (
-                <button 
-                  onClick={() => {
-                    const firstIncomp = room.tasks?.findIndex((t, i) => !userProgress.completedTasks.includes(i));
-                    toggleTask(room.tasks[firstIncomp === -1 ? 0 : firstIncomp].id);
-                  }} 
-                  className="rdp-main-btn"
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() =>
+                  activeTaskIndex > 0 &&
+                  toggleTask(room.tasks[activeTaskIndex - 1].id)
+                }
+                disabled={activeTaskIndex === 0}
+                className="rdp-nav-arrow"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <button
+                onClick={() =>
+                  activeTaskIndex < room.tasks.length - 1 &&
+                  toggleTask(room.tasks[activeTaskIndex + 1].id)
+                }
+                disabled={activeTaskIndex === room.tasks.length - 1}
+                className="rdp-nav-arrow"
+              >
+                <ArrowRight size={16} />
+              </button>
+              {room.quizzes?.length > 0 && (
+                <button
+                  onClick={() => setShowQuiz(true)}
+                  disabled={
+                    userProgress.completedTasks.length < room.tasks?.length
+                  }
+                  className="rdp-quiz-trigger"
                 >
-                  <Zap size={18} fill="currentColor" /> {userProgress.roomCompleted ? "Review Room" : "Continue"}
+                  <Trophy size={14} /> Final Quiz
                 </button>
               )}
-              <div className="flex gap-2">
-                <button className="rdp-back-btn flex-1 justify-center"><Bookmark size={14}/> Save</button>
-                <button onClick={handleTryAgain} className="rdp-back-btn flex-1 justify-center"><RefreshCw size={14}/> Reset</button>
-              </div>
             </div>
           </div>
-        </section>
+        )}
 
-        {/* ── MAIN LAYOUT ── */}
-        <div className="rdp-layout">
-          
-          {/* Side: Task Browser */}
-          <aside className="rdp-sidebar">
-            <div className="rdp-s-title">
-              <Terminal size={18} className="text-slate-500" />
-              Challenge Tasks
+        {/* ── MAIN CONTENT ── */}
+        <div className="rdp-content-col">
+          {!userProgress.joined ? (
+            /* JOIN PROMPT */
+            <div className="rdp-card-v2 py-12 text-center">
+              <Shield size={32} className="text-primary mx-auto mb-3" />
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2 italic">
+                Ready to Begin?
+              </h3>
+              <p className="text-sm text-slate-500 mb-6 px-12">
+                Join this room to start completing tasks and earning XP.
+              </p>
+              <button
+                onClick={handleJoinRoom}
+                className="px-8 py-3 rounded-lg bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform inline-flex items-center gap-3"
+              >
+                <Play size={16} /> Start Investigation
+              </button>
             </div>
-            <div className="rdp-s-list">
-              {room.tasks?.map((t, idx) => {
-                const status = getTaskStatus(idx);
-                const isActive = activeTaskId === t.id;
-                return (
-                  <button 
-                    key={t.id}
-                    onClick={() => toggleTask(t.id)}
-                    className={`rdp-t-item ${isActive ? 'rdp-t-item--active' : ''} ${status === 'completed' ? 'rdp-t-item--done' : ''}`}
-                  >
-                    <div className="rdp-t-icon">
-                      {status === 'completed' ? (
-                        <Check size={14} className="text-success" />
-                      ) : status === 'in-progress' ? (
-                        <CircleDot size={14} className="text-primary animate-pulse" />
-                      ) : (
-                        <Circle size={14} className="text-slate-600" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="rdp-t-title">{t.title}</div>
-                      <div className="text-[10px] font-bold text-slate-500">{t.xp || 100} XP</div>
-                    </div>
-                  </button>
-                );
-              })}
-              {room.quizzes?.length > 0 && (
-                 <button 
-                    onClick={() => setShowQuiz(true)}
-                    disabled={!showQuiz && userProgress.completedTasks.length < room.tasks?.length}
-                    className={`rdp-t-item ${showQuiz ? 'rdp-t-item--active' : ''} ${quizSubmitted ? 'rdp-t-item--done' : ''}`}
-                 >
-                    <div className="rdp-t-icon">
-                      <Trophy size={16}/>
-                    </div>
-                    <span className="rdp-t-title">Final Quiz</span>
-                 </button>
-              )}
-            </div>
-          </aside>
-
-          {/* Main: Active Task Content */}
-          <main className="rdp-content">
-            {userProgress.roomCompleted && (
-              <div className="p-6 rounded-2xl bg-success/10 border border-success/30 flex items-center justify-between rdp-fade-in shadow-[0_0_30px_rgba(57,255,20,0.1)]">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center">
-                    <Trophy className="text-success" size={24}/>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-white italic tracking-tighter uppercase">Mission Successful</h3>
-                    <p className="text-sm text-success/80 font-bold uppercase tracking-widest">Sector Cleared | {userStats.totalXP} XP Collected</p>
-                  </div>
-                </div>
-                <button onClick={() => navigate("/dashboard")} className="rdp-back-btn border-success/30 hover:bg-success/20 text-white font-black">Open Archive</button>
+          ) : showQuiz ? (
+            /* QUIZ VIEW */
+            <div className="rdp-card-v2 rdp-fade-in">
+              <div className="rdp-card-header-v2 flex justify-between items-center">
+                <span>Final Assessment</span>
+                <button
+                  onClick={() => setShowQuiz(false)}
+                  className="text-[10px] text-primary hover:underline"
+                >
+                  ← Back to Tasks
+                </button>
               </div>
-            )}
-
-            {showQuiz ? (
-              /* QUIZ UI */
-              <div className="rdp-card rdp-fade-in">
-                <div className="rdp-card-head">
-                  <h2 className="rdp-card-title">Final Knowledge Check</h2>
-                  <Trophy size={20} className="text-warning" />
-                </div>
-                <div className="rdp-card-body space-y-10">
-                   {(() => {
-                      const questions = shuffledQuestions.length > 0 ? shuffledQuestions : room.quizzes[0].questions;
-                      return questions.map((q, qi) => (
-                        <div key={q.id} className="rdp-quiz-q">
-                           <h4 className="text-white font-bold mb-4 flex gap-3">
-                              <span className="text-slate-600">{qi + 1}.</span> {q.question_text}
-                           </h4>
-                           <div className="grid gap-3">
-                              {q.options.map((opt, oi) => (
-                                <label key={oi} className={`rdp-t-item font-medium transition-all ${quizAnswers[q.id] === opt ? 'bg-primary/20 border-primary/40 text-white' : ''} ${quizSubmitted ? 'pointer-events-none' : ''}`}>
-                                   <input 
-                                      type="radio" 
-                                      name={`q-${q.id}`} 
-                                      className="sr-only"
-                                      checked={quizAnswers[q.id] === opt}
-                                      onChange={() => !quizSubmitted && setQuizAnswers(p => ({ ...p, [q.id]: opt }))}
-                                   />
-                                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${quizAnswers[q.id] === opt ? 'border-primary' : 'border-slate-700'}`}>
-                                      {quizAnswers[q.id] === opt && <div className="w-2.5 h-2.5 bg-primary rounded-full"/>}
-                                   </div>
-                                   {opt}
-                                </label>
-                              ))}
-                           </div>
-                           {quizSubmitted && quizResults?.results && (
-                              <div className={`mt-4 p-4 rounded-xl flex gap-3 ${quizResults.results.find(r => r.questionId === q.id)?.correct ? 'bg-success/10 text-success border border-success/20' : 'bg-danger/10 text-danger border border-danger/20'}`}>
-                                 {quizResults.results.find(r => r.questionId === q.id)?.correct ? <CheckCircle size={18}/> : <X size={18}/>}
-                                 <div className="text-sm">
-                                    <span className="font-bold underline">{quizResults.results.find(r => r.questionId === q.id)?.correct ? 'Correct' : 'Incorrect'}</span>
-                                    {q.explanation && <p className="mt-1 opacity-80">{q.explanation}</p>}
-                                 </div>
-                              </div>
-                           )}
-                        </div>
-                      ));
-                   })()}
-
-                   {!quizSubmitted ? (
-                      <button 
-                        onClick={handleQuizSubmit}
-                        disabled={Object.keys(quizAnswers).length < room.quizzes[0].questions.length}
-                        className="rdp-main-btn py-5"
-                      >
-                         Submit Results
-                      </button>
-                   ) : (
-                      <div className={`p-8 rounded-2xl text-center border-2 ${quizResults?.passed ? 'bg-success/10 border-success/30' : 'bg-danger/10 border-danger/30'}`}>
-                         <h2 className={`text-2xl font-black mb-2 ${quizResults?.passed ? 'text-success' : 'text-danger'}`}>
-                            {quizResults?.passed ? "MISSION SUCCESSFUL" : "MISSION FAILED"}
-                         </h2>
-                         <p className="text-white font-bold text-xl mb-4">{quizResults?.percentage}% Success Rate</p>
-                         {quizResults?.passed ? (
-                            <div className="space-y-4">
-                               <p className="text-slate-400">The sector is secured. You have earned {quizResults.earnedPoints} XP bonus.</p>
-                               <button onClick={() => navigate("/rooms")} className="rdp-main-btn">Return to Base</button>
+              <div className="p-8 space-y-8">
+                {(() => {
+                  const questions =
+                    shuffledQuestions.length > 0
+                      ? shuffledQuestions
+                      : room.quizzes[0].questions;
+                  return questions.map((q, qi) => (
+                    <div key={q.id} className="rdp-quiz-q">
+                      <p className="text-sm font-bold text-white mb-4">
+                        <span className="text-slate-600 mr-2">{qi + 1}.</span>{" "}
+                        {q.question_text}
+                      </p>
+                      <div className="grid gap-2">
+                        {q.options.map((opt, oi) => (
+                          <label
+                            key={oi}
+                            className={`px-4 py-3 rounded border text-[11px] font-medium transition-all flex items-center gap-3 cursor-pointer ${quizAnswers[q.id] === opt ? "bg-primary/10 border-primary text-white" : "bg-slate-900/50 border-slate-800 text-slate-500 hover:border-slate-700 shadow-sm"} ${quizSubmitted ? "pointer-events-none" : ""}`}
+                          >
+                            <input
+                              type="radio"
+                              name={`q-${q.id}`}
+                              className="sr-only"
+                              checked={quizAnswers[q.id] === opt}
+                              onChange={() =>
+                                !quizSubmitted &&
+                                setQuizAnswers((p) => ({ ...p, [q.id]: opt }))
+                              }
+                            />
+                            <div
+                              className={`w-3.5 h-3.5 rounded-full border shrink-0 ${quizAnswers[q.id] === opt ? "border-primary" : "border-slate-700"}`}
+                            >
+                              {quizAnswers[q.id] === opt && (
+                                <div className="w-full h-full scale-50 bg-primary rounded-full" />
+                              )}
                             </div>
-                         ) : (
-                            <button onClick={handleTryAgain} className="rdp-main-btn" style={{ background: '#ef4444' }}>Retake Mission</button>
-                         )}
+                            {opt}
+                          </label>
+                        ))}
                       </div>
-                   )}
-                </div>
-              </div>
-            ) : (
-              /* TASK UI */
-              <div className="rdp-card rdp-fade-in" key={activeTaskId}>
-                <div className="rdp-card-head">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-primary">
-                      {getTopicIcon(activeTask.title)}
                     </div>
-                    <div>
-                      <h2 className="rdp-card-title">{activeTask.title}</h2>
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">+ {activeTask.xp || 100} XP</span>
-                    </div>
+                  ));
+                })()}
+                {!quizSubmitted ? (
+                  <button
+                    onClick={handleQuizSubmit}
+                    className="w-full py-4 rounded-xl bg-primary text-white font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                  >
+                    Submit Evaluation
+                  </button>
+                ) : (
+                  <div
+                    className={`p-8 rounded-xl text-center shadow-xl ${quizResults?.passed ? "bg-success/5 border border-success/20" : "bg-danger/5 border border-danger/20"}`}
+                  >
+                    <h3
+                      className={`text-xl font-black mb-1 italic tracking-tighter ${quizResults?.passed ? "text-success" : "text-danger"}`}
+                    >
+                      {quizResults?.passed
+                        ? "MISSION SUCCESSFUL"
+                        : "MISSION FAILED"}
+                    </h3>
+                    <p className="text-sm text-slate-400 mb-6">
+                      Score: {quizResults?.percentage}%
+                    </p>
+                    <button
+                      onClick={handleTryAgain}
+                      className="px-6 py-2 rounded-lg bg-slate-800 text-white text-[10px] font-black border border-slate-700 uppercase tracking-widest hover:bg-slate-700 transition-colors"
+                    >
+                      Restart Sector
+                    </button>
                   </div>
-                  {userProgress.completedTasks.includes(activeTaskIndex) && (
-                    <div className="flex items-center gap-2 text-success font-bold text-sm bg-success/10 px-3 py-1.5 rounded-lg border border-success/20">
-                      <CheckCircle size={14}/> Completed
-                    </div>
-                  )}
+                )}
+              </div>
+            </div>
+          ) : (
+            /* TASK VIEW */
+            <div className="rdp-fade-in" key={activeTaskId}>
+              {/* Task Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-primary border border-slate-700 shadow-xl">
+                    {getTopicIcon(activeTask.title)}
+                  </div>
+                  <h2 className="text-xl font-black text-white italic tracking-tighter">
+                    {activeTask.title}
+                  </h2>
                 </div>
+                {userProgress.completedTasks.includes(activeTaskIndex) && (
+                  <span className="px-3 py-1 rounded bg-success/10 border border-success/20 text-success text-[10px] font-black uppercase tracking-widest">
+                    COMPLETED
+                  </span>
+                )}
+              </div>
 
-                <div className="rdp-task-vis h-[240px] w-full relative">
-                   <img src={getTopicImg(activeTask.title, room.category)} className="w-full h-full object-cover" alt=""/>
-                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F1A] via-transparent to-transparent opacity-60"/>
-                </div>
-
-                <div className="rdp-card-body">
-                  <EnhancedContentRenderer content={activeTask.content} title={activeTask.title} />
+              {/* Task Content Card */}
+              <div className="rdp-card-v2">
+                <div className="p-8">
+                  <EnhancedContentRenderer
+                    content={activeTask.content}
+                    title={activeTask.title}
+                  />
 
                   {activeTask.codeSnippet && (
-                    <CodeSection code={activeTask.codeSnippet} language={activeTask.codeLanguage} />
-                  )}
-
-                  {activeTask.hint && (
-                    <div className="mt-8 border-t border-slate-800 pt-6">
-                      <button 
-                         onClick={() => {
-                           if(confirm("Using a hint will deduct 25 XP. Proceed?")) {
-                             // XP Deduction simulation
-                             setUserProgress(p => ({ ...p, totalXP: Math.max(0, p.totalXP - 25) }));
-                             setExpandedTasks(p => [...p, `${activeTask.id}_hint`]); // Use different key to show hint
-                           }
-                         }}
-                         className="flex items-center gap-2 text-warning font-bold text-xs uppercase tracking-widest hover:text-white transition-colors"
-                      >
-                         <HelpCircle size={14}/> Unlock Technical Intel (-25 XP)
-                      </button>
-                      
-                      {(expandedTasks.includes(`${activeTask.id}_hint`) || userProgress.completedTasks.includes(activeTaskIndex)) && (
-                        <div className="mt-4 p-4 bg-amber-500/5 rounded-xl text-sm italic text-amber-200/70 border border-amber-500/10 rdp-fade-in">
-                          <span className="font-bold text-amber-500 not-italic mr-2">INTEL_RECOVERED:</span>
-                          {activeTask.hint}
-                        </div>
-                      )}
+                    <div className="mt-8">
+                      <CodeSection
+                        code={activeTask.codeSnippet}
+                        language={activeTask.codeLanguage}
+                      />
                     </div>
                   )}
 
+                  {/* Answer Submission */}
                   {!userProgress.completedTasks.includes(activeTaskIndex) && (
                     <div className="rdp-ans-section">
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="rdp-ans-lbl m-0">{activeTask.question}</label>
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">Input Flag Below</span>
-                      </div>
+                      <label className="rdp-ans-lbl">Mission Objective</label>
+                      <p className="text-sm font-bold text-white mb-6 leading-relaxed">
+                        {activeTask.question}
+                      </p>
                       <div className="rdp-ans-row">
-                        <input 
-                          type="text" 
-                          className="rdp-inp font-mono" 
-                          placeholder="CV{flag_here}..."
+                        <input
+                          type="text"
+                          className="rdp-inp"
+                          placeholder="Decrypt flag..."
                           value={taskAnswers[activeTask.id] || ""}
-                          onChange={(e) => setTaskAnswers(p => ({ ...p, [activeTask.id]: e.target.value }))}
-                          onKeyPress={(e) => e.key === 'Enter' && handleTaskSubmit(activeTask.id, activeTaskIndex)}
+                          onChange={(e) =>
+                            setTaskAnswers((p) => ({
+                              ...p,
+                              [activeTask.id]: e.target.value,
+                            }))
+                          }
+                          onKeyPress={(e) =>
+                            e.key === "Enter" &&
+                            handleTaskSubmit(activeTask.id, activeTaskIndex)
+                          }
                         />
-                        <button 
-                          onClick={() => handleTaskSubmit(activeTask.id, activeTaskIndex)}
-                          disabled={!taskAnswers[activeTask.id] || submissionStatus[activeTask.id] === 'submitting'}
+                        <button
+                          onClick={() =>
+                            handleTaskSubmit(activeTask.id, activeTaskIndex)
+                          }
                           className="rdp-submit"
                         >
-                          {submissionStatus[activeTask.id] === 'submitting' ? <RefreshCw className="animate-spin" size={18}/> : 'Submit Flag'}
+                          Submit
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-            )}
-          </main>
 
-          {/* Right: Room Stats / Creator */}
-          <aside className="rdp-info">
-             <div className="rdp-info-sec">
-                <span className="rdp-info-lbl">Room Intel</span>
-                <div className="rdp-info-box space-y-4">
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Enrollment</span>
-                      <div className="flex items-center gap-1.5">
-                         <Users size={12} className="text-primary"/>
-                         <span className="text-white font-bold">{room.enrollmentCount || room.participants || 0}</span>
-                      </div>
-                   </div>
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Avg. Time</span>
-                      <span className="text-white font-bold">{room.estimatedTime || room.estimated_time_minutes + "m"}</span>
-                   </div>
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Rating</span>
-                      <div className="flex items-center gap-1 text-warning font-bold">
-                         ★ {room.rating || "4.8"}
-                      </div>
-                   </div>
-                   <div className="h-px bg-slate-800"/>
-                   <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                         <Terminal size={18} className="text-primary"/>
-                      </div>
-                      <div className="flex flex-col">
-                         <span className="text-[10px] font-bold text-slate-500 uppercase">Creator</span>
-                         <span className="text-xs font-bold text-white">{room.creator || "CyberVerse Admin"}</span>
-                      </div>
-                   </div>
-                </div>
-             </div>
-
-             <div className="rdp-info-sec">
-                <span className="rdp-info-lbl">Tags & Skills</span>
-                <div className="flex flex-wrap gap-2">
-                   {room.tags?.map(t => (
-                      <span key={t} className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[11px] font-bold text-slate-400 capitalize"># {t}</span>
-                   ))}
-                </div>
-             </div>
-
-             {userProgress.roomCompleted && (
-                <div className="p-5 rounded-2xl bg-primary/10 border border-primary/20 text-center space-y-3">
-                   <Trophy size={32} className="mx-auto text-primary"/>
-                   <h5 className="text-white font-black text-xs uppercase tracking-widest">Sector Cleared</h5>
-                   <p className="text-[11px] text-slate-400">You have successfully dominated this room and gathered all available intel.</p>
-                </div>
-             )}
-          </aside>
+              {/* Bottom Nav */}
+              <div className="flex justify-between items-center mt-8">
+                <button
+                  onClick={() =>
+                    activeTaskIndex > 0 &&
+                    toggleTask(room.tasks[activeTaskIndex - 1].id)
+                  }
+                  disabled={activeTaskIndex === 0}
+                  className="text-[10px] font-black text-slate-500 hover:text-white disabled:opacity-0 transition-colors tracking-widest"
+                >
+                  ← PREVIOUS
+                </button>
+                <button
+                  onClick={() => {
+                    if (activeTaskIndex < room.tasks.length - 1) {
+                      toggleTask(room.tasks[activeTaskIndex + 1].id);
+                    } else if (
+                      room.quizzes?.length > 0 &&
+                      userProgress.completedTasks.length >= room.tasks.length
+                    ) {
+                      setShowQuiz(true);
+                    }
+                  }}
+                  disabled={
+                    activeTaskIndex === room.tasks.length - 1 &&
+                    !(
+                      room.quizzes?.length > 0 &&
+                      userProgress.completedTasks.length >= room.tasks.length
+                    )
+                  }
+                  className="text-[10px] font-black text-slate-500 hover:text-white disabled:opacity-0 transition-colors tracking-widest"
+                >
+                  {activeTaskIndex === room.tasks.length - 1 &&
+                  room.quizzes?.length > 0
+                    ? "GO TO EVALUATION →"
+                    : "NEXT →"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1242,33 +1325,55 @@ const RoomDetail = () => {
       {showCompletionModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-4">
           <div className="max-w-md w-full text-center space-y-8 rdp-fade-in">
-             <div className="relative inline-block">
-                <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
-                   <Award size={48} className="text-primary"/>
-                </div>
-                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full -z-10 animate-pulse"/>
-             </div>
-             
-             <div className="space-y-2">
-                <h1 className="text-4xl font-black text-white italic tracking-tighter">MISSION COMPLETE</h1>
-                <p className="text-slate-400">System breach detected... Data harvested successfully.</p>
-             </div>
+            <div className="relative inline-block">
+              <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center animate-bounce">
+                <Award size={48} className="text-primary" />
+              </div>
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full -z-10" />
+            </div>
 
-             <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                   <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">XP EARNED</span>
-                   <span className="text-2xl font-black text-primary">+{userProgress.totalXP}</span>
-                </div>
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                   <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">SCORE</span>
-                   <span className="text-2xl font-black text-white">{quizResults?.percentage || 100}%</span>
-                </div>
-             </div>
+            <div className="space-y-2">
+              <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">
+                Mission Accomplished
+              </h1>
+              <p className="text-slate-400">
+                Security breach successful. Data extracted.
+              </p>
+            </div>
 
-             <div className="flex gap-4">
-                <button onClick={() => navigate("/rooms")} className="flex-1 rdp-back-btn justify-center py-4 bg-transparent border-slate-700">Back to Rooms</button>
-                <button onClick={() => navigate("/dashboard")} className="flex-1 rdp-main-btn py-4">Dashboard</button>
-             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                <span className="block text-[10px] font-black text-slate-500 uppercase mb-1">
+                  XP COLLECTED
+                </span>
+                <span className="text-2xl font-black text-primary">
+                  +{userProgress.totalXP}
+                </span>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                <span className="block text-[10px] font-black text-slate-500 uppercase mb-1">
+                  SCORE
+                </span>
+                <span className="text-2xl font-black text-white">
+                  {quizResults?.percentage || 100}%
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => navigate("/rooms")}
+                className="flex-1 py-4 rounded-xl bg-slate-900 border border-slate-800 text-white font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-colors"
+              >
+                Marketplace
+              </button>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="flex-1 py-4 rounded-xl bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform"
+              >
+                Terminal
+              </button>
+            </div>
           </div>
         </div>
       )}

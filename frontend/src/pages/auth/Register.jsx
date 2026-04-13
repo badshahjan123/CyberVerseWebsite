@@ -1,4 +1,5 @@
 import { useState, memo, useCallback } from "react";
+import "./Auth.css";
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { useApp } from "../../contexts/app-context";

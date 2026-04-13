@@ -20,6 +20,7 @@ import { getRoomProgress, resetRoomProgress } from "../../services/roomProgress"
 import { useApp } from "../../contexts/app-context";
 import { useActivity } from "../../contexts/activity-context";
 import { useToast } from "../../contexts/toast-context";
+import "./RoomModule.css";
 
 const RoomCompleted = () => {
   const { slug: roomId } = useParams();

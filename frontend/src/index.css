@@ -1,0 +1,290 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GLOBAL THEME OVERRIDE - Forces theme on ALL elements */
+html:not(.dark),
+html:not(.dark) body,
+html:not(.dark) #root,
+html:not(.dark) *[class*="root"],
+html:not(.dark) *[class*="bg-"],
+html:not(.dark) .min-h-screen,
+html:not(.dark) main,
+html:not(.dark) .cv-home,
+html:not(.dark) .db-root,
+html:not(.dark) .lp2-root,
+html:not(.dark) .rp-root,
+html:not(.dark) .rdp-root,
+html:not(.dark) .lb-root,
+html:not(.dark) .pp-root,
+html:not(.dark) .cp-root,
+html:not(.dark) .up-root,
+html:not(.dark) .ms-root,
+html:not(.dark) .si-root,
+html:not(.dark) .ch-root,
+html:not(.dark) .bg-root,
+html:not(.dark) .rcp-root,
+html:not(.dark) .auth-page,
+html:not(.dark) .auth2-bg {
+  background: linear-gradient(180deg, #F8FAFC 0%, #E0E7FF 100%) !important;
+  color: #0F172A !important;
+}
+
+html.dark,
+html.dark body,
+html.dark #root,
+html.dark *[class*="root"],
+html.dark .min-h-screen,
+html.dark main,
+html.dark .cv-home,
+html.dark .db-root,
+html.dark .lp2-root,
+html.dark .rp-root,
+html.dark .rdp-root,
+html.dark .lb-root,
+html.dark .pp-root,
+html.dark .cp-root,
+html.dark .up-root,
+html.dark .ms-root,
+html.dark .si-root,
+html.dark .ch-root,
+html.dark .bg-root,
+html.dark .rcp-root,
+html.dark .auth-page,
+html.dark .auth2-bg {
+  background: linear-gradient(180deg, #0B0F1A 0%, #04060C 100%) !important;
+  color: #F8FAFC !important;
+}
+
+/* Override cards and surfaces */
+html:not(.dark) .card,
+html:not(.dark) .card-elevated,
+html:not(.dark) .card-glass,
+html:not(.dark) *[class*="card"] {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #E2E8F0 !important;
+}
+
+html.dark .card,
+html.dark .card-elevated,
+html.dark .card-glass,
+html.dark *[class*="card"]:not([class*="badge"]) {
+  background: rgba(15, 20, 28, 0.7) !important;
+  color: #F8FAFC !important;
+  border-color: #1E293B !important;
+}
+
+@layer base {
+  :root {
+    /* Light Mode - Clean Tech Variables */
+    --bg-primary: 255 255 255;
+    --bg-secondary: 248 250 252;
+    --bg-tertiary: 241 245 249;
+    
+    --surface-card: 255 255 255;
+    --surface-elevated: 248 250 252;
+    --surface-hover: 241 245 249;
+    
+    --text-primary: 15 23 42;
+    --text-secondary: 71 85 105;
+    --text-tertiary: 148 163 184;
+    
+    --border-primary: 226 232 240;
+    --border-secondary: 203 213 225;
+    
+    --accent-primary: 59 130 246;
+    --accent-secondary: 6 182 212;
+    --accent-hover: 37 99 235;
+    
+    --shadow-color: 0 0 0;
+    --shadow-opacity: 0.1;
+  }
+
+  .dark {
+    /* Dark Mode - Classy Cyber Variables */
+    --bg-primary: 10 14 26;
+    --bg-secondary: 15 20 25;
+    --bg-tertiary: 26 31 46;
+    
+    --surface-card: 15 20 25;
+    --surface-elevated: 26 31 46;
+    --surface-hover: 30 36 51;
+    
+    --text-primary: 248 250 252;
+    --text-secondary: 203 213 225;
+    --text-tertiary: 100 116 139;
+    
+    --border-primary: 30 41 59;
+    --border-secondary: 51 65 85;
+    
+    --accent-primary: 6 182 212;
+    --accent-secondary: 139 92 246;
+    --accent-neon: 0 240 255;
+    --accent-purple: 168 85 247;
+    
+    --shadow-color: 6 182 212;
+    --shadow-opacity: 0.2;
+  }
+
+  * {
+    @apply border-border-primary;
+  }
+
+  body {
+    @apply bg-white dark:bg-dark-bg-primary 
+           text-light-text-primary dark:text-dark-text-primary
+           transition-colors duration-300;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    overflow-x: hidden;
+  }
+
+  html {
+    @apply scroll-smooth;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  /* Card Components */
+  .card {
+    @apply bg-white dark:bg-dark-surface-card
+           border border-light-border-primary dark:border-dark-border-primary
+           rounded-xl shadow-light-md dark:shadow-dark-md
+           transition-all duration-300;
+  }
+
+  .card-elevated {
+    @apply bg-light-surface-elevated dark:bg-dark-surface-elevated
+           border border-light-border-primary dark:border-dark-border-primary
+           rounded-xl shadow-light-lg dark:shadow-dark-lg
+           transition-all duration-300;
+  }
+
+  .card-glass {
+    @apply bg-white/80 dark:bg-dark-surface-card/50
+           backdrop-blur-xl border border-light-border-primary/50 dark:border-dark-border-primary/50
+           rounded-xl shadow-light-lg dark:shadow-dark-lg
+           transition-all duration-300;
+  }
+
+  /* Button Components */
+  .btn-primary {
+    @apply bg-light-accent-primary dark:bg-dark-accent-primary
+           hover:bg-light-accent-hover dark:hover:bg-dark-accent-neon
+           text-white font-semibold px-6 py-3 rounded-lg
+           shadow-light-md dark:shadow-dark-md
+           hover:shadow-light-lg dark:hover:shadow-neon
+           transition-all duration-300
+           active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply bg-light-surface-elevated dark:bg-dark-surface-elevated
+           hover:bg-light-surface-hover dark:hover:bg-dark-surface-hover
+           text-light-text-primary dark:text-dark-text-primary
+           border border-light-border-secondary dark:border-dark-border-secondary
+           font-semibold px-6 py-3 rounded-lg
+           transition-all duration-300
+           active:scale-95;
+  }
+
+  .btn-glass {
+    @apply bg-white/10 dark:bg-slate-900/30
+           backdrop-blur-xl border border-light-border-primary/20 dark:border-cyan-500/20
+           text-light-text-primary dark:text-dark-text-primary
+           font-semibold px-6 py-3 rounded-lg
+           shadow-light-md dark:shadow-dark-md
+           hover:shadow-light-lg dark:hover:shadow-neon
+           transition-all duration-300
+           active:scale-95;
+  }
+
+  /* Input Components */
+  .input {
+    @apply bg-light-surface-elevated dark:bg-dark-surface-elevated
+           border border-light-border-primary dark:border-dark-border-primary
+           text-light-text-primary dark:text-dark-text-primary
+           placeholder:text-light-text-tertiary dark:placeholder:text-dark-text-tertiary
+           px-4 py-3 rounded-lg
+           focus:outline-none focus:ring-2 
+           focus:ring-light-accent-primary dark:focus:ring-dark-accent-primary
+           focus:border-transparent
+           transition-all duration-300;
+  }
+
+  /* Text Styles */
+  .text-primary {
+    @apply text-light-text-primary dark:text-dark-text-primary;
+  }
+
+  .text-secondary {
+    @apply text-light-text-secondary dark:text-dark-text-secondary;
+  }
+
+  .text-tertiary {
+    @apply text-light-text-tertiary dark:text-dark-text-tertiary;
+  }
+
+  /* Gradient Text */
+  .text-gradient {
+    @apply bg-gradient-to-r from-light-accent-primary to-light-accent-secondary
+           dark:from-dark-accent-primary dark:to-dark-accent-secondary
+           bg-clip-text text-transparent;
+  }
+
+  .text-gradient-neon {
+    @apply bg-gradient-to-r from-dark-accent-neon to-dark-accent-purple
+           bg-clip-text text-transparent;
+  }
+
+  /* Background Gradients */
+  .bg-gradient-main {
+    @apply bg-gradient-to-br from-white via-slate-50 to-blue-50
+           dark:from-dark-bg-primary dark:via-slate-950 dark:to-cyan-950;
+  }
+
+  /* Cyber Effects */
+  .cyber-glow {
+    @apply dark:shadow-neon dark:animate-glow;
+  }
+
+  .cyber-border {
+    @apply border border-transparent dark:border-dark-accent-primary/30
+           dark:hover:border-dark-accent-neon/50
+           transition-colors duration-300;
+  }
+
+  /* Scrollbar Styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--accent-primary)) rgb(var(--bg-secondary));
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-light-bg-secondary dark:bg-dark-bg-secondary rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-light-accent-primary dark:bg-dark-accent-primary rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-light-accent-hover dark:bg-dark-accent-neon;
+  }
+}
+
+@layer utilities {
+  .glass-effect {
+    @apply backdrop-blur-xl bg-white/10 dark:bg-slate-900/30;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}

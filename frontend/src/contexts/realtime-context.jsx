@@ -168,7 +168,7 @@ export const RealtimeProvider = ({ children }) => {
     console.log('🔌 Connecting to Socket.io server at:', SOCKET_URL)
 
     const socket = io(SOCKET_URL, {
-      auth: { token },
+      auth: { token: token || 'guest' }, // Allow guest connection for platform-wide events
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -328,26 +328,23 @@ export const RealtimeProvider = ({ children }) => {
     }
   }, [])
 
-  // Initialize when authenticated
+  // Initialize context basic state and socket
   useEffect(() => {
     if (isAdminRoute) return
     
-    if (!isAuthenticated) {
-      if (isInitializedRef.current) {
-        disconnectSocket()
-        delete window.triggerRealtimeUpdate
-        isInitializedRef.current = false
-      }
-      return
-    }
-
+    // Always start trackers (for guests and members)
     isInitializedRef.current = true
     window.triggerRealtimeUpdate = triggerUpdate
     window.applyRealtimeUpdate = applyUpdate
 
-    refreshUserStats()
+    // Basic data fetches (No Auth Required)
     fetchLeaderboardData()
-    connectSocket()
+
+    // Auth-only initializations
+    if (isAuthenticated) {
+      refreshUserStats()
+      connectSocket()
+    }
 
     // 🔄 Auto Refresh Rule: Every 30 seconds for non-websocket fallbacks
     const interval = setInterval(() => {

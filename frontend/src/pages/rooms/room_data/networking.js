@@ -5,7 +5,7 @@ export const NETWORKING_ROOM_DATA = {
   difficulty: "Beginner",
   duration: "60 min",
   description: "Master the OSI model, TCP/IP, DNS, and routing fundamentals to build a solid foundation in networking.",
-  totalXP: 1500,
+  totalXP: 100,
   enrollments: 3247,
   rating: 4.8,
   creator: "CyberVerse Team",
@@ -17,7 +17,7 @@ export const NETWORKING_ROOM_DATA = {
       subtitle: "The 7 Layers of Communication",
       icon: "layers",
       difficulty: "Beginner",
-      xp: 150,
+      xp: 20,
       image: "/images/rooms/osi-model.png",
       scenario: {
         title: "The Digital Tower",
@@ -51,7 +51,7 @@ export const NETWORKING_ROOM_DATA = {
       subtitle: "Your Digital Fingerprint",
       icon: "hash",
       difficulty: "Beginner",
-      xp: 250,
+      xp: 20,
       image: "/images/rooms/ip-routing.png",
       scenario: {
         title: "The Global Post Office",
@@ -86,7 +86,7 @@ Default Gateway: 192.168.0.1` }
       subtitle: "Reliability vs Speed",
       icon: "activity",
       difficulty: "Beginner",
-      xp: 300,
+      xp: 20,
       image: "/images/rooms/osi-model.png",
       scenario: {
         title: "The Handshake",
@@ -119,7 +119,7 @@ Default Gateway: 192.168.0.1` }
       subtitle: "The Address Book and Assistant",
       icon: "globe",
       difficulty: "Beginner",
-      xp: 350,
+      xp: 20,
       image: "/images/rooms/ip-routing.png",
       scenario: {
         title: "The Phonebook",
@@ -151,7 +151,7 @@ Address: 104.21.78.221` }
       subtitle: "Moving Data Packets",
       icon: "router",
       difficulty: "Intermediate",
-      xp: 450,
+      xp: 20,
       image: "/images/rooms/osi-model.png",
       scenario: {
         title: "The Traffic Controller",

@@ -3,7 +3,33 @@ const User = require('../../models/User');
 const Room = require('../../models/Room');
 const Lab = require('../../models/Lab');
 const { cookieAuth, adminAuth } = require('../../middleware/cookieAuth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const router = express.Router();
+
+// ── Image upload for rooms ──
+const roomImgDir = path.join(__dirname, '../../uploads/rooms');
+if (!fs.existsSync(roomImgDir)) fs.mkdirSync(roomImgDir, { recursive: true });
+
+const roomImgStorage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, roomImgDir),
+  filename: (_, file, cb) => cb(null, `room-${Date.now()}${path.extname(file.originalname)}`),
+});
+const uploadRoomImg = multer({
+  storage: roomImgStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files allowed'));
+  },
+});
+
+// POST /api/admin/rooms/upload-image
+router.post('/rooms/upload-image', cookieAuth, uploadRoomImg.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+  res.json({ url: `/uploads/rooms/${req.file.filename}` });
+});
 
 // =============================================================================
 // DASHBOARD & ANALYTICS

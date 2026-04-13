@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyber-lab-forensics
+  labels:
+    app: cyber-lab
+    lab-id: linux-forensics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cyber-lab
+      lab-id: linux-forensics
+  template:
+    metadata:
+      labels:
+        app: cyber-lab
+        lab-id: linux-forensics
+    spec:
+      containers:
+        - name: lab-container
+          image: badshahjan/lab1:latest # ✅ MUST
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Setup Lab Environment (Force recreation)
+              mkdir -p /home/labuser/evidence
+              echo "The password is hidden in the binary" > /home/labuser/evidence/.secret_note
+              echo "U0VDUkVUX0tFWV8xMjM0NQ==" | base64 -d > /home/labuser/evidence/mystery.bin
+              echo 'echo "FLAG" > /tmp/flag_storage' >> /home/labuser/.bash_history
+              echo "FLAG{FORENSIC_DISCOVERY_COMPLETE}" > /home/labuser/.backup_flag.txt
+              chown -R 1000:1000 /home/labuser
+              
+              # Start Terminal (Explicit interface binding)
+              ttyd -W -p 80 -i 0.0.0.0 bash
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cyber-lab-forensics-service
+  labels:
+    lab-id: linux-forensics
+spec:
+  selector:
+    app: cyber-lab
+    lab-id: linux-forensics
+  ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 80
+      nodePort: 32083
+  type: NodePort

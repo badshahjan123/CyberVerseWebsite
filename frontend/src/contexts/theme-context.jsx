@@ -4,27 +4,40 @@ const ThemeContext = createContext()
 
 export const ThemeProvider = ({ children }) => {
     const [isDarkMode, setIsDarkMode] = useState(() => {
-        // Check localStorage first
-        const saved = localStorage.getItem('theme')
+        const saved = localStorage.getItem('cyberverse-theme')
         if (saved) {
             return saved === 'dark'
         }
-        // Default to system preference
-        return window.matchMedia('(prefers-color-scheme: dark)').matches
+        return true
     })
 
     useEffect(() => {
-        // Apply theme to HTML element
+        const root = document.documentElement
+        const body = document.body
+        
+        // Remove both classes first
+        root.classList.remove('dark', 'light')
+        
         if (isDarkMode) {
-            document.documentElement.classList.add('dark')
-            localStorage.setItem('theme', 'dark')
+            // Dark mode
+            root.classList.add('dark')
+            root.setAttribute('data-theme', 'dark')
+            body.setAttribute('data-theme', 'dark')
+            localStorage.setItem('cyberverse-theme', 'dark')
         } else {
-            document.documentElement.classList.remove('dark')
-            localStorage.setItem('theme', 'light')
+            // Light mode
+            root.classList.add('light')
+            root.setAttribute('data-theme', 'light')
+            body.setAttribute('data-theme', 'light')
+            localStorage.setItem('cyberverse-theme', 'light')
         }
+        
+        // Force repaint
+        void document.body.offsetHeight
     }, [isDarkMode])
 
     const toggleTheme = () => {
+        console.log('Toggling theme from:', isDarkMode ? 'dark' : 'light', 'to:', isDarkMode ? 'light' : 'dark')
         setIsDarkMode(prev => !prev)
     }
 
