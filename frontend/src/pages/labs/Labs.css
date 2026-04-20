@@ -1,0 +1,1021 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Labs Page — Premium Interactive Enhancements
+   Theme: EXACT match with Dashboard + Home
+   BG: linear-gradient #081224 → #0b1f3a (Dashboard)
+   Cyan: #00D1FF   Orange: #FF6B00   Green: #88E636
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════ PAGE BACKGROUND — identical to Dashboard ═══════ */
+
+.labs-page {
+  background: linear-gradient(to right, #081224 0%, #0b1f3a 45%, #0b1f3a 72%, rgba(255,106,0,0.08) 100%) !important;
+}
+
+.labs-page__grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.labs-page__overlay {
+  background: rgba(0,0,0,0.18);
+}
+
+/* ═══════ COLOR UTILITY CLASSES ═══════ */
+
+.labs-text-cyan   { color: #00D1FF !important; }
+.labs-text-orange { color: #FF6B00 !important; }
+.labs-text-green  { color: #88E636 !important; }
+.labs-text-amber  { color: #FFB800 !important; }
+
+.labs-icon-cyan   { color: #00D1FF !important; }
+.labs-icon-orange { color: #FF6B00 !important; }
+
+/* ═══════ HERO ═══════ */
+
+.labs-hero {
+  background: linear-gradient(135deg, rgba(8,18,36,0.9) 0%, rgba(11,31,58,0.6) 50%, rgba(8,18,36,0.9) 100%);
+}
+
+.labs-hero__icon-box {
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(0, 209, 255, 0.08);
+  border: 1px solid rgba(0, 209, 255, 0.2);
+}
+
+.labs-stat-counter {
+  transition: transform 0.3s ease;
+}
+.labs-stat-counter:hover {
+  transform: translateY(-2px);
+}
+
+/* ═══════ FILTER TABS ═══════ */
+
+.labs-toolbar {
+  background: rgba(8, 18, 36, 0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.labs-tab {
+  position: relative;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #94A3B8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.labs-tab:hover {
+  color: #CBD5E1;
+  text-shadow: 0 0 12px rgba(0, 209, 255, 0.2);
+}
+
+.labs-tab--active {
+  color: #00D1FF !important;
+  text-shadow: 0 0 16px rgba(0, 209, 255, 0.4);
+}
+
+.labs-tab__indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #00D1FF;
+  box-shadow: 0 0 10px rgba(0, 209, 255, 0.15), 0 0 20px rgba(0, 209, 255, 0.1);
+  animation: labs-indicator-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes labs-indicator-in {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+/* ═══════ SEARCH INPUT ═══════ */
+
+.labs-search-input {
+  padding: 8px 32px 8px 36px;
+  border-radius: 10px;
+  font-size: 14px;
+  width: 192px;
+  background: rgba(13, 22, 35, 0.95) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  color: #fff !important;
+  outline: none;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.labs-search-input:focus {
+  width: 256px;
+  border-color: rgba(0, 209, 255, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(0, 209, 255, 0.08), 0 0 16px rgba(0, 209, 255, 0.08) !important;
+}
+
+.labs-search-input::placeholder {
+  color: #64748B;
+}
+
+/* ═══════ CHIP BAR ═══════ */
+
+.labs-chipbar {
+  background: rgba(8, 18, 36, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.labs-chipbar__divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: rgba(255,255,255,0.08);
+}
+
+/* ═══════ FILTER CHIPS — class-based colors (avoids global a[style] override) ═══════ */
+
+.labs-chip {
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  color: #64748B !important;
+  text-shadow: none !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.labs-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94A3B8 !important;
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Green variant (subscription, tags) */
+.labs-chip--green.labs-chip--active {
+  background: rgba(136, 230, 54, 0.12) !important;
+  color: #88E636 !important;
+  border-color: rgba(136, 230, 54, 0.25) !important;
+  box-shadow: 0 0 12px rgba(136, 230, 54, 0.15);
+}
+
+/* Easy */
+.labs-chip--easy.labs-chip--active {
+  background: rgba(57, 255, 20, 0.1) !important;
+  color: #39FF14 !important;
+  border-color: rgba(57, 255, 20, 0.3) !important;
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.12);
+}
+
+/* Medium */
+.labs-chip--medium.labs-chip--active {
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #F59E0B !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.12);
+}
+
+/* Hard */
+.labs-chip--hard.labs-chip--active {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #EF4444 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.12);
+}
+
+/* Insane */
+.labs-chip--insane.labs-chip--active {
+  background: rgba(185, 28, 28, 0.12) !important;
+  color: #B91C1C !important;
+  border-color: rgba(185, 28, 28, 0.35) !important;
+  box-shadow: 0 0 12px rgba(185, 28, 28, 0.15);
+}
+
+.labs-chip--active:hover {
+  transform: translateY(-1px);
+}
+
+/* ─── Clear All Button ─── */
+
+.labs-clear-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.08);
+  color: #EF4444 !important;
+  text-shadow: none !important;
+  transition: all 0.25s ease;
+}
+
+.labs-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.15);
+}
+
+.labs-clear-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* ─── Mobile Filter Btn ─── */
+
+.labs-filter-mobile-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(13, 22, 35, 0.95);
+  color: #94A3B8 !important;
+  text-shadow: none !important;
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.labs-filter-mobile-btn:hover {
+  border-color: rgba(0, 209, 255, 0.35);
+}
+
+.labs-filter-count {
+  margin-left: 4px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #00D1FF;
+  color: #081224 !important;
+}
+
+/* ═══════ SORT & VIEW ═══════ */
+
+.labs-sort-select {
+  appearance: none;
+  padding: 6px 28px 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: rgba(13, 22, 35, 0.95) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  color: #CBD5E1 !important;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.labs-sort-select:focus {
+  border-color: rgba(0, 209, 255, 0.35) !important;
+}
+
+.labs-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.labs-view-btn {
+  padding: 6px;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748B !important;
+  text-shadow: none !important;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.labs-view-btn:hover {
+  color: #94A3B8 !important;
+}
+
+.labs-view-btn--active {
+  background: rgba(0, 209, 255, 0.08);
+  color: #00D1FF !important;
+  box-shadow: 0 0 8px rgba(0, 209, 255, 0.1);
+}
+
+/* ═══════ LAB CARDS — PREMIUM REDESIGN ═══════ */
+
+.labs-card {
+  background: rgba(8, 14, 26, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, box-shadow;
+  position: relative;
+}
+
+.labs-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(0, 209, 255, 0.25);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(0, 209, 255, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.labs-card--completed:hover {
+  border-color: rgba(255, 107, 0, 0.3);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(255, 107, 0, 0.08);
+}
+
+.labs-card--locked { opacity: 0.72; }
+
+/* ── Top accent glow line (colour-coded by difficulty) ── */
+.labs-card__accent-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 10;
+  transition: opacity 0.3s ease;
+}
+
+/* ── Hero image block ── */
+.labs-card__hero {
+  height: 160px;
+  background: #060d1a;
+}
+
+.labs-card__hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+}
+
+.labs-card:hover .labs-card__hero-img {
+  transform: scale(1.08);
+  opacity: 0.8;
+}
+
+/* Cinematic gradient — dark at bottom, transparent at top */
+.labs-card__hero-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 14, 26, 0.1)  0%,
+    rgba(8, 14, 26, 0.3)  40%,
+    rgba(8, 14, 26, 0.85) 80%,
+    rgba(8, 14, 26, 0.98) 100%
+  );
+}
+
+/* Title + difficulty overlaid on the image gradient */
+.labs-card__hero-title-block {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.labs-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  letter-spacing: -0.01em;
+  transition: color 0.3s ease;
+}
+
+.labs-card:hover .labs-card__title {
+  color: #e2f7ff !important;
+}
+
+/* Lock overlay */
+.labs-card__lock-overlay {
+  background: rgba(6, 10, 20, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.labs-card__lock-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 107, 0, 0.1);
+  border: 1px solid rgba(255, 107, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Hover CTA overlay (slides up from bottom of image) ── */
+.labs-card__hover-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 14px 14px;
+  display: flex;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity   0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 5;
+}
+
+.labs-card:hover .labs-card__hover-overlay {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.labs-hover-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.labs-hover-cta--start {
+  background: linear-gradient(135deg, #FF6B00, #cc4400) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+  box-shadow: 0 4px 20px rgba(255, 107, 0, 0.35);
+}
+
+.labs-hover-cta--start:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 6px 28px rgba(255, 107, 0, 0.45);
+}
+
+.labs-hover-cta--completed {
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.2), rgba(204, 68, 0, 0.25)) !important;
+  color: #FF6B00 !important;
+  text-shadow: none !important;
+  border: 1px solid rgba(255, 107, 0, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 107, 0, 0.1);
+}
+
+.labs-hover-cta--completed:hover {
+  background: linear-gradient(135deg, #FF6B00, #cc4400) !important;
+  color: #fff !important;
+  border-color: transparent;
+  box-shadow: 0 4px 20px rgba(255, 107, 0, 0.35);
+}
+
+/* ── Card body ── */
+.labs-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  flex: 1;
+}
+
+.labs-card__desc {
+  font-size: 11px;
+  color: #64748B;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Stat pills row ── */
+.labs-card__stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.labs-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #64748B;
+  transition: all 0.25s ease;
+}
+
+.labs-card:hover .labs-stat-pill {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #94A3B8;
+}
+
+.labs-stat-pill--xp {
+  background: rgba(255, 184, 0, 0.08) !important;
+  border-color: rgba(255, 184, 0, 0.18) !important;
+  color: #FFB800 !important;
+}
+
+.labs-card:hover .labs-stat-pill--xp {
+  box-shadow: 0 0 10px rgba(255, 184, 0, 0.12);
+}
+
+/* ── Progress ── */
+.labs-card__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.labs-card__progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  color: #4B5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Footer CTA row (visible; hover overlay takes over on hover) ── */
+.labs-card__footer {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+/* ─── Lab Rows ─── */
+
+.labs-row {
+  background: rgba(11, 18, 32, 0.70);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.labs-row:hover {
+  border-color: rgba(0, 209, 255, 0.35) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 16px rgba(0, 209, 255, 0.06);
+  transform: translateX(4px);
+}
+
+.labs-row--completed {
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* ═══════ BADGES ═══════ */
+
+.labs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
+
+.labs-badge--premium {
+  background: rgba(255, 107, 0, 0.18);
+  color: #FF6B00;
+  border: 1px solid rgba(255, 107, 0, 0.35);
+}
+
+.labs-badge--free {
+  background: rgba(136, 230, 54, 0.14);
+  color: #88E636;
+  border: 1px solid rgba(136, 230, 54, 0.3);
+}
+
+.labs-badge--type-ctf {
+  background: rgba(255, 184, 0, 0.15);
+  color: #FFB800;
+  border: 1px solid rgba(255, 184, 0, 0.3);
+}
+
+.labs-badge--type-lab {
+  background: rgba(0, 209, 255, 0.12);
+  color: #00D1FF;
+  border: 1px solid rgba(0, 209, 255, 0.25);
+}
+
+.labs-badge--completed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.labs-badge--inprogress {
+  background: rgba(0, 209, 255, 0.12);
+  color: #00D1FF;
+  border: 1px solid rgba(0, 209, 255, 0.3);
+  animation: labs-badge-pulse 2.5s ease-in-out infinite;
+}
+
+.labs-badge--sm {
+  font-size: 8px;
+  padding: 1px 5px;
+}
+
+@keyframes labs-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 209, 255, 0); }
+  50%      { box-shadow: 0 0 8px rgba(0, 209, 255, 0.2); }
+}
+
+/* ─── Type Badges ─── */
+
+.labs-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.labs-type-badge--ctf {
+  background: rgba(255, 107, 0, 0.08);
+  color: #FF6B00;
+}
+
+.labs-type-badge--lab {
+  background: rgba(0, 209, 255, 0.08);
+  color: #00D1FF;
+}
+
+.labs-card:hover .labs-type-badge--ctf {
+  box-shadow: 0 0 8px rgba(255, 107, 0, 0.15);
+}
+
+.labs-card:hover .labs-type-badge--lab {
+  box-shadow: 0 0 8px rgba(0, 209, 255, 0.15);
+}
+
+/* ─── XP Badge ─── */
+
+.labs-xp-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #FFB800;
+  opacity: 0.9;
+  transition: all 0.25s ease;
+}
+
+.labs-card:hover .labs-xp-badge,
+.labs-row:hover .labs-xp-badge {
+  opacity: 1;
+  text-shadow: 0 0 8px rgba(255, 184, 0, 0.3);
+}
+
+/* ═══════ PROGRESS BAR ═══════ */
+
+.labs-progress-track {
+  background: rgba(255,255,255,0.05);
+}
+
+.labs-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #00D1FF, #0099CC);
+  box-shadow: 0 0 8px rgba(0, 209, 255, 0.4);
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: labs-progress-glow 2s ease-in-out infinite;
+}
+
+@keyframes labs-progress-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 209, 255, 0.4); }
+  50%      { box-shadow: 0 0 16px rgba(0, 209, 255, 0.6); }
+}
+
+/* ═══════ DIFFICULTY LABEL ═══════ */
+
+.labs-diff-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+/* ═══════ CTA BUTTONS ═══════ */
+
+.labs-cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: none;
+}
+
+.labs-cta-btn--sm {
+  padding: 6px 12px;
+}
+
+/* Start / Resume — orange gradient matching Dashboard + Home */
+.labs-cta-btn--start {
+  background: linear-gradient(135deg, #FF6B00, #cc4400) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 0 14px rgba(255, 107, 0, 0.25);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Row variant — always visible */
+.labs-cta-btn--row.labs-cta-btn--start {
+  opacity: 1 !important;
+  transform: translateY(0);
+}
+
+.labs-card:hover .labs-cta-btn--start,
+.labs-row:hover .labs-cta-btn--start {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.labs-cta-btn--start:hover {
+  transform: translateY(-2px) !important;
+  filter: brightness(1.1);
+  box-shadow: 0 0 24px rgba(255, 107, 0, 0.35) !important;
+}
+
+.labs-cta-btn--start:active {
+  transform: translateY(0) scale(0.97) !important;
+}
+
+/* Completed */
+.labs-cta-btn--completed {
+  background: rgba(255, 107, 0, 0.08) !important;
+  color: #FF6B00 !important;
+  text-shadow: none !important;
+  border: 1px solid rgba(255, 107, 0, 0.25);
+}
+
+.labs-cta-btn--completed:hover {
+  background: rgba(255, 107, 0, 0.15) !important;
+  box-shadow: 0 0 12px rgba(255, 107, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Locked */
+.labs-cta-btn--locked {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #94A3B8 !important;
+  text-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: default;
+}
+
+/* Upgrade Button */
+.labs-upgrade-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  background: #FF6B00 !important;
+  color: #000 !important;
+  text-shadow: none !important;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.labs-upgrade-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(255, 107, 0, 0.25);
+}
+
+/* Arrow Button */
+.labs-arrow-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.labs-arrow-btn:hover {
+  background: rgba(0, 209, 255, 0.08) !important;
+  border-color: rgba(0, 209, 255, 0.2);
+}
+
+.labs-arrow-icon {
+  color: #94A3B8 !important;
+  transition: color 0.3s ease;
+}
+
+.labs-card:hover .labs-arrow-icon {
+  color: #00D1FF !important;
+}
+
+/* ═══════ LOADING SKELETONS ═══════ */
+
+.labs-skeleton {
+  background: rgba(13, 22, 35, 0.95);
+  border: 1px solid rgba(255,255,255,0.08);
+  animation: labs-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.labs-skeleton__img {
+  background: rgba(11, 18, 32, 0.95);
+}
+
+.labs-skeleton__line {
+  background: rgba(255,255,255,0.06);
+}
+
+.labs-skeleton__line--dim {
+  background: rgba(255,255,255,0.04);
+}
+
+.labs-skeleton__line--dimmer {
+  background: rgba(255,255,255,0.03);
+}
+
+@keyframes labs-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+/* ═══════ EMPTY STATE ═══════ */
+
+.labs-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.labs-empty-state__icon {
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  background: rgba(0, 209, 255, 0.06);
+  border: 1px solid rgba(0, 209, 255, 0.15);
+  animation: labs-empty-float 3s ease-in-out infinite;
+}
+
+.labs-empty-state__icon--error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.labs-empty-state__icon--error svg {
+  color: #EF4444 !important;
+}
+
+@keyframes labs-empty-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* ═══════ PAGINATION ═══════ */
+
+.labs-pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(13, 22, 35, 0.95);
+  color: #CBD5E1 !important;
+  text-shadow: none !important;
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.labs-pagination-btn:hover:not(:disabled) {
+  border-color: rgba(0, 209, 255, 0.35);
+  background: rgba(0, 209, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.labs-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.labs-pagination-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(13, 22, 35, 0.95);
+  color: #94A3B8 !important;
+  text-shadow: none !important;
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.labs-pagination-num:hover:not(.labs-pagination-num--active) {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #CBD5E1 !important;
+  transform: translateY(-1px);
+}
+
+.labs-pagination-num--active {
+  background: #00D1FF !important;
+  color: #081224 !important;
+  border: none;
+  box-shadow: 0 0 14px rgba(0, 209, 255, 0.15);
+  font-weight: 700 !important;
+}
+
+/* ═══════ MOBILE DRAWER ═══════ */
+
+.labs-mobile-drawer {
+  background: #081224;
+}
+
+.labs-mobile-drawer__header {
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.labs-mobile-drawer__close {
+  background: rgba(255,255,255,0.04);
+  transition: background 0.2s ease;
+}
+
+.labs-mobile-drawer__close:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.labs-mobile-drawer__footer {
+  border-top: 1px solid rgba(255,255,255,0.08);
+}

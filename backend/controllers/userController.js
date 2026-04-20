@@ -41,9 +41,25 @@ exports.getStats = async (req, res) => {
     const weekly = await WeeklyStats.getCurrentWeekStats(user._id);
     const rank = await user.calculateRank();
 
+    // Cap weekly pointsEarned to user's actual total points
+    const weeklyPointsEarned = Math.min(weekly.pointsEarned || 0, user.points || 0);
+
+    // If DB has wrong value, fix it
+    if (weekly.pointsEarned > user.points) {
+      weekly.pointsEarned = weeklyPointsEarned;
+      await weekly.save();
+    }
+
     res.json({
       user: { ...user.toObject(), rank, pointsToNextLevel: user.getPointsToNextLevel() },
-      weeklyStats: { labsCompleted: weekly.labsCompleted || 0, pointsEarned: weekly.pointsEarned || 0 }
+      weeklyStats: {
+        labsCompleted:  weekly.labsCompleted  || 0,
+        roomsCompleted: weekly.roomsCompleted || 0,
+        pointsEarned:   weeklyPointsEarned,
+        startRank:      weekly.startRank      || 0,
+        currentRank:    weekly.currentRank    || 0,
+        timeSpent:      weekly.timeSpent      || 0
+      }
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

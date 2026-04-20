@@ -50,7 +50,31 @@ const roomSchema = new mongoose.Schema({
     title: String,
     order: Number,
     estimated_time_minutes: Number,
-    content_markdown: String
+    content_markdown: String,
+    icon: String,
+    difficulty: String,
+    image: String,
+    scenario: {
+      title: String,
+      text: String,
+      impact: String,
+    },
+    content: [new mongoose.Schema({
+      id: Number,
+      type: { type: String },
+      content: String,
+    }, { _id: false })],
+    taskQuestions: [new mongoose.Schema({
+      id: Number,
+      question_text: String,
+      hint: String,
+      correct_answer: String,
+      points: { type: Number, default: 10 },
+    }, { _id: false })],
+    animation: {
+      type: { type: String },
+      data: String,
+    },
   }],
   quizzes: [{
     id: Number,
@@ -60,9 +84,11 @@ const roomSchema = new mongoose.Schema({
     pass_percentage: Number,
     questions: [{
       id: Number,
+      taskIndex: Number,
       type: {
         type: String,
-        enum: ['single', 'multi', 'short']
+        enum: ['single', 'multi', 'short'],
+        default: 'single',
       },
       question_text: String,
       options: [String],
@@ -77,7 +103,8 @@ const roomSchema = new mongoose.Schema({
     order: Number,
     type: {
       type: String,
-      enum: ['static', 'flag-based', 'docker-lab']
+      enum: ['static', 'flag-based', 'docker-lab'],
+      default: 'static',
     },
     description_markdown: String,
     hint: String,

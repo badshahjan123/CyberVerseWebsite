@@ -21,6 +21,13 @@ export const submitExercise = async (roomId, lectureIndex, answer, points = 100)
   })
 }
 
+export const submitTaskQuestion = async (roomId, topicId, questionId, answer) => {
+  return await apiCall(`/room-progress/${roomId}/task-question`, {
+    method: 'POST',
+    body: JSON.stringify({ topicId, questionId, answer })
+  })
+}
+
 export const submitQuiz = async (roomId, quizId, answers) => {
   return await apiCall(`/rooms/${roomId}/quizzes/${quizId}/submit`, {
     method: 'POST',

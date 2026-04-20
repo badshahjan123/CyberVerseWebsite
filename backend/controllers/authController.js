@@ -236,6 +236,119 @@ exports.getMe = async (req, res) => {
   }
 };
 
+// @desc    Forgot password — send OTP to email
+// @route   POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email }).select('+twoFactorSecret');
+    // Always return success to prevent email enumeration
+    if (!user) return res.json({ success: true, message: 'If this email exists, a code has been sent.' });
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    user.emailOTP = { code: otp, expiresAt, attempts: 0, maxAttempts: 3 };
+    await user.save();
+
+    const emailService = require('../services/email.service');
+    await emailService.sendForgotPasswordOTP(email, otp, user.name);
+
+    // Tell frontend what 2FA methods are available
+    res.json({
+      success: true,
+      message: 'Reset code sent to your email.',
+      has2FA: user.twoFactorEnabled,
+      hasTOTP: !!(user.twoFactorEnabled && user.twoFactorSecret),
+      email
+    });
+  } catch (error) {
+    logger.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Verify reset OTP (email based)
+// @route   POST /api/auth/verify-reset-otp
+exports.verifyResetOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const emailOTP = user.emailOTP;
+    if (!emailOTP?.code) return res.status(400).json({ message: 'No OTP requested. Please request a new code.' });
+    if (new Date() > new Date(emailOTP.expiresAt)) return res.status(400).json({ message: 'Code expired. Please request a new one.' });
+    if (emailOTP.attempts >= emailOTP.maxAttempts) return res.status(400).json({ message: 'Too many attempts. Please request a new code.' });
+
+    if (emailOTP.code !== otp.toString()) {
+      user.emailOTP.attempts += 1;
+      await user.save();
+      return res.status(400).json({ message: 'Invalid code. Please try again.' });
+    }
+
+    // OTP valid — generate a short-lived reset token
+    const resetToken = jwt.sign({ id: user._id, purpose: 'reset' }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    user.emailOTP = {}; // clear OTP
+    await user.save();
+
+    res.json({ success: true, resetToken });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Reset password with token
+// @route   POST /api/auth/reset-password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+    let decoded;
+    try {
+      decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+    } catch {
+      return res.status(400).json({ message: 'Reset link expired. Please start over.' });
+    }
+    if (decoded.purpose !== 'reset') return res.status(400).json({ message: 'Invalid reset token.' });
+
+    const user = await User.findById(decoded.id).select('+password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Verify TOTP for password reset
+// @route   POST /api/auth/verify-totp-reset
+exports.verifyTOTPReset = async (req, res) => {
+  try {
+    const { email, totpCode } = req.body;
+    const user = await User.findOne({ email }).select('+twoFactorSecret');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const isValid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: totpCode.toString(),
+      window: 4,
+      step: 30
+    });
+
+    if (!isValid) return res.status(401).json({ message: 'Invalid authenticator code.' });
+
+    const resetToken = jwt.sign({ id: user._id, purpose: 'reset' }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    res.json({ success: true, resetToken });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // @desc    Reset password using 2FA
 // @route   POST /api/auth/reset-password-2fa
 exports.resetPassword2FA = async (req, res) => {

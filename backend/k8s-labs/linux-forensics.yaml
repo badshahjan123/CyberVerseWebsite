@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: lab-container
-          image: badshahjan/lab1:latest # ✅ MUST
+          image: badshahjan/lab1:latest
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -30,7 +30,7 @@ spec:
               echo 'echo "FLAG" > /tmp/flag_storage' >> /home/labuser/.bash_history
               echo "FLAG{FORENSIC_DISCOVERY_COMPLETE}" > /home/labuser/.backup_flag.txt
               chown -R 1000:1000 /home/labuser
-              
+
               # Start Terminal (Explicit interface binding)
               ttyd -W -p 80 -i 0.0.0.0 bash
           imagePullPolicy: Always

@@ -25,6 +25,22 @@ router.post('/google', authController.googleAuth);
 // @route   GET /api/auth/me
 router.get('/me', auth, authController.getMe);
 
+// @route   POST /api/auth/forgot-password
+router.post('/forgot-password', [
+  body('email').isEmail().withMessage('Please enter a valid email')
+], authController.forgotPassword);
+
+// @route   POST /api/auth/verify-reset-otp
+router.post('/verify-reset-otp', authController.verifyResetOTP);
+
+// @route   POST /api/auth/reset-password
+router.post('/reset-password', [
+  body('newPassword').isLength({ min: 6 })
+], authController.resetPassword);
+
+// @route   POST /api/auth/verify-totp-reset
+router.post('/verify-totp-reset', authController.verifyTOTPReset);
+
 // @route   POST /api/auth/reset-password-2fa
 router.post('/reset-password-2fa', [
   body('email').isEmail().withMessage('Please enter a valid email'),

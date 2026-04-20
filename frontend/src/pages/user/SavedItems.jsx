@@ -1,123 +1,149 @@
+import { useMemo, memo } from 'react'
 import { Link } from 'react-router-dom'
-import { Archive, BookmarkX, Clock, Target, Beaker, ArrowUpRight, Play, Shield } from 'lucide-react'
+import { 
+  Archive, BookmarkX, Clock, Target, Beaker, 
+  ArrowUpRight, Play, Shield, Bookmark,
+  Zap, Search, Ghost, Trash2, LayoutGrid,
+  ChevronRight, ExternalLink
+} from 'lucide-react'
 import { useBookmarks } from '../../contexts/bookmark-context'
 import './SavedItems.css'
 
-const SavedItems = () => {
+const SavedItems = memo(() => {
     const { bookmarkedItems, removeBookmark, setBookmarkedItems } = useBookmarks()
     
-    const handleUnsave = (id, type) => {
+    const handleUnsave = (e, id, type) => {
+        e.preventDefault()
+        e.stopPropagation()
         removeBookmark(id, type)
     }
 
     const handleClearAll = () => {
-        if (confirm("Are you sure you want to purge all tactical archive data?")) {
+        if (window.confirm("Are you sure you want to purge all tactical archive data?")) {
             setBookmarkedItems([])
         }
     }
+
+    const sortedItems = useMemo(() => {
+        return [...bookmarkedItems].sort((a,b) => new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt))
+    }, [bookmarkedItems])
     
     return (
-        <div className="si-root">
-            <div className="si-grid-bg" />
-            <div className="rdp-bg-glow" /> {/* Reusing the glow from RoomDetail */}
+        <div className="si-page min-h-screen relative overflow-x-hidden text-white">
+            {/* Background layers */}
+            <div className="absolute inset-0 z-0 pointer-events-none si-page__grid" />
+            <div className="absolute inset-0 z-0 pointer-events-none si-page__overlay" />
             
-            <div className="container mx-auto px-6 max-w-7xl pt-20 pb-40 relative z-10">
-                <header className="cv-page-header rcp-fade-in flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-                    <div>
-                        <h1 className="cv-page-title">Saved Items</h1>
-                        <p className="cv-page-subtitle">
-                           Manage your architectural intelligence and stored directives
+            <div className="relative z-10 pt-20 pb-40 px-6 max-w-7xl mx-auto">
+                
+                {/* ═══ HEADER ═══ */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-16 si-fade-in">
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                           <div className="si-hero-icon">
+                             <Bookmark size={22} className="text-[#00D1FF]" />
+                           </div>
+                           <h1 className="text-4xl font-black uppercase tracking-tight">Tactical Archive</h1>
+                        </div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
+                           Manage your architectural intelligence and stored mission directives
                         </p>
                     </div>
                     {bookmarkedItems.length > 0 && (
-                        <button onClick={handleClearAll} className="si-purge-btn px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all flex-shrink-0">
-                            Purge Archives
+                        <button onClick={handleClearAll} className="si-btn-outline-danger">
+                            <Trash2 size={14} /> Purge Archives
                         </button>
                     )}
                 </header>
 
+                {/* ═══ CONTENT ═══ */}
                 {bookmarkedItems.length === 0 ? (
-                    <div className="si-empty-state rcp-fade-in max-w-4xl mx-auto backdrop-blur-md">
-                        <div className="w-24 h-24 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-cyan-500/20">
-                            <Archive size={40} className="text-cyan-400 opacity-50" />
+                    <div className="si-empty-state si-fade-in">
+                        <div className="si-empty-state__icon-box">
+                            <Archive size={40} />
                         </div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Archive Vault Empty</h3>
-                        <p className="cv-page-subtitle mb-12">No tactical data has been stored in your mainframe.</p>
+                        <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Archive Vault Empty</h3>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-xs mx-auto mb-10">
+                          No tactical intelligence has been stored in your primary mainframe.
+                        </p>
                         <div className="flex flex-wrap gap-4 justify-center">
-                            <Link to="/rooms" className="rcp-primary-btn !w-fit !px-8">
-                                Locate Rooms
+                            <Link to="/rooms" className="si-btn-primary">
+                                Locate Rooms <ChevronRight size={14} />
                             </Link>
-                            <Link to="/labs" className="px-8 py-3 bg-white/5 border border-white/10 text-white font-bold text-sm rounded-xl hover:bg-white/10 transition-all">
+                            <Link to="/labs" className="si-btn-secondary">
                                 Infiltrate Labs
                             </Link>
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {bookmarkedItems.map((item, index) => (
-                            <div
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {sortedItems.map((item, index) => (
+                            <Link 
+                                to={item.type === 'room' ? `/rooms/${item.slug || item.id}` : `/labs/${item.id}`}
                                 key={`${item.type}-${item.id}`}
-                                className="si-card rcp-fade-in"
-                                style={{ animationDelay: `${index * 0.1}s` }}
+                                className="si-card group si-fade-in"
+                                style={{ animationDelay: `${index * 0.05}s` }}
                             >
+                                {/* Unsave Floating Action */}
                                 <button
-                                    onClick={() => handleUnsave(item.id, item.type)}
-                                    className="si-unsave-btn"
-                                    title="Purge from Archive"
+                                    onClick={(e) => handleUnsave(e, item.id, item.type)}
+                                    className="si-card__unsave"
+                                    title="Purge Intelligence"
                                 >
                                     <BookmarkX size={16} />
                                 </button>
 
-                                <div className="flex items-center justify-between mb-5">
-                                    <div className={`si-type-tag ${item.type === 'room' ? 'si-type-tag--room' : 'si-type-tag--lab'}`}>
-                                        {item.type === 'room' ? <Target size={12} /> : <Beaker size={12} />}
-                                        <span style={{ marginLeft: '6px' }}>{item.type}</span>
+                                {/* Top Section: Hero Image / Placeholder */}
+                                <div className="si-card__hero">
+                                    <div className="si-card__hero-overlay" />
+                                    <div className="si-card__hero-content">
+                                        <div className={`si-card__type-badge si-card__type-badge--${item.type}`}>
+                                            {item.type === 'room' ? <Target size={12} /> : <Beaker size={12} />}
+                                            <span>{item.type}</span>
+                                        </div>
                                     </div>
+                                    {/* Difficulty overlay top right */}
                                     {item.difficulty && (
-                                        <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border bg-white/5 ${item.difficulty.toLowerCase().includes('easy') || item.difficulty.toLowerCase().includes('beginner') ? 'text-emerald-400 border-emerald-500/30' : item.difficulty.toLowerCase().includes('hard') || item.difficulty.toLowerCase().includes('advanced') ? 'text-red-400 border-red-500/30' : 'text-amber-400 border-amber-500/30'}`}>
+                                        <div className={`si-card__diff-badge si-card__diff-badge--${item.difficulty.toLowerCase()}`}>
                                             {item.difficulty}
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="si-item-icon mb-4">
-                                    {item.icon ? item.icon : (item.type === 'room' ? '🎯' : '🧪')}
-                                </div>
-
-                                <h3 className="si-item-title mb-2">
-                                    {item.title}
-                                </h3>
-
-                                <p className="si-item-meta mb-6">
-                                    {item.category || 'Classified Intelligence'}
-                                </p>
-
-                                <div className="si-stat-row">
-                                    <div className="si-stat">
-                                        <Clock size={14} />
-                                        <span>Logged: {new Date(item.bookmarkedAt).toLocaleDateString()}</span>
-                                    </div>
-                                    {item.xp && (
-                                        <div className="si-stat ml-auto">
-                                            <span className="text-amber-400 font-black">{item.xp} XP</span>
+                                {/* Body */}
+                                <div className="si-card__body">
+                                    <div className="flex items-start justify-between gap-4 mb-4">
+                                        <h3 className="text-lg font-black text-white leading-tight group-hover:text-[#00D1FF] transition-colors line-clamp-2">
+                                            {item.title}
+                                        </h3>
+                                        <div className="si-card__xp">
+                                            <Zap size={10} className="text-[#FF6B00]" />
+                                            <span>{item.xp || 500}</span>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
 
-                                <Link
-                                    to={item.type === 'room' ? `/rooms/${item.slug || item.id}` : `/labs/${item.id}`}
-                                    className="rcp-primary-btn"
-                                >
-                                    Access Data 
-                                    <ArrowUpRight size={16} />
-                                </Link>
-                            </div>
+                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">
+                                        {item.category || 'Classified Intelligence'}
+                                    </p>
+
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                            <Clock size={12} className="opacity-40" />
+                                            <span>Logged {new Date(item.bookmarkedAt).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="si-card__cta">
+                                           Access <ChevronRight size={14} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
                         ))}
                     </div>
                 )}
             </div>
         </div>
     )
-}
+})
 
+SavedItems.displayName = "SavedItems";
 export default SavedItems

@@ -403,19 +403,16 @@ const badgeRegistry = [
   {
     name: "Architect of Systems",
     description: "Demonstrated deep knowledge of operating systems and core infrastructure.",
-    unlockReason: "Complete at least 3 System-category challenges",
+    unlockReason: "Complete Linux Fundamentals",
     category: "milestone",
     badgeType: "progress",
     difficulty: "rare",
     xpReward: 500,
     icon: "server",
     isHidden: false,
-    evaluator: (user, context) => {
-      const systemRooms = (user.roomProgress || []).filter(
-        (rp) => rp.completed && rp.category === "System",
-      ).length;
-      return systemRooms >= 1; // Lowering to 1 for now since we just added the first big one
-    },
+    evaluator: (user, context) =>
+      context.type === "room_completion" &&
+      context.roomId === "linux-fundamentals",
   },
   {
     name: "Networking Initiate",
@@ -435,7 +432,7 @@ const badgeRegistry = [
   {
     name: "Web Security Pro",
     description: "You have shown exceptional skill in securing and breaking web applications.",
-    unlockReason: "Complete 2 Web-category rooms",
+    unlockReason: "Complete 2 Web Security rooms",
     category: "milestone",
     badgeType: "progress",
     difficulty: "rare",
@@ -443,10 +440,11 @@ const badgeRegistry = [
     icon: "shield",
     isHidden: false,
     evaluator: (user, context) => {
-      const webRooms = (user.roomProgress || []).filter(
-        (rp) => rp.completed && (rp.category === "Web" || rp.category === "Web Security"),
+      const webSlugs = ['web-app-pentesting', 'sql-injection-fundamentals', 'authentication-session-attacks'];
+      const completed = (user.roomProgress || []).filter(
+        (rp) => rp.completed && webSlugs.includes(rp.roomId),
       ).length;
-      return webRooms >= 2;
+      return completed >= 2;
     },
   },
   {

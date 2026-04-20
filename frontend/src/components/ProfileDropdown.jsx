@@ -125,10 +125,26 @@ const ProfileDropdown = ({ user, onLogout }) => {
                         </button>
                     </div>
 
+                    {/* Group 3: Theme Toggle */}
+                    <div className="py-1">
+                        <button
+                            onClick={toggleTheme}
+                            className="w-full flex items-center justify-between px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                            </div>
+                            <div className={`w-8 h-4 rounded-full relative transition-colors ${isDarkMode ? 'bg-cyan-500' : 'bg-slate-500'}`}>
+                                <div className={`absolute top-1 left-1 w-2 h-2 bg-white rounded-full transition-transform ${isDarkMode ? 'translate-x-4' : ''}`} />
+                            </div>
+                        </button>
+                    </div>
+
                     {/* Divider */}
                     <div className="border-t border-slate-200 dark:border-slate-700"></div>
 
-                    {/* Group 3: Logout */}
+                    {/* Group 4: Logout */}
                     <div className="py-2">
                         <button
                             onClick={handleLogout}

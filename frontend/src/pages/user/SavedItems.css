@@ -1,355 +1,184 @@
-/* ══════════════════════════════════════════════════════════
-   SAVED ITEMS PAGE — Premium CyberVerse Styling
-   ══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   Saved Items — Tactical Archive Design System
+   BG: #081224 → #0b1f3a (exact Dashboard match)
+   Cyan: #00D1FF   Orange: #FF6B00
+   ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Root & Background ── */
-.si-root {
-  position: relative;
-  min-height: 100vh;
-  overflow-x: hidden;
-  z-index: 1;
+/* ═══════ PAGE BACKGROUND ═══════ */
+
+.si-page {
+  background: linear-gradient(to right, #081224 0%, #0b1f3a 45%, #0b1f3a 72%, rgba(255,106,0,0.08) 100%) !important;
 }
 
-.si-grid-bg {
-  position: fixed;
-  inset: 0;
+.si-page__grid {
   background-image:
-    linear-gradient(rgba(0, 245, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 245, 255, 0.025) 1px, transparent 1px);
-  background-size: 50px 50px;
-  pointer-events: none;
-  z-index: -1;
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
-/* ── Page Header ── */
-.cv-page-title {
-  font-size: 2.5rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, #FFFFFF 0%, #94A3B8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0 0 0.5rem 0;
-  line-height: 1.1;
+.si-page__overlay {
+  background: rgba(0,0,0,0.18);
 }
 
-.cv-page-subtitle {
-  font-size: 0.95rem;
-  color: #64748B;
-  font-weight: 500;
-  line-height: 1.6;
-  margin: 0;
+/* ═══════ HEADER & HERO ═══════ */
+
+.si-hero-icon {
+  width: 52px; height: 52px; border-radius: 12px;
+  background: rgba(0,209,255,0.08); border: 1px solid rgba(0,209,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px rgba(0,209,255,0.1);
 }
 
-/* ── Empty State ── */
-.si-empty-state {
-  text-align: center;
-  padding: 5rem 3rem;
-  margin-top: 3rem;
-  background: rgba(17, 24, 39, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 24px;
+/* ═══════ BUTTONS ═══════ */
+
+.si-btn-primary {
+  padding: 12px 28px; border-radius: 12px;
+  background: linear-gradient(135deg, #FF6B00, #CC4400);
+  color: #fff; font-size: 12px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 15px rgba(255,107,0,0.25);
 }
 
-/* ── Card ── */
+.si-btn-primary:hover {
+  transform: translateY(-2px); filter: brightness(1.1);
+  box-shadow: 0 10px 25px rgba(255,107,0,0.35);
+}
+
+.si-btn-secondary {
+  padding: 12px 28px; border-radius: 12px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+  color: #94A3B8; font-size: 12px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+}
+
+.si-btn-secondary:hover {
+  background: rgba(255,255,255,0.06); color: white; border-color: rgba(255,255,255,0.2);
+}
+
+.si-btn-outline-danger {
+  padding: 10px 18px; border-radius: 10px;
+  background: transparent; border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #EF4444; font-size: 10px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.si-btn-outline-danger:hover {
+  background: rgba(239, 68, 68, 0.1); border-color: #EF4444;
+}
+
+/* ═══════ CARDS ═══════ */
+
 .si-card {
+  background: rgba(8, 14, 26, 0.85);
+  backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px; overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  padding: 1.75rem;
-  border-radius: 16px;
-  background: rgba(17, 24, 39, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(12px);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.si-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.4), transparent);
-  opacity: 0;
-  transition: opacity 0.35s ease;
 }
 
 .si-card:hover {
-  border-color: rgba(0, 245, 255, 0.2);
-  transform: translateY(-4px);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(0, 245, 255, 0.08);
+  transform: translateY(-8px); border-color: rgba(0,209,255,0.25);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(0,209,255,0.05);
 }
 
-.si-card:hover::before {
-  opacity: 1;
+/* Hero Section of Card */
+
+.si-card__hero {
+  height: 120px; background: #060d1a; position: relative;
+  background-image: radial-gradient(circle at 50% 120%, rgba(0,209,255,0.1), transparent 70%);
 }
 
-/* ── Unsave Button ── */
-.si-unsave-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  z-index: 2;
+.si-card__hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(8, 14, 26, 0.95));
 }
 
-.si-unsave-btn:hover {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #EF4444;
+.si-card__hero-content {
+  position: absolute; bottom: 12px; left: 16px;
+}
+
+/* Floating Actions */
+
+.si-card__unsave {
+  position: absolute; top: 12px; right: 12px; z-index: 20;
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.1); color: #64748B;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.si-card__unsave:hover {
+  background: #EF4444; border-color: #EF4444; color: white;
   transform: scale(1.1);
 }
 
-.si-unsave-btn svg {
-  color: inherit !important;
+/* Badges */
+
+.si-card__type-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 9px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
-/* ── Type Tags ── */
-.si-type-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  border: 1px solid;
+.si-card__type-badge--room { background: rgba(0,209,255,0.1); color: #00D1FF; border: 1px solid rgba(0,209,255,0.2); }
+.si-card__type-badge--lab { background: rgba(255,107,0,0.1); color: #FF6B00; border: 1px solid rgba(255,107,0,0.2); }
+
+.si-card__diff-badge {
+  position: absolute; top: 12px; left: 12px;
+  font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 2px 6px; border-radius: 4px; border: 1px solid transparent;
 }
 
-.si-type-tag svg {
-  color: inherit !important;
+.si-card__diff-badge--easy { color: #88E636; background: rgba(136,230,54,0.1); border-color: rgba(136,230,54,0.2); }
+.si-card__diff-badge--medium { color: #F5A623; background: rgba(245,166,35,0.1); border-color: rgba(245,166,35,0.2); }
+.si-card__diff-badge--hard { color: #FF6B00; background: rgba(255,107,0,0.1); border-color: rgba(255,107,0,0.2); }
+
+/* Body */
+
+.si-card__body { padding: 20px 24px 24px; }
+
+.si-card__xp {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 900; color: #fff;
 }
 
-.si-type-tag--room {
-  background: rgba(0, 245, 255, 0.08);
-  color: #00F5FF;
-  border-color: rgba(0, 245, 255, 0.2);
+.si-card__cta {
+  font-size: 9px; font-weight: 900; text-transform: uppercase;
+  color: #00D1FF; display: flex; align-items: center; gap: 4px;
+  opacity: 0.6; transition: all 0.3s ease;
 }
 
-.si-type-tag--lab {
-  background: rgba(168, 85, 247, 0.08);
-  color: #A855F7;
-  border-color: rgba(168, 85, 247, 0.2);
+.si-card:hover .si-card__cta { opacity: 1; transform: translateX(2px); }
+
+/* ═══════ EMPTY STATE ═══════ */
+
+.si-empty-state {
+  text-align: center; padding: 80px 40px; border-radius: 2rem;
+  background: rgba(8, 14, 26, 0.4); border: 1px solid rgba(255,255,255,0.05);
 }
 
-/* ── Item Icon ── */
-.si-item-icon {
-  font-size: 2rem;
-  line-height: 1;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.15));
+.si-empty-state__icon-box {
+  width: 100px; height: 100px; border-radius: 50%;
+  background: rgba(0,209,255,0.05); border: 1px solid rgba(0,209,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 32px; color: #00D1FF; opacity: 0.5;
 }
 
-/* ── Item Title ── */
-.si-item-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #F0F6FC;
-  line-height: 1.3;
-  margin: 0;
-  padding-right: 2rem;
+/* ═══════ MISC ═══════ */
+
+.si-fade-in {
+  animation: si-fade 0.5s ease-out both;
 }
 
-/* ── Item Meta ── */
-.si-item-meta {
-  font-size: 0.8rem;
-  color: #64748B;
-  font-weight: 600;
-  margin: 0;
-}
-
-/* ── Stat Row ── */
-.si-stat-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  margin-bottom: 0.5rem;
-}
-
-/* ── Individual Stat ── */
-.si-stat {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  color: #64748B;
-  font-weight: 600;
-}
-
-.si-stat svg {
-  color: #00F5FF !important;
-  flex-shrink: 0;
-}
-
-/* ── Primary Button Override inside cards ── */
-.si-card .rcp-primary-btn {
-  width: 100%;
-  justify-content: center;
-  gap: 8px;
-  padding: 0.85rem 1.5rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  text-decoration: none;
-  margin-top: auto;
-}
-
-/* ── Difficulty Badge Overrides ── */
-.si-card .text-success {
-  color: #39FF14 !important;
-}
-
-.si-card .text-warning {
-  color: #F59E0B !important;
-}
-
-.si-card .border-success\/30 {
-  border-color: rgba(57, 255, 20, 0.3) !important;
-}
-
-.si-card .border-warning\/30 {
-  border-color: rgba(245, 158, 11, 0.3) !important;
-}
-
-/* ── Animations ── */
-.si-card.rcp-fade-in {
-  opacity: 0;
-  animation: si-card-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes si-card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(24px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .cv-page-title {
-    font-size: 1.75rem;
-  }
-
-  .cv-page-subtitle {
-    font-size: 0.85rem;
-  }
-
-  .si-card {
-    padding: 1.25rem;
-  }
-
-  .si-empty-state {
-    padding: 3rem 1.5rem;
-  }
-}
-
-/* ── Light Mode Overrides ── */
-html:not(.dark) .si-grid-bg,
-html.light .si-grid-bg {
-  background-image:
-    linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
-}
-
-html:not(.dark) .cv-page-title,
-html.light .cv-page-title {
-  background: linear-gradient(135deg, #0F172A 0%, #334155 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-html:not(.dark) .cv-page-subtitle,
-html.light .cv-page-subtitle {
-  color: #64748B;
-}
-
-html:not(.dark) .si-card,
-html.light .si-card {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: #E2E8F0;
-  backdrop-filter: blur(12px);
-}
-
-html:not(.dark) .si-card:hover,
-html.light .si-card:hover {
-  border-color: #38BDF8;
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.08),
-    0 0 30px rgba(56, 189, 248, 0.1);
-}
-
-html:not(.dark) .si-card::before,
-html.light .si-card::before {
-  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.5), transparent);
-}
-
-html:not(.dark) .si-empty-state,
-html.light .si-empty-state {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: #E2E8F0;
-}
-
-html:not(.dark) .si-unsave-btn,
-html.light .si-unsave-btn {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: #E2E8F0;
-  color: #94A3B8;
-}
-
-html:not(.dark) .si-unsave-btn:hover,
-html.light .si-unsave-btn:hover {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.25);
-  color: #EF4444;
-}
-
-html:not(.dark) .si-item-title,
-html.light .si-item-title {
-  color: #1E293B;
-}
-
-html:not(.dark) .si-stat-row,
-html.light .si-stat-row {
-  border-top-color: #E2E8F0;
-}
-
-html:not(.dark) .si-stat svg,
-html.light .si-stat svg {
-  color: #38BDF8 !important;
-}
-
-html:not(.dark) .si-type-tag--room,
-html.light .si-type-tag--room {
-  background: rgba(56, 189, 248, 0.08);
-  color: #0284C7;
-  border-color: rgba(56, 189, 248, 0.25);
-}
-
-html:not(.dark) .si-type-tag--lab,
-html.light .si-type-tag--lab {
-  background: rgba(168, 85, 247, 0.08);
-  color: #7C3AED;
-  border-color: rgba(168, 85, 247, 0.25);
+@keyframes si-fade {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }

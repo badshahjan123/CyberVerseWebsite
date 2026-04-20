@@ -1,0 +1,211 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Certificates Page — Premium Achievement Theme
+   BG: #081224 → #0b1f3a (exact Dashboard match)
+   Cyan: #00D1FF   Orange: #FF6B00
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════ PAGE BACKGROUND ═══════ */
+
+.cert-page {
+  background: linear-gradient(to right, #081224 0%, #0b1f3a 45%, #0b1f3a 72%, rgba(255,106,0,0.08) 100%) !important;
+}
+
+.cert-page__grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.cert-page__overlay {
+  background: rgba(0,0,0,0.18);
+}
+
+/* ═══════ COLOR TOKENS ═══════ */
+
+.cert-text-cyan   { color: #00D1FF !important; }
+.cert-text-orange { color: #FF6B00 !important; }
+
+/* ═══════ HERO ═══════ */
+
+.cert-hero {
+  background: linear-gradient(135deg, rgba(8,18,36,0.9) 0%, rgba(11,31,58,0.6) 50%, rgba(8,18,36,0.9) 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.cert-hero__icon-box {
+  padding: 12px; border-radius: 14px;
+  background: rgba(255,107,0,0.1);
+  border: 1px solid rgba(255,107,0,0.25);
+  box-shadow: 0 4px 20px rgba(255,107,0,0.15);
+}
+
+.cert-hero__glow-orange {
+  position: absolute; top: -150px; left: 10%;
+  width: 500px; height: 500px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,107,0,0.1) 0%, transparent 70%);
+  filter: blur(80px); pointer-events: none;
+}
+
+.cert-hero__glow-cyan {
+  position: absolute; bottom: -100px; right: 20%;
+  width: 400px; height: 400px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,209,255,0.08) 0%, transparent 70%);
+  filter: blur(80px); pointer-events: none;
+}
+
+.cert-stats-card {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+
+/* ═══════ TOOLBAR ═══════ */
+
+.cert-tab-group {
+  display: flex; align-items: center; gap: 4px; padding: 4px;
+  background: rgba(11,18,32,0.8); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; backdrop-filter: blur(12px);
+}
+
+.cert-tab {
+  padding: 10px 22px; border-radius: 10px;
+  font-size: 13px; font-weight: 700; color: #64748B !important;
+  background: none; border: none; cursor: pointer; transition: all 0.25s ease;
+}
+
+.cert-tab:hover { color: #CBD5E1 !important; transform: translateY(-1px); }
+
+.cert-tab--active {
+  background: linear-gradient(135deg, #FF6B00, #cc4400) !important;
+  color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 4px 15px rgba(255,107,0,0.25);
+}
+
+.cert-search-input {
+  width: 100%; padding: 12px 14px 12px 42px;
+  background: rgba(11,18,32,0.8) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  color: #fff !important; border-radius: 14px; outline: none;
+  font-size: 14px; transition: all 0.3s ease;
+}
+
+.cert-search-input:focus {
+  border-color: rgba(0,209,255,0.4) !important;
+  box-shadow: 0 0 0 4px rgba(0,209,255,0.08) !important;
+}
+
+/* ═══════ CERTIFICATE CARD ═══════ */
+
+.cert-card {
+  background: rgba(8, 14, 26, 0.85);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.cert-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  border-color: rgba(0,209,255,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(0,209,255,0.08);
+}
+
+.cert-card__accent-line {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: #00D1FF; box-shadow: 0 0 10px rgba(0,209,255,0.5);
+  z-index: 20; opacity: 0; transition: opacity 0.3s ease;
+}
+
+.cert-card:hover .cert-card__accent-line { opacity: 1; }
+
+.cert-card__hero {
+  background: #060d1a; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.cert-card__hero-gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(11,31,58,0.2), rgba(8,14,26,0.95));
+}
+
+.cert-card__hero-glow {
+  position: absolute; top: -50px; right: -50px;
+  width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,209,255,0.08) 0%, transparent 70%);
+  filter: blur(30px);
+}
+
+.cert-card__medal-box {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, #FFB800, #FF6B00);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 15px rgba(255,107,0,0.3);
+}
+
+/* Auth ID box */
+
+.cert-credential-box {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+}
+
+.cert-icon-btn {
+  padding: 4px; border-radius: 6px; color: #64748B !important;
+  background: none; border: none; cursor: pointer; transition: all 0.2s ease;
+}
+
+.cert-icon-btn:hover { background: rgba(255,255,255,0.06); color: #CBD5E1 !important; }
+.cert-icon-btn--active { color: #10B981 !important; transform: scale(1.1); }
+
+/* Buttons */
+
+.cert-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 800;
+  text-transform: uppercase; border: none; cursor: pointer; transition: all 0.3s ease;
+}
+
+.cert-btn--cyan {
+  background: linear-gradient(135deg, #FF6B00, #cc4400) !important;
+  color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 4px 15px rgba(255,107,0,0.25);
+}
+
+.cert-btn--cyan:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+.cert-btn--link {
+  background: rgba(0,119,181,0.1); border: 1px solid rgba(0,119,181,0.2);
+  color: #0077B5 !important;
+}
+
+.cert-btn--link:hover { background: rgba(0,119,181,0.2); transform: translateY(-1px); }
+
+/* ─── Locked State ─── */
+
+.cert-card--locked {
+  background: rgba(11,18,32,0.4); border-color: rgba(255,255,255,0.05);
+  cursor: not-allowed;
+}
+
+.cert-card__locked-overlay {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at center, transparent, rgba(8,14,26,0.3));
+}
+
+/* ─── Footer / LinkedIn ─── */
+
+.cert-footer {
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.cert-btn--linkedin {
+  background: #0077B5 !important; color: #fff !important;
+  box-shadow: 0 8px 24px rgba(0,119,181,0.25);
+}
+
+.cert-btn--linkedin:hover { background: #006097 !important; transform: translateY(-2px); }
+
+.cert-btn--orange {
+  background: linear-gradient(135deg, #FF6B00, #cc4400) !important;
+  color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 4px 15px rgba(255,107,0,0.2);
+  text-decoration: none;
+}

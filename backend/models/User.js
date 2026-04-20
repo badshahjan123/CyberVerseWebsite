@@ -105,7 +105,8 @@ const userSchema = new mongoose.Schema({
     labId: String,
     completed: Boolean,
     completedAt: Date,
-    score: Number
+    score: Number,
+    completedTasks: [String]
   }],
   roomProgress: [{
     roomId: String,
@@ -264,20 +265,37 @@ userSchema.methods.calculateRank = async function () {
   return rank;
 };
 
+// Level thresholds — progressive system
+// Jaise jaise level badhta hai, zyada XP chahiye
+const LEVEL_THRESHOLDS = [
+  0,      // Lv 1  — Script Kiddie
+  300,    // Lv 2  — Cyber Apprentice
+  700,    // Lv 3  — Code Breaker
+  1200,   // Lv 4  — Net Stalker
+  2000,   // Lv 5  — Exploit Dev
+  3000,   // Lv 6  — Zero-Day Hunter
+  4500,   // Lv 7  — Red Teamer
+  6500,   // Lv 8  — Cyber Phantom
+  9000,   // Lv 9  — Ghost Operator
+  12000,  // Lv 10 — Elite Hacker
+  16000,  // Lv 11 — Legend
+];
+
 // Calculate user level based on points
 userSchema.methods.calculateLevel = function () {
-  // Level formula: Level = floor(points / 1000) + 1
-  // Level 1: 0-999 points
-  // Level 2: 1000-1999 points
-  // Level 3: 2000-2999 points, etc.
-  return Math.floor(this.points / 1000) + 1;
+  let level = 1;
+  for (let i = 1; i < LEVEL_THRESHOLDS.length; i++) {
+    if (this.points >= LEVEL_THRESHOLDS[i]) level = i + 1;
+    else break;
+  }
+  return level;
 };
 
 // Get points needed for next level
 userSchema.methods.getPointsToNextLevel = function () {
   const currentLevel = this.calculateLevel();
-  const pointsForNextLevel = currentLevel * 1000;
-  return pointsForNextLevel - this.points;
+  if (currentLevel >= LEVEL_THRESHOLDS.length) return 0; // Max level
+  return LEVEL_THRESHOLDS[currentLevel] - this.points;
 };
 
 // Update streak based on activity

@@ -29,6 +29,7 @@ const seedLab = async () => {
             points: 100,
             isPremium: false,
             isActive: true,
+            coverImage: '/images/labs/linux-forensics-cover.png',
             tags: ['linux', 'forensics', 'bash', 'investigation'],
             estimatedTime: 45,
             prerequisites: ['Basic Linux Commands'],

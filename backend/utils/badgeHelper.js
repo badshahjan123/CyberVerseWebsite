@@ -29,7 +29,7 @@ const syncBadgesDB = async () => {
         { upsert: true },
       );
     }
-    logger.log(`✅ ${badgeRegistry.length} badges synced to database`);
+    logger.info(`✅ ${badgeRegistry.length} badges synced to database`);
   } catch (error) {
     logger.error("Badge DB sync error:", error);
   }
@@ -91,7 +91,7 @@ const awardBadge = async (userId, badgeName) => {
       await user.save();
     }
 
-    logger.log(`✅ Badge awarded: ${badgeName} to user ${userId}`);
+    logger.info(`✅ Badge awarded: ${badgeName} to user ${userId}`);
     return badge;
   } catch (err) {
     if (err.code === 11000) {
@@ -173,7 +173,7 @@ const checkAndAwardBadges = async (userId, context = {}) => {
     }
 
     if (awardedBadges.length > 0) {
-      logger.log(`🎉 ${awardedBadges.length} badges awarded to user ${userId}`);
+      logger.info(`🎉 ${awardedBadges.length} badges awarded to user ${userId}`);
     }
 
     return awardedBadges;

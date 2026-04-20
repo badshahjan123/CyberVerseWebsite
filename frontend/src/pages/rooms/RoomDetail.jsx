@@ -9,6 +9,7 @@ import {
   submitQuiz,
   completeRoom,
   resetRoomProgress,
+  submitTaskQuestion,
 } from "../../services/roomProgress";
 import { useToast } from "../../contexts/toast-context";
 import { useRealtime } from "../../contexts/realtime-context";
@@ -45,6 +46,7 @@ import {
 } from "lucide-react";
 import { clearQuizCache } from "../../utils/clearQuizCache";
 import { shuffleCompleteQuiz } from "../../utils/shuffleQuestions";
+import { attemptsService } from "../../services/attempts";
 import "./RoomModule.css";
 
 const CAT_IMG = {
@@ -322,9 +324,18 @@ const RoomDetail = () => {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const [submissionStatus, setSubmissionStatus] = useState({}); // { [taskId]: 'idle'|'submitting'|'success'|'error' }
-  const [shuffledQuestions, setShuffledQuestions] = useState([]); // Shuffled quiz questions
+  const [submissionStatus, setSubmissionStatus] = useState({});
+  const [shuffledQuestions, setShuffledQuestions] = useState([]);
+  const [tqAnswers, setTqAnswers] = useState({});  // { "topicId_qId": string }
+  const [tqStatus, setTqStatus] = useState({});    // { "topicId_qId": 'correct'|'wrong' }
   const [heroImg, setHeroImg] = useState("");
+  
+  // Replay & Scoring States
+  const [attemptId, setAttemptId] = useState(null);
+  const [bestScore, setBestScore] = useState(0);
+  const [attemptsCount, setAttemptsCount] = useState(0);
+  const [startTime, setStartTime] = useState(Date.now());
+  const [newHighScore, setNewHighScore] = useState(false);
 
   // Handle page exit detection for resume flow
   useEffect(() => {
@@ -364,17 +375,17 @@ const RoomDetail = () => {
           // Check if backend has 'topics' (new structure)
           if (roomData.topics && roomData.topics.length > 0) {
             roomData.tasks = roomData.topics.map((topic, index) => {
-              // Find matching exercise by topic id, not by index
               const matchingExercise =
                 roomData.exercises?.find((ex) => ex.id === topic.id) ||
                 roomData.exercises?.[index];
               return {
                 id: topic.id || index + 1,
                 title: topic.title,
-                content: topic.content_markdown || topic.content || "",
-                codeSnippet: topic.codeSnippet,
-                codeLanguage: topic.codeLanguage,
-                hint: topic.hint,
+                content: Array.isArray(topic.content) && topic.content.length > 0
+                  ? topic.content
+                  : topic.content_markdown || "",
+                hint: topic.hint || matchingExercise?.hint || "",
+                taskQuestions: topic.taskQuestions || [],
                 question:
                   matchingExercise?.description_markdown ||
                   `Complete the task for ${topic.title}`,
@@ -566,6 +577,17 @@ const RoomDetail = () => {
         } else {
           console.log("🔒 No user logged in");
         }
+        // Load Best Scores & Attempt History
+        // Use roomData._id (ObjectId) instead of roomId (slug) for database internal tracking
+        const statsData = await attemptsService.getItemStats('room', roomData._id);
+        setBestScore(statsData.bestScore);
+        setAttemptsCount(statsData.attemptsCount);
+
+        // Start NEW Attempt for Replay
+        const attemptRes = await attemptsService.startAttempt(roomData._id, 'room', roomData.points || 1000);
+        setAttemptId(attemptRes.attemptId);
+        setStartTime(Date.now());
+
       } catch (error) {
         console.error("Failed to load room:", error);
         setRoom(null);
@@ -574,16 +596,22 @@ const RoomDetail = () => {
       }
     };
 
-    loadRoomData();
+    if (roomId) {
+        loadRoomData();
+    }
   }, [roomId, user]);
 
   // Calculate progress percentage
-  const totalComponents =
-    (room?.tasks?.length || 0) + (room?.quizzes?.length > 0 ? 1 : 0);
-  const completedComponents =
-    userProgress.completedTasks.length + (userProgress.roomCompleted ? 1 : 0);
-  const progressPercentage =
-    totalComponents > 0 ? (completedComponents / totalComponents) * 100 : 0;
+  const totalTasks = room?.tasks?.length || 0;
+  const totalComponents = totalTasks + (room?.quizzes?.length > 0 ? 1 : 0);
+  const completedTaskCount = room?.tasks
+    ? room.tasks.filter((t, i) =>
+        userProgress.completedTasks.includes(i) ||
+        (t.taskQuestions?.length > 0 && t.taskQuestions.every(q => tqStatus[`${t.id}_${q.id}`] === "correct"))
+      ).length
+    : 0;
+  const completedComponents = completedTaskCount + (userProgress.roomCompleted ? 1 : 0);
+  const progressPercentage = totalComponents > 0 ? (completedComponents / totalComponents) * 100 : 0;
 
   // Handle Join Room
   const handleJoinRoom = async () => {
@@ -722,6 +750,21 @@ const RoomDetail = () => {
                 }),
               );
 
+              // Finalize Attempt session
+              const completionTime = Math.floor((Date.now() - startTime) / 1000);
+              attemptsService.completeAttempt(
+                attemptId,
+                finalXP,
+                completionTime,
+                [{ taskId: 'room_completion', completed: true, completedAt: new Date() }]
+              ).then(result => {
+                if (result.isNewBest) {
+                  setNewHighScore(true);
+                  setBestScore(result.bestScore);
+                }
+                setAttemptsCount(result.attemptsCount);
+              });
+
               // Navigate to completion screen
               setTimeout(() => {
                 navigate(`/rooms/${roomId}/completed`);
@@ -772,7 +815,9 @@ const RoomDetail = () => {
       setQuizSubmitted(false);
       setShowQuiz(false);
       setSubmissionStatus({});
-      setExpandedTasks([1]); // Expand first task
+      setTqAnswers({});
+      setTqStatus({});
+      setExpandedTasks([1]);
 
       // Clear quiz cache
       localStorage.removeItem(`quiz_results_${roomId}`);
@@ -816,10 +861,7 @@ const RoomDetail = () => {
       // If passed, complete the room
       if (response.passed) {
         const finalTotalXP = userProgress.totalXP + response.earnedPoints;
-
-        // FIX: Validate all tasks are complete before calling completeRoom
-        const allTasksComplete =
-          userProgress.completedTasks.length === room.tasks.length;
+        const allTasksComplete = allTasksDone;
 
         if (!allTasksComplete) {
           console.error(
@@ -837,6 +879,20 @@ const RoomDetail = () => {
         setTimeout(async () => {
           // Call backend to mark room as complete and update leaderboard
           try {
+            const completionTime = Math.floor((Date.now() - startTime) / 1000);
+            const attemptResult = await attemptsService.completeAttempt(
+              attemptId,
+              response.earnedPoints + (userProgress.totalXP || 0),
+              completionTime,
+              userProgress.completedTasks.map(id => ({ taskId: id, completed: true, completedAt: new Date() }))
+            );
+
+            if (attemptResult.isNewBest) {
+              setNewHighScore(true);
+              setBestScore(attemptResult.bestScore);
+            }
+            setAttemptsCount(attemptResult.attemptsCount);
+
             const completeResponse = await completeRoom(
               roomId,
               response.percentage,
@@ -846,7 +902,7 @@ const RoomDetail = () => {
               applyUpdate(completeResponse.userStats);
             }
             requestLeaderboardUpdate();
-            console.log("✅ Room marked complete on backend");
+            console.log("✅ Room marked complete on backend (Attempt finalized)");
           } catch (error) {
             console.error("Failed to mark room as complete:", error);
             // Don't block UI if backend fails, but log it
@@ -936,10 +992,16 @@ const RoomDetail = () => {
   }
 
   const activeTaskId = expandedTasks[0] || 1;
-  const activeTask =
-    room.tasks?.find((t) => t.id === activeTaskId) || room.tasks?.[0];
-  const activeTaskIndex =
-    room.tasks?.findIndex((t) => t.id === activeTaskId) ?? 0;
+  const activeTask = room.tasks?.find((t) => t.id === activeTaskId) || room.tasks?.[0];
+  const activeTaskIndex = room.tasks?.findIndex((t) => t.id === activeTaskId) ?? 0;
+
+  // For admin rooms using taskQuestions, a task is "done" when all its questions are answered correctly
+  const isTaskDone = (task, taskIndex) => {
+    if (userProgress.completedTasks.includes(taskIndex)) return true;
+    if (!task.taskQuestions?.length) return false;
+    return task.taskQuestions.every((q) => tqStatus[`${task.id}_${q.id}`] === "correct");
+  };
+  const allTasksDone = room.tasks?.length > 0 && room.tasks.every((t, i) => isTaskDone(t, i));
 
   return (
     <div className="rdp-root">
@@ -1042,282 +1104,363 @@ const RoomDetail = () => {
         )}
 
         {/* ── TASK SELECTOR BAR ── */}
-        {!showQuiz && userProgress.joined && (
+        {userProgress.joined && (
           <div className="rdp-task-bar">
             <div className="rdp-task-bar-left">
               <select
                 className="rdp-task-select"
-                value={activeTaskId}
+                value={showQuiz ? "quiz" : String(activeTaskId)}
                 onChange={(e) => {
-                  setShowQuiz(false);
-                  toggleTask(Number(e.target.value));
+                  if (e.target.value === "quiz") {
+                    if (allTasksDone) setShowQuiz(true);
+                  } else {
+                    setShowQuiz(false);
+                    toggleTask(Number(e.target.value));
+                  }
                 }}
               >
                 {room.tasks?.map((t, idx) => (
                   <option key={t.id} value={t.id}>
-                    {userProgress.completedTasks.includes(idx)
-                      ? "✓"
-                      : `${idx + 1}.`}{" "}
-                    {t.title}
+                    {userProgress.completedTasks.includes(idx) ? "✓" : `${idx + 1}.`} {t.title}
                   </option>
                 ))}
+                {room.quizzes?.length > 0 && (
+                  <option value="quiz" disabled={!allTasksDone}>
+                    {allTasksDone ? "🏆 Final Quiz" : "🔒 Final Quiz (complete tasks first)"}
+                  </option>
+                )}
               </select>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() =>
-                  activeTaskIndex > 0 &&
-                  toggleTask(room.tasks[activeTaskIndex - 1].id)
-                }
-                disabled={activeTaskIndex === 0}
+                onClick={() => activeTaskIndex > 0 && toggleTask(room.tasks[activeTaskIndex - 1].id)}
+                disabled={showQuiz || activeTaskIndex === 0}
                 className="rdp-nav-arrow"
               >
                 <ArrowLeft size={16} />
               </button>
               <button
-                onClick={() =>
-                  activeTaskIndex < room.tasks.length - 1 &&
-                  toggleTask(room.tasks[activeTaskIndex + 1].id)
-                }
-                disabled={activeTaskIndex === room.tasks.length - 1}
+                onClick={() => activeTaskIndex < room.tasks.length - 1 && toggleTask(room.tasks[activeTaskIndex + 1].id)}
+                disabled={showQuiz || activeTaskIndex === room.tasks.length - 1}
                 className="rdp-nav-arrow"
               >
                 <ArrowRight size={16} />
               </button>
               {room.quizzes?.length > 0 && (
                 <button
-                  onClick={() => setShowQuiz(true)}
-                  disabled={
-                    userProgress.completedTasks.length < room.tasks?.length
-                  }
+                  onClick={() => allTasksDone && setShowQuiz(true)}
+                  disabled={!allTasksDone}
                   className="rdp-quiz-trigger"
+                  title={!allTasksDone ? "Complete all tasks first" : ""}
                 >
-                  <Trophy size={14} /> Final Quiz
+                  {allTasksDone ? <Trophy size={14} /> : <Lock size={14} />} Final Quiz
                 </button>
               )}
             </div>
           </div>
         )}
 
-        {/* ── MAIN CONTENT ── */}
-        <div className="rdp-content-col">
-          {!userProgress.joined ? (
-            /* JOIN PROMPT */
-            <div className="rdp-card-v2 py-12 text-center">
-              <Shield size={32} className="text-primary mx-auto mb-3" />
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2 italic">
-                Ready to Begin?
-              </h3>
-              <p className="text-sm text-slate-500 mb-6 px-12">
-                Join this room to start completing tasks and earning XP.
-              </p>
-              <button
-                onClick={handleJoinRoom}
-                className="px-8 py-3 rounded-lg bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform inline-flex items-center gap-3"
-              >
-                <Play size={16} /> Start Investigation
-              </button>
-            </div>
-          ) : showQuiz ? (
-            /* QUIZ VIEW */
-            <div className="rdp-card-v2 rdp-fade-in">
-              <div className="rdp-card-header-v2 flex justify-between items-center">
-                <span>Final Assessment</span>
+        {/* ── MISSION GRID ── */}
+        <div className="rdp-grid-v2">
+          <div className="rdp-content-col">
+            {!userProgress.joined ? (
+              /* JOIN PROMPT */
+              <div className="rdp-card-v2 py-12 text-center">
+                <Shield size={32} className="text-primary mx-auto mb-3" />
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2 italic">
+                  Ready to Begin?
+                </h3>
+                <p className="text-sm text-slate-500 mb-6 px-12">
+                  Join this room to start completing tasks and earning XP.
+                </p>
                 <button
-                  onClick={() => setShowQuiz(false)}
-                  className="text-[10px] text-primary hover:underline"
+                  onClick={handleJoinRoom}
+                  className="px-8 py-3 rounded-lg bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform inline-flex items-center gap-3"
                 >
-                  ← Back to Tasks
+                  <Play size={16} /> Start Investigation
                 </button>
               </div>
-              <div className="p-8 space-y-8">
-                {(() => {
-                  const questions =
-                    shuffledQuestions.length > 0
-                      ? shuffledQuestions
-                      : room.quizzes[0].questions;
-                  return questions.map((q, qi) => (
-                    <div key={q.id} className="rdp-quiz-q">
-                      <p className="text-sm font-bold text-white mb-4">
-                        <span className="text-slate-600 mr-2">{qi + 1}.</span>{" "}
-                        {q.question_text}
-                      </p>
-                      <div className="grid gap-2">
-                        {q.options.map((opt, oi) => (
-                          <label
-                            key={oi}
-                            className={`px-4 py-3 rounded border text-[11px] font-medium transition-all flex items-center gap-3 cursor-pointer ${quizAnswers[q.id] === opt ? "bg-primary/10 border-primary text-white" : "bg-slate-900/50 border-slate-800 text-slate-500 hover:border-slate-700 shadow-sm"} ${quizSubmitted ? "pointer-events-none" : ""}`}
-                          >
-                            <input
-                              type="radio"
-                              name={`q-${q.id}`}
-                              className="sr-only"
-                              checked={quizAnswers[q.id] === opt}
-                              onChange={() =>
-                                !quizSubmitted &&
-                                setQuizAnswers((p) => ({ ...p, [q.id]: opt }))
-                              }
-                            />
-                            <div
-                              className={`w-3.5 h-3.5 rounded-full border shrink-0 ${quizAnswers[q.id] === opt ? "border-primary" : "border-slate-700"}`}
+            ) : showQuiz ? (
+              /* QUIZ VIEW */
+              <div className="rdp-card-v2 rdp-fade-in">
+                <div className="rdp-card-header-v2 flex justify-between items-center">
+                  <span>Final Assessment</span>
+                  <button
+                    onClick={() => setShowQuiz(false)}
+                    className="text-[10px] text-primary hover:underline"
+                  >
+                    ← Back to Tasks
+                  </button>
+                </div>
+                <div className="p-8 space-y-8">
+                  {(() => {
+                    const questions =
+                      shuffledQuestions.length > 0
+                        ? shuffledQuestions
+                        : room.quizzes[0].questions;
+                    return questions.map((q, qi) => (
+                      <div key={q.id} className="rdp-quiz-q">
+                        <p className="text-sm font-bold text-white mb-4">
+                          <span className="text-slate-600 mr-2">{qi + 1}.</span>{" "}
+                          {q.question_text}
+                        </p>
+                        <div className="grid gap-2">
+                          {q.options.map((opt, oi) => (
+                            <label
+                              key={oi}
+                              className={`px-4 py-3 rounded border text-[11px] font-medium transition-all flex items-center gap-3 cursor-pointer ${quizAnswers[q.id] === opt ? "bg-primary/10 border-primary text-white" : "bg-slate-900/50 border-slate-800 text-slate-500 hover:border-slate-700 shadow-sm"} ${quizSubmitted ? "pointer-events-none" : ""}`}
                             >
-                              {quizAnswers[q.id] === opt && (
-                                <div className="w-full h-full scale-50 bg-primary rounded-full" />
+                              <input
+                                type="radio"
+                                name={`q-${q.id}`}
+                                className="sr-only"
+                                checked={quizAnswers[q.id] === opt}
+                                onChange={() =>
+                                  !quizSubmitted &&
+                                  setQuizAnswers((p) => ({ ...p, [q.id]: opt }))
+                                }
+                              />
+                              <div
+                                className={`w-3.5 h-3.5 rounded-full border shrink-0 ${quizAnswers[q.id] === opt ? "border-primary" : "border-slate-700"}`}
+                              >
+                                {quizAnswers[q.id] === opt && (
+                                  <div className="w-full h-full scale-50 bg-primary rounded-full" />
+                                )}
+                              </div>
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                  {!quizSubmitted ? (
+                    <button
+                      onClick={handleQuizSubmit}
+                      className="w-full py-4 rounded-xl bg-primary text-white font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                    >
+                      Submit Evaluation
+                    </button>
+                  ) : (
+                    <div
+                      className={`p-8 rounded-xl text-center shadow-xl ${quizResults?.passed ? "bg-success/5 border border-success/20" : "bg-danger/5 border border-danger/20"}`}
+                    >
+                      <h3
+                        className={`text-xl font-black mb-1 italic tracking-tighter ${quizResults?.passed ? "text-success" : "text-danger"}`}
+                      >
+                        {quizResults?.passed
+                          ? "MISSION SUCCESSFUL"
+                          : "MISSION FAILED"}
+                      </h3>
+                      <p className="text-sm text-slate-400 mb-6">
+                        Score: {quizResults?.percentage}%
+                      </p>
+                      <button
+                        onClick={handleTryAgain}
+                        className="px-6 py-2 rounded-lg bg-slate-800 text-white text-[10px] font-black border border-slate-700 uppercase tracking-widest hover:bg-slate-700 transition-colors"
+                      >
+                        Restart Sector
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* TASK VIEW */
+              <div className="rdp-fade-in" key={activeTaskId}>
+                {/* Task Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-primary border border-slate-700 shadow-xl">
+                      {getTopicIcon(activeTask.title)}
+                    </div>
+                    <h2 className="text-xl font-black text-white italic tracking-tighter">
+                      {activeTask.title}
+                    </h2>
+                  </div>
+                  {userProgress.completedTasks.includes(activeTaskIndex) && (
+                    <span className="px-3 py-1 rounded bg-success/10 border border-success/20 text-success text-[10px] font-black uppercase tracking-widest">
+                      COMPLETED
+                    </span>
+                  )}
+                </div>
+
+                {/* Task Content Card */}
+                <div className="rdp-card-v2">
+                  <div className="p-8">
+                    {/* Render content blocks saved by admin editor */}
+                    {Array.isArray(activeTask.content) && activeTask.content.length > 0 ? (
+                      <div className="space-y-4">
+                        {activeTask.content.map((block, bi) => {
+                          if (block.type === "code") return (
+                            <CodeSection key={bi} code={block.content} language="terminal" />
+                          );
+                          if (block.type === "image") return (
+                            <div key={bi} className="rdp-visual-card rdp-fade-in">
+                              <img src={block.content} alt="" className="rdp-visual-img" />
+                            </div>
+                          );
+                          return (
+                            <div key={bi} className="rdp-prose">
+                              <EnhancedContentRenderer content={block.content} title={activeTask.title} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <EnhancedContentRenderer content={activeTask.content} title={activeTask.title} />
+                    )}
+
+                    {activeTask.codeSnippet && (
+                      <div className="mt-8">
+                        <CodeSection
+                          code={activeTask.codeSnippet}
+                          language={activeTask.codeLanguage}
+                        />
+                      </div>
+                    )}
+
+                    {/* Task Questions from admin editor */}
+                    {activeTask.taskQuestions?.length > 0 ? (
+                      <div className="mt-8 space-y-6">
+                        {activeTask.taskQuestions.map((q) => {
+                          const key = `${activeTask.id}_${q.id}`;
+                          const status = tqStatus[key];
+                          return (
+                            <div key={key} className="rdp-ans-section">
+                              <p className="text-sm font-bold text-white mb-2 leading-relaxed">{q.question_text}</p>
+                              {q.hint && (
+                                <p className="text-xs text-slate-500 italic mb-3">Hint: {q.hint}</p>
+                              )}
+                              {status === "correct" ? (
+                                <div className="flex items-center gap-2 text-success text-xs font-black">
+                                  <Check size={14} /> Correct! +{q.points || 10} XP
+                                </div>
+                              ) : (
+                                <div className="rdp-ans-row">
+                                  <input
+                                    type="text"
+                                    className={`rdp-inp ${status === "wrong" ? "border-red-500" : ""}`}
+                                    placeholder="Your answer..."
+                                    value={tqAnswers[key] || ""}
+                                    onChange={(e) => setTqAnswers((p) => ({ ...p, [key]: e.target.value }))}
+                                    onKeyPress={async (e) => {
+                                      if (e.key !== "Enter") return;
+                                      const res = await submitTaskQuestion(roomId, activeTask.id, q.id, tqAnswers[key] || "");
+                                      setTqStatus((p) => ({ ...p, [key]: res.correct ? "correct" : "wrong" }));
+                                      if (res.correct) toast({ title: `+${res.pointsEarned} XP`, description: "Correct!" });
+                                    }}
+                                  />
+                                  <button
+                                    className="rdp-submit"
+                                    onClick={async () => {
+                                      const res = await submitTaskQuestion(roomId, activeTask.id, q.id, tqAnswers[key] || "");
+                                      setTqStatus((p) => ({ ...p, [key]: res.correct ? "correct" : "wrong" }));
+                                      if (res.correct) toast({ title: `+${res.pointsEarned} XP`, description: "Correct!" });
+                                    }}
+                                  >Submit</button>
+                                </div>
+                              )}
+                              {status === "wrong" && (
+                                <p className="text-xs text-red-400 mt-1">Incorrect, try again.</p>
                               )}
                             </div>
-                            {opt}
-                          </label>
-                        ))}
+                          );
+                        })}
                       </div>
-                    </div>
-                  ));
-                })()}
-                {!quizSubmitted ? (
+                    ) : (
+                      /* fallback: old single-answer exercise */
+                      !userProgress.completedTasks.includes(activeTaskIndex) && (
+                        <div className="rdp-ans-section">
+                          <label className="rdp-ans-lbl">Mission Objective</label>
+                          <p className="text-sm font-bold text-white mb-6 leading-relaxed">{activeTask.question}</p>
+                          <div className="rdp-ans-row">
+                            <input
+                              type="text"
+                              className="rdp-inp"
+                              placeholder="Decrypt flag..."
+                              value={taskAnswers[activeTask.id] || ""}
+                              onChange={(e) => setTaskAnswers((p) => ({ ...p, [activeTask.id]: e.target.value }))}
+                              onKeyPress={(e) => e.key === "Enter" && handleTaskSubmit(activeTask.id, activeTaskIndex)}
+                            />
+                            <button onClick={() => handleTaskSubmit(activeTask.id, activeTaskIndex)} className="rdp-submit">Submit</button>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom Nav */}
+                <div className="flex justify-between items-center mt-8">
                   <button
-                    onClick={handleQuizSubmit}
-                    className="w-full py-4 rounded-xl bg-primary text-white font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-                  >
-                    Submit Evaluation
-                  </button>
-                ) : (
-                  <div
-                    className={`p-8 rounded-xl text-center shadow-xl ${quizResults?.passed ? "bg-success/5 border border-success/20" : "bg-danger/5 border border-danger/20"}`}
-                  >
-                    <h3
-                      className={`text-xl font-black mb-1 italic tracking-tighter ${quizResults?.passed ? "text-success" : "text-danger"}`}
-                    >
-                      {quizResults?.passed
-                        ? "MISSION SUCCESSFUL"
-                        : "MISSION FAILED"}
-                    </h3>
-                    <p className="text-sm text-slate-400 mb-6">
-                      Score: {quizResults?.percentage}%
-                    </p>
-                    <button
-                      onClick={handleTryAgain}
-                      className="px-6 py-2 rounded-lg bg-slate-800 text-white text-[10px] font-black border border-slate-700 uppercase tracking-widest hover:bg-slate-700 transition-colors"
-                    >
-                      Restart Sector
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* TASK VIEW */
-            <div className="rdp-fade-in" key={activeTaskId}>
-              {/* Task Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-primary border border-slate-700 shadow-xl">
-                    {getTopicIcon(activeTask.title)}
-                  </div>
-                  <h2 className="text-xl font-black text-white italic tracking-tighter">
-                    {activeTask.title}
-                  </h2>
-                </div>
-                {userProgress.completedTasks.includes(activeTaskIndex) && (
-                  <span className="px-3 py-1 rounded bg-success/10 border border-success/20 text-success text-[10px] font-black uppercase tracking-widest">
-                    COMPLETED
-                  </span>
-                )}
-              </div>
-
-              {/* Task Content Card */}
-              <div className="rdp-card-v2">
-                <div className="p-8">
-                  <EnhancedContentRenderer
-                    content={activeTask.content}
-                    title={activeTask.title}
-                  />
-
-                  {activeTask.codeSnippet && (
-                    <div className="mt-8">
-                      <CodeSection
-                        code={activeTask.codeSnippet}
-                        language={activeTask.codeLanguage}
-                      />
-                    </div>
-                  )}
-
-                  {/* Answer Submission */}
-                  {!userProgress.completedTasks.includes(activeTaskIndex) && (
-                    <div className="rdp-ans-section">
-                      <label className="rdp-ans-lbl">Mission Objective</label>
-                      <p className="text-sm font-bold text-white mb-6 leading-relaxed">
-                        {activeTask.question}
-                      </p>
-                      <div className="rdp-ans-row">
-                        <input
-                          type="text"
-                          className="rdp-inp"
-                          placeholder="Decrypt flag..."
-                          value={taskAnswers[activeTask.id] || ""}
-                          onChange={(e) =>
-                            setTaskAnswers((p) => ({
-                              ...p,
-                              [activeTask.id]: e.target.value,
-                            }))
-                          }
-                          onKeyPress={(e) =>
-                            e.key === "Enter" &&
-                            handleTaskSubmit(activeTask.id, activeTaskIndex)
-                          }
-                        />
-                        <button
-                          onClick={() =>
-                            handleTaskSubmit(activeTask.id, activeTaskIndex)
-                          }
-                          className="rdp-submit"
-                        >
-                          Submit
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Bottom Nav */}
-              <div className="flex justify-between items-center mt-8">
-                <button
-                  onClick={() =>
-                    activeTaskIndex > 0 &&
-                    toggleTask(room.tasks[activeTaskIndex - 1].id)
-                  }
-                  disabled={activeTaskIndex === 0}
-                  className="text-[10px] font-black text-slate-500 hover:text-white disabled:opacity-0 transition-colors tracking-widest"
-                >
-                  ← PREVIOUS
-                </button>
-                <button
-                  onClick={() => {
-                    if (activeTaskIndex < room.tasks.length - 1) {
-                      toggleTask(room.tasks[activeTaskIndex + 1].id);
-                    } else if (
-                      room.quizzes?.length > 0 &&
-                      userProgress.completedTasks.length >= room.tasks.length
-                    ) {
-                      setShowQuiz(true);
+                    onClick={() =>
+                      activeTaskIndex > 0 &&
+                      toggleTask(room.tasks[activeTaskIndex - 1].id)
                     }
-                  }}
-                  disabled={
-                    activeTaskIndex === room.tasks.length - 1 &&
-                    !(
-                      room.quizzes?.length > 0 &&
-                      userProgress.completedTasks.length >= room.tasks.length
-                    )
-                  }
-                  className="text-[10px] font-black text-slate-500 hover:text-white disabled:opacity-0 transition-colors tracking-widest"
-                >
-                  {activeTaskIndex === room.tasks.length - 1 &&
-                  room.quizzes?.length > 0
-                    ? "GO TO EVALUATION →"
-                    : "NEXT →"}
-                </button>
+                    disabled={activeTaskIndex === 0}
+                    className="text-[10px] font-black text-slate-500 hover:text-white disabled:opacity-0 transition-colors tracking-widest"
+                  >
+                    ← PREVIOUS
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (activeTaskIndex < room.tasks.length - 1) {
+                        toggleTask(room.tasks[activeTaskIndex + 1].id);
+                      } else if (room.quizzes?.length > 0 && allTasksDone) {
+                        setShowQuiz(true);
+                      }
+                    }}
+                    disabled={
+                      activeTaskIndex === room.tasks.length - 1 &&
+                      !(room.quizzes?.length > 0 && allTasksDone)
+                    }
+                    className="text-[10px] font-black text-slate-500 hover:text-white disabled:opacity-0 transition-colors tracking-widest"
+                  >
+                    {activeTaskIndex === room.tasks.length - 1 && room.quizzes?.length > 0
+                      ? "GO TO EVALUATION →"
+                      : "NEXT →"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <aside className="rdp-sidebar-v2 rdp-fade-in-right">
+            {newHighScore && (
+              <div className="bg-success/10 border border-success/20 p-6 rounded-2xl mb-4 animate-bounce flex items-center gap-4 text-success font-black text-xs">
+                <Trophy size={20} /> NEW HIGH SCORE! 🎉
+              </div>
+            )}
+
+            <div className="rdp-card-v2">
+              <div className="rdp-card-header-v2">Mission Metrics</div>
+              <div className="p-6 space-y-4">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500 font-bold uppercase tracking-tighter">Best Rank</span>
+                  <span className="text-success font-black">{bestScore} XP</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500 font-bold uppercase tracking-tighter">Attempts</span>
+                  <span className="text-white font-black">{attemptsCount}</span>
+                </div>
               </div>
             </div>
-          )}
+
+            <div className="rdp-card-v2">
+              <div className="rdp-card-header-v2">Intelligence</div>
+              <div className="p-6 space-y-4">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500 font-bold uppercase tracking-tighter">Target</span>
+                  <span className="text-white font-bold">{room.category}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500 font-bold uppercase tracking-tighter">Risk Level</span>
+                  <span className="text-primary font-bold uppercase">{room.difficulty}</span>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
 

@@ -43,8 +43,12 @@ const weeklyStatsSchema = new mongoose.Schema({
 // Get or create weekly stats for a user
 weeklyStatsSchema.statics.getCurrentWeekStats = async function(userId) {
   const now = new Date();
-  const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+  
+  // Calculate this week's boundaries
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
+  
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(endOfWeek.getDate() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
@@ -56,12 +60,24 @@ weeklyStatsSchema.statics.getCurrentWeekStats = async function(userId) {
   });
 
   if (!weeklyStats) {
+    const User = mongoose.model('User');
+    const user = await User.findById(userId);
+    
+    // Default initial rank logic
+    const totalUsers = await User.countDocuments();
+    const currentRealRank = user ? await user.calculateRank() : totalUsers;
+    
+    // If they joined THIS WEEK, startRank is the bottom (totalUsers)
+    // and pointsEarned starts with their signup bonus.
+    const isNewUserThisWeek = user && user.createdAt >= startOfWeek;
+    
     weeklyStats = await this.create({
       userId,
       weekStartDate: startOfWeek,
       weekEndDate: endOfWeek,
-      startRank: 0,
-      currentRank: 0
+      pointsEarned: isNewUserThisWeek ? user.points : 0,
+      startRank: isNewUserThisWeek ? totalUsers : currentRealRank,
+      currentRank: currentRealRank
     });
   }
 
@@ -69,23 +85,33 @@ weeklyStatsSchema.statics.getCurrentWeekStats = async function(userId) {
 };
 
 // Update stats for an activity
-weeklyStatsSchema.statics.recordActivity = async function(userId, activityType, points, isNewCompletion = true) {
+weeklyStatsSchema.statics.recordActivity = async function(userId, activityType, points, isNewCompletion = false) {
   const stats = await this.getCurrentWeekStats(userId);
-  
-  if (points) {
+
+  if (points && points > 0) {
     stats.pointsEarned += points;
   }
-  
+
   if (isNewCompletion) {
-    if (activityType === 'room') {
-      stats.roomsCompleted += 1;
-    } else if (activityType === 'lab') {
-      stats.labsCompleted += 1;
-    }
+    if (activityType === 'room') stats.roomsCompleted += 1;
+    else if (activityType === 'lab') stats.labsCompleted += 1;
   }
-  
-  // Update rank if necessary (can be called separately if rank calculation is expensive)
-  // For now, we just save the points
+
+  // Ensure current rank is always live
+  try {
+    const User = mongoose.model('User');
+    const user = await User.findById(userId);
+    if (user) {
+      stats.currentRank = await user.calculateRank();
+      
+      // If user has more total points than weekly (e.g. joined before this week)
+      // we DON'T cap. But if somehow weekly exceeds total (shouldn't happen), we cap.
+      if (stats.pointsEarned > user.points) {
+        stats.pointsEarned = user.points;
+      }
+    }
+  } catch (_) {}
+
   await stats.save();
   return stats;
 };

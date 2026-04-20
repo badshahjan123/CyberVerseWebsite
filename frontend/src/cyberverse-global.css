@@ -11,7 +11,7 @@
 html.dark,
 html.dark body,
 html.dark #root {
-  background: #0B0F1A !important;
+  background: #0B0F1A;
   color: #FFFFFF;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
@@ -25,15 +25,15 @@ html.light #root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Apply to ALL page containers */
-html.dark .min-h-screen,
+/* Apply to ALL page containers — exclude pages with inline background styles */
+html.dark .min-h-screen:not([style]),
 html.dark [class*="root"],
 html.dark [class*="-bg"] {
-  background: #0B0F1A !important;
+  background: #0B0F1A;
   color: #FFFFFF !important;
 }
 
-html.light .min-h-screen,
+html.light .min-h-screen:not([style]),
 html.light [class*="root"],
 html.light [class*="-bg"] {
   background: #F8FAFC !important;
@@ -154,31 +154,134 @@ html.light .ch-card:hover {
 }
 
 /* ========================================
+   BUTTON TEXT PROTECTION — home page & inline-styled buttons
+   ======================================== */
+a[style], button[style] {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 6px rgba(0,0,0,0.4) !important;
+  opacity: 1 !important;
+}
+
+/* ========================================
    BUTTON SYSTEM - GLACIER BLUE ACCENT
    ======================================== */
 
-/* Primary Buttons */
+/* ========================================
+   UNIVERSAL BUTTON SYSTEM (Primary Action)
+   Fixes all "Start Lab", "Enter Labs", "Start Challenge" buttons in ONE PLACE.
+   ======================================== */
+
+/* Targets:
+   1. The .btn-primary class
+   2. Any element with an inline style background containing our brand orange (#FF6B00)
+   3. Specific secondary action classes like .rdp-submit
+*/
 html.dark .btn-primary,
-html.dark [class*="btn-primary"],
-html.dark button[class*="primary"] {
-  background: #38BDF8 !important;
-  color: #0B0F1A !important;
+html.dark button.btn-primary,
+html.dark a.btn-primary,
+html.dark .rdp-submit,
+html.dark .lp-btn-primary,
+html.dark .wpr-q-submit,
+html.dark .wpr-nav-next,
+html.dark .rcp-primary-btn,
+html.dark [style*="background: linear-gradient(135deg, #FF6B00"],
+html.dark [style*="background:#FF6B00"],
+html.dark [style*="background: #FF6B00"],
+html.dark [class*="from-[#FF6B00]"],
+html.dark [class*="bg-cyan-500"],
+html.dark [class*="bg-primary"],
+html.dark [class*="btn-glass"],
+html.dark .btn:not([class*="replay"]),
+html.dark .button:not([class*="replay"]) {
+  background: linear-gradient(135deg, #FF6B00, #CC4400) !important;
+  color: #FFFFFF !important;
   border: none !important;
   border-radius: 12px !important;
-  font-weight: 600 !important;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3) !important;
-  transition: all 0.3s ease !important;
+  font-weight: 900 !important; /* ULTRA BOLD for clarity */
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 0, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-shadow: none !important; /* Pure white clarity */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
 }
 
-html.dark .btn-primary:hover {
-  background: #0EA5E9 !important;
-  box-shadow: 0 0 30px rgba(56, 189, 248, 0.5) !important;
+/* Force all contents of these buttons (Icons, Spans, Text) to be PURE FULL WHITE */
+html.dark .btn-primary *,
+html.dark button.btn-primary *,
+html.dark a.btn-primary *,
+html.dark .lp-btn-primary *,
+html.dark [style*="#FF6B00"] *,
+html.dark [class*="from-[#FF6B00]"] *,
+html.dark [class*="bg-cyan-500"] *,
+html.dark [class*="bg-primary"] *,
+html.dark .btn-secondary:not([class*="replay"]):not([class*="rcp-secondary"]):not([class*="irb-replay"]):not([class*="rpl-btn"]) * {
+  color: #FFFFFF !important;
+  fill: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+/* Hover state for all primary buttons */
+html.dark .btn-primary:hover,
+html.dark [style*="#FF6B00"]:hover,
+html.dark [class*="from-[#FF6B00]"]:hover {
   transform: translateY(-2px) !important;
+  filter: brightness(1.2) !important;
+  box-shadow: 0 8px 28px rgba(255, 107, 0, 0.4) !important;
 }
 
-html.light .btn-primary,
-html.light [class*="btn-primary"],
-html.light button[class*="primary"] {
+html.dark .btn-primary svg,
+html.dark [style*="#FF6B00"] svg,
+html.dark [class*="from-[#FF6B00]"] svg {
+  color: #FFFFFF !important;
+  fill: none !important; /* Lucide icons typically use stroke */
+}
+
+html.dark .btn-primary svg[fill],
+html.dark [style*="#FF6B00"] svg[fill],
+html.dark [class*="from-[#FF6B00]"] svg[fill] {
+  fill: #FFFFFF !important;
+}
+
+/* REPLAY BUTTONS - Protected from global orange transform */
+html.dark .btn-secondary[class*="replay"],
+html.dark .btn-secondary[class*="rcp-secondary"],
+html.dark .btn-secondary[class*="irb-replay"],
+html.dark .rpl-btn,
+html.dark .rcp-secondary-btn,
+html.dark .wpr-nav-btn[style*="F59E0B"],
+html.dark .room-hover-cta--completed {
+  background: rgba(16, 185, 129, 0.1) !important;
+  color: #10B981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+}
+
+html.dark .btn-secondary[class*="replay"] *,
+html.dark .rcp-secondary-btn *,
+html.dark .room-hover-cta--completed * {
+  color: #10B981 !important;
+  fill: #10B981 !important;
+}
+
+/* Secondary Buttons (Generic) - Now Orange by default unless Replay */
+html.dark .btn-secondary {
+  background: linear-gradient(135deg, #FF6B00, #CC4400) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 900 !important;
+}
+
+html.light .btn-primary:not(a):not([style]),
+html.light button.btn-primary {
   background: #38BDF8 !important;
   color: #FFFFFF !important;
   border: none !important;
@@ -186,12 +289,6 @@ html.light button[class*="primary"] {
   font-weight: 600 !important;
   box-shadow: 0 2px 8px rgba(56, 189, 248, 0.2) !important;
   transition: all 0.3s ease !important;
-}
-
-html.light .btn-primary:hover {
-  background: #0EA5E9 !important;
-  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3) !important;
-  transform: translateY(-2px) !important;
 }
 
 /* Secondary/Ghost Buttons */
@@ -232,50 +329,53 @@ html.light .btn-ghost:hover {
    ======================================== */
 
 /* Navbar */
-html.dark .cv-navbar,
-html.dark nav {
-  background: rgba(17, 24, 39, 0.95) !important;
-  border-bottom: 1px solid #1F2937 !important;
-  backdrop-filter: blur(12px) !important;
+html.dark .cv-navbar-matte {
+  background: transparent !important;
+  border-bottom: none !important;
 }
 
-html.light .cv-navbar,
-html.light nav {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-bottom: 1px solid #E2E8F0 !important;
-  backdrop-filter: blur(12px) !important;
+html.dark .cv-navbar-matte.scrolled {
+  background: rgba(6, 9, 15, 0.85) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }
 
-/* Nav Links - Subtle Hover */
-html.dark .cv-nav-link,
-html.dark nav a {
+html.light .cv-navbar-matte {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+html.light .cv-navbar-matte.scrolled {
+  background: rgba(255, 255, 255, 0.90) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+/* Nav Links - Subtle Hover — scoped to .cv-nav-link only, not all anchors */
+html.dark .cv-nav-link {
   color: #94A3B8 !important;
   transition: color 0.3s ease !important;
 }
-
 html.dark .cv-nav-link:hover,
 html.dark .cv-nav-link-active {
   color: #38BDF8 !important;
   background: transparent !important;
 }
-
 html.dark .cv-nav-link::after {
   background: #38BDF8 !important;
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
 }
-
-html.light .cv-nav-link,
-html.light nav a {
+html.light .cv-nav-link {
   color: #64748B !important;
   transition: color 0.3s ease !important;
 }
-
 html.light .cv-nav-link:hover,
 html.light .cv-nav-link-active {
   color: #38BDF8 !important;
   background: transparent !important;
 }
-
 html.light .cv-nav-link::after {
   background: #38BDF8 !important;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.3) !important;
@@ -388,29 +488,35 @@ html.light .text-accent {
   color: #38BDF8 !important;
 }
 
-/* Active States */
-html.dark [class*="active"],
-html.dark .active {
+/* Active States — exclude navbar links to avoid overriding NavLink active */
+html.dark [class*="active"]:not(.cv-nav-link-item),
+html.dark .active:not(.cv-nav-link-item) {
   color: #38BDF8 !important;
   border-color: #38BDF8 !important;
 }
 
-html.light [class*="active"],
-html.light .active {
+html.light [class*="active"]:not(.cv-nav-link-item),
+html.light .active:not(.cv-nav-link-item) {
   color: #38BDF8 !important;
   border-color: #38BDF8 !important;
+}
+
+/* Nav link active — protected from global overrides */
+.cv-nav-link-item.active {
+  color: #00D1FF !important;
+  background: rgba(0, 209, 255, 0.08) !important;
 }
 
 /* ========================================
    ICONS
    ======================================== */
 
-html.dark svg {
-  color: #94A3B8 !important;
+/* Icons — scoped to non-button, non-link contexts only */
+html.dark svg:not(a svg):not(button svg):not([style] svg) {
+  color: #94A3B8;
 }
-
-html.light svg {
-  color: #64748B !important;
+html.light svg:not(a svg):not(button svg):not([style] svg) {
+  color: #64748B;
 }
 
 /* Accent Icons */

@@ -102,20 +102,22 @@ exports.submitExercise = async (req, res) => {
     if (isCorrect) {
       const user = await User.findById(req.user.id);
       if (user) {
-        user.points = (user.points || 0) + exercise.points;
-        user.updateStreak("room", req.params.slug);
-        await user.save();
-
+        // Only award points if not already awarded for this exercise
+        const rp = user.roomProgress.find(p => p.roomId === req.params.slug);
+        const alreadyAwarded = rp?.exerciseAnswers?.[req.params.exerciseId]?.correct === true;
+        if (!alreadyAwarded) {
+          if (rp) {
+            if (!rp.exerciseAnswers) rp.exerciseAnswers = {};
+            rp.exerciseAnswers[req.params.exerciseId] = { correct: true };
+          }
+          user.points = (user.points || 0) + exercise.points;
+          user.updateStreak("room", req.params.slug);
+          await user.save();
+        }
         const rank = await user.calculateRank();
         return res.json({
-          success: true,
-          correct: true,
-          points: exercise.points,
-          userStats: {
-            ...user.toObject(),
-            rank,
-            pointsToNextLevel: user.getPointsToNextLevel(),
-          },
+          success: true, correct: true, points: alreadyAwarded ? 0 : exercise.points,
+          userStats: { ...user.toObject(), rank, pointsToNextLevel: user.getPointsToNextLevel() },
         });
       }
     }
@@ -177,52 +179,52 @@ exports.submitQuiz = async (req, res) => {
       });
     });
 
-    const percentage = (earnedPoints / totalPoints) * 100;
-    const passed = percentage >= quiz.pass_percentage;
+    const percentage = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
+    const passed = percentage >= (quiz.pass_percentage || 70);
+    const PASS_BONUS = 50; // bonus XP for passing
 
     const user = await User.findById(req.user.id);
     if (user) {
-      // Update user points and progress logic here...
-      // (Delegating to seeder/utils later if too complex)
-      user.points = (user.points || 0) + earnedPoints;
+      let roomProgress = user.roomProgress.find((rp) => rp.roomId === room.slug);
 
-      // If passed, mark as room completed and update completedRooms count
+      // Best-score logic: only award points that IMPROVE on previous best
+      const prevBestPoints = roomProgress?.quizScore?.pointsEarned || 0;
+      const extraPoints = Math.max(0, earnedPoints - prevBestPoints);
+
+      // Pass bonus only on first-ever pass
+      const firstTimePass = passed && !(roomProgress?.quizCompleted);
+      const totalEarned = extraPoints + (firstTimePass ? PASS_BONUS : 0);
+
+      user.points = (user.points || 0) + totalEarned;
+
       if (passed) {
-        // Update room progress
-        let roomProgress = user.roomProgress.find(
-          (rp) => rp.roomId === room.slug,
-        );
         if (!roomProgress) {
           user.roomProgress.push({
             roomId: room.slug,
             joined: true,
             completed: true,
             completedAt: new Date(),
+            quizCompleted: true,
             totalPointsEarned: earnedPoints,
-            quizScore: {
-              pointsEarned: earnedPoints,
-              maxPoints: totalPoints,
-              percentage: percentage,
-            },
+            quizScore: { pointsEarned: earnedPoints, maxPoints: totalPoints, percentage },
           });
+          user.updateStreak("room", room.slug);
         } else {
-          roomProgress.completed = true;
-          roomProgress.completedAt = new Date();
-          roomProgress.quizScore = {
-            pointsEarned: earnedPoints,
-            maxPoints: totalPoints,
-            percentage: percentage,
-          };
+          if (!roomProgress.completed) {
+            roomProgress.completed = true;
+            roomProgress.completedAt = new Date();
+            user.updateStreak("room", room.slug);
+          }
+          roomProgress.quizCompleted = true;
+          if (earnedPoints > prevBestPoints) {
+            roomProgress.quizScore = { pointsEarned: earnedPoints, maxPoints: totalPoints, percentage };
+            roomProgress.totalPointsEarned = (roomProgress.totalPointsEarned || 0) + extraPoints;
+          }
         }
-
-        // Increment completed rooms counter
-        user.completedRooms = (user.completedRooms || 0) + 1;
-
-        // Update streak
-        user.updateStreak("room", room.slug);
       }
 
       await user.save();
+      await WeeklyStats.recordActivity(user._id, 'room', totalEarned, firstTimePass);
 
       // Award badges on room completion
       if (passed) {
@@ -266,8 +268,10 @@ exports.submitQuiz = async (req, res) => {
       res.json({
         success: true,
         passed,
-        percentage,
-        earnedPoints,
+        percentage: Math.round(percentage),
+        earnedPoints: totalEarned,
+        quizPoints: earnedPoints,
+        passBonus: firstTimePass ? PASS_BONUS : 0,
         totalPoints,
         results,
       });

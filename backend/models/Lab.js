@@ -87,6 +87,14 @@ const labSchema = new mongoose.Schema({
     type: Number,
     default: 7681
   },
+  k8sYaml: {
+    type: String, // e.g. 'malware.yaml'
+    trim: true
+  },
+  k8sUrl: {
+    type: String, // e.g. 'http://localhost:32230'
+    trim: true
+  },
   // Structured tasks with answers
   tasks: [{
     id: { type: Number },
@@ -101,6 +109,9 @@ const labSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  coverImage: {
+    type: String
   }
 }, {
   timestamps: true

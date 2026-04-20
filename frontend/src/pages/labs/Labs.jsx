@@ -26,11 +26,14 @@ import {
   Shield,
   Target,
   BarChart3,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProtectedRoute } from "../../components/protected-route";
 import { useApp } from "../../contexts/app-context";
 import axios from "../../api/axios";
+import "./Labs.css";
 
 /* ─── Difficulty signal bars (THM-style) ─── */
 const DifficultyBars = memo(({ level }) => {
@@ -51,6 +54,9 @@ const DifficultyBars = memo(({ level }) => {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
+            className="labs-diff-bar"
+            data-active={i <= bars ? "true" : "false"}
+            data-color={level}
             style={{
               width: "2.5px",
               height: `${5 + i * 2.5}px`,
@@ -61,7 +67,7 @@ const DifficultyBars = memo(({ level }) => {
           />
         ))}
       </div>
-      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color, opacity: 0.9 }}>
+      <span className="labs-diff-label" data-level={level} style={{ color }}>
         {level}
       </span>
     </div>
@@ -95,131 +101,152 @@ const StarRating = memo(({ rating }) => {
 });
 StarRating.displayName = "StarRating";
 
-/* ─── Lab Card (Grid mode — THM-inspired) ─── */
+/* ─── Lab Card (Grid mode — premium redesign) ─── */
 const LabCard = memo(({ lab, progress, isPremiumUser }) => {
   const slug = lab.slug || lab.id;
   const isCompleted = progress?.completed || false;
   const progressPct = progress?.progress || (isCompleted ? 100 : 0);
+  const isInProgress = progressPct > 0 && !isCompleted;
   const isLocked = lab.isPremium && !isPremiumUser;
+
+  /* accent color for the top glow line */
+  const accentColor = isCompleted
+    ? "#10B981"
+    : lab.difficulty === "Easy" || lab.difficulty === "Beginner"
+    ? "#39FF14"
+    : lab.difficulty === "Medium"
+    ? "#F59E0B"
+    : lab.difficulty === "Hard"
+    ? "#EF4444"
+    : lab.difficulty === "Insane"
+    ? "#B91C1C"
+    : "#00D1FF";
 
   return (
     <div
-      className={`group relative rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 flex flex-col ${isCompleted ? "ring-1 ring-emerald-500/30" : ""} ${isLocked ? "opacity-75" : ""}`}
-      style={{
-        background: "rgba(17, 25, 40, 0.75)",
-        backdropFilter: "blur(8px)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)"
-      }}
+      className={`labs-card group relative rounded-2xl overflow-hidden flex flex-col ${
+        isCompleted ? "labs-card--completed" : ""
+      } ${isLocked ? "labs-card--locked" : ""}`}
     >
-      {/* Image */}
-      <div className="relative h-32 overflow-hidden" style={{ background: "#0D1117" }}>
+      {/* Top accent glow line — colour-coded by difficulty */}
+      <div className="labs-card__accent-line" style={{ background: accentColor, boxShadow: `0 0 12px ${accentColor}99` }} />
+
+      {/* ── HERO IMAGE ── */}
+      <div className="relative overflow-hidden labs-card__hero">
         <img
-          src={lab.coverImage || "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=600"}
+          src={lab.coverImage || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800"}
           alt={lab.title}
           loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-70 group-hover:opacity-100"
+          className="labs-card__hero-img"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111a2e] via-transparent to-transparent opacity-60" />
+        {/* cinematic gradient — stronger at bottom so text sits on it */}
+        <div className="labs-card__hero-gradient" />
 
-        {/* Status badges */}
-        <div className="absolute top-2 right-2 flex items-center gap-2">
+        {/* ── Floating chips (top-left) ── */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          {/* Premium / Free */}
           {lab.isPremium ? (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase"
-              style={{ background: "rgba(245,166,35,0.15)", color: "#F5A623", border: "1px solid rgba(245,166,35,0.3)" }}>
-              <Crown size={9} /> Premium
+            <span className="labs-badge labs-badge--premium">
+              <Crown size={8} /> PRO
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase"
-              style={{ background: "rgba(136,230,54,0.12)", color: "#39FF14", border: "1px solid rgba(57,255,20,0.25)" }}>
-              Free
+            <span className="labs-badge labs-badge--free">FREE</span>
+          )}
+          {/* Type */}
+          {lab.type === "ctf" ? (
+            <span className="labs-badge labs-badge--type-ctf"><Trophy size={8} /> CTF</span>
+          ) : (
+            <span className="labs-badge labs-badge--type-lab"><Terminal size={8} /> Lab</span>
+          )}
+        </div>
+
+        {/* ── Status chip (top-right) ── */}
+        <div className="absolute top-3 right-3">
+          {isCompleted && (
+            <span className="labs-badge labs-badge--completed">
+              <CheckCircle2 size={8} /> Done
+            </span>
+          )}
+          {isInProgress && (
+            <span className="labs-badge labs-badge--inprogress">
+              <Clock size={8} /> {progressPct}%
             </span>
           )}
         </div>
 
-        {isCompleted && (
-          <div className="absolute top-2 left-2">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase"
-              style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}>
-              <CheckCircle2 size={9} /> Completed
-            </span>
-          </div>
-        )}
+        {/* ── Title sits on the image gradient at bottom ── */}
+        <div className="labs-card__hero-title-block">
+          <h3 className="labs-card__title">{lab.title}</h3>
+          <DifficultyBars level={lab.difficulty} />
+        </div>
 
         {/* Lock overlay */}
         {isLocked && (
-          <div className="absolute inset-0 bg-[#0a1128]/80 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
-            <Lock size={20} style={{ color: "#F5A623" }} />
-            <Link to="/premium" className="px-3 py-1 rounded text-[10px] font-bold uppercase transition-all hover:scale-105"
-              style={{ background: "#F5A623", color: "#000" }}>Upgrade</Link>
+          <div className="absolute inset-0 labs-card__lock-overlay">
+            <div className="labs-card__lock-icon">
+              <Lock size={22} className="labs-icon-orange" />
+            </div>
+            <Link to="/premium" className="labs-upgrade-btn">Unlock Pro</Link>
+          </div>
+        )}
+
+        {/* ── Hover CTA overlay — slides up from bottom ── */}
+        {!isLocked && (
+          <div className="labs-card__hover-overlay">
+            {isCompleted ? (
+              <Link to={`/labs/${slug}`} className="labs-hover-cta labs-hover-cta--completed">
+                <RotateCcw size={14} /> Replay Lab
+              </Link>
+            ) : (
+              <Link to={`/labs/${slug}`} className="labs-hover-cta labs-hover-cta--start btn-primary">
+                <Play size={14} /> {progressPct > 0 ? "Resume" : "Start Lab"}
+              </Link>
+            )}
           </div>
         )}
       </div>
 
-      {/* Body */}
-      <div className="flex-1 flex flex-col p-3.5 gap-3">
-        <div>
-          <h3 className="font-bold text-white text-[14px] leading-snug line-clamp-2 mb-1 group-hover:text-[#00F2FF] transition-colors">
-            {lab.title}
-          </h3>
-          <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed opacity-80">
-            {lab.description || lab.short_description || `By ${lab.creator || "CyberVerse Team"}`}
-          </p>
+      {/* ── BODY ── */}
+      <div className="labs-card__body">
+        {/* Description */}
+        <p className="labs-card__desc">
+          {lab.description || lab.short_description || `By ${lab.creator || "CyberVerse Team"}`}
+        </p>
+
+        {/* ── Stat pills row ── */}
+        <div className="labs-card__stat-row">
+          <span className="labs-stat-pill">
+            <Users size={10} /> {lab.participants || 0}
+          </span>
+          <span className="labs-stat-pill">
+            <Clock size={10} /> {lab.duration || "30m"}
+          </span>
+          <span className="labs-stat-pill labs-stat-pill--xp">
+            <Zap size={10} /> {lab.points || 100} XP
+          </span>
         </div>
 
-        {/* Meta row */}
-        <div className="flex items-center justify-between">
-          <DifficultyBars level={lab.difficulty} />
-          {lab.type === "ctf" ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase" style={{ background: "rgba(245,166,35,0.08)", color: "#F5A623" }}>
-              <Trophy size={10} /> CTF
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase" style={{ background: "rgba(0,242,255,0.08)", color: "#00F2FF" }}>
-              <BookOpen size={10} /> Labs
-            </span>
-          )}
-        </div>
-
-        {/* Stats */}
-        <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold border-t border-white/5 pt-3">
-          <span className="flex items-center gap-1"><Users size={11} /> {lab.participants || 0}</span>
-          <span className="flex items-center gap-1"><Clock size={11} /> {lab.duration || "30m"}</span>
-          <span className="flex items-center gap-1 text-amber-400/90"><Zap size={11} /> {lab.points || 100} XP</span>
-        </div>
-
-        {/* Progress */}
+        {/* ── Progress bar ── */}
         {progressPct > 0 && !isCompleted && (
-          <div className="mt-1">
-            <div className="flex justify-between text-[10px] mb-1 font-bold">
-              <span className="text-slate-500 uppercase tracking-tighter">Progress</span>
-              <span style={{ color: "#00F2FF" }}>{progressPct}%</span>
+          <div className="labs-card__progress">
+            <div className="labs-card__progress-labels">
+              <span>Progress</span>
+              <span className="labs-text-cyan">{progressPct}%</span>
             </div>
-            <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
-              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: "linear-gradient(90deg, #00F2FF, #0099CC)" }} />
+            <div className="labs-progress-track">
+              <div className="labs-progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
           </div>
         )}
 
-        {/* CTA */}
-        <div className="flex gap-2 mt-auto pt-1">
-          {isLocked ? (
-            <Link to="/premium" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase transition-all" style={{ background: "rgba(255,255,255,0.05)", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <Lock size={12} /> Locked
+        {/* ── Footer: only show for locked (hover overlay handles start/replay) ── */}
+        {isLocked && (
+          <div className="labs-card__footer">
+            <Link to="/premium" className="labs-cta-btn labs-cta-btn--locked flex-1">
+              <Lock size={12} /> Locked — Upgrade
             </Link>
-          ) : isCompleted ? (
-            <Link to={`/labs/${slug}`} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase transition-all hover:bg-emerald-500/20" style={{ background: "rgba(16,185,129,0.1)", color: "#10B981", border: "1px solid rgba(16,185,129,0.2)" }}>
-              <CheckCircle2 size={12} /> Review
-            </Link>
-          ) : (
-            <Link to={`/labs/${slug}`} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase transition-all hover:brightness-110 shadow-lg shadow-cyan-500/20" style={{ background: "linear-gradient(135deg, #00F2FF 0%, #0099CC 100%)", color: "#000" }}>
-              <Play size={12} /> {progressPct > 0 ? "Resume" : "Start"}
-            </Link>
-          )}
-          <Link to={`/labs/${slug}`} className="flex items-center justify-center w-9 h-9 rounded-lg transition-all hover:bg-white/10" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <ArrowRight size={14} className="text-slate-400" />
-          </Link>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -230,17 +257,15 @@ LabCard.displayName = "LabCard";
 const LabRow = memo(({ lab, progress, isPremiumUser }) => {
   const slug = lab.slug || lab.id;
   const isCompleted = progress?.completed || false;
+  const progressPct = progress?.progress || (isCompleted ? 100 : 0);
+  const isInProgress = progressPct > 0 && !isCompleted;
   const isLocked = lab.isPremium && !isPremiumUser;
 
   return (
     <div
-      className={`group flex items-center gap-4 p-3 rounded-xl transition-all duration-300 hover:border-cyan-500/30 ${isCompleted ? "ring-1 ring-emerald-500/20" : ""}`}
-      style={{
-        background: "rgba(17, 25, 40, 0.6)",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}
+      className={`labs-row group flex items-center gap-4 p-3 rounded-xl ${isCompleted ? "labs-row--completed" : ""}`}
     >
-      <div className="relative w-24 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ background: "#0D1117" }}>
+      <div className="relative w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 labs-card__image">
         <img
           src={lab.coverImage || "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=180"}
           alt={lab.title}
@@ -248,42 +273,49 @@ const LabRow = memo(({ lab, progress, isPremiumUser }) => {
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-70"
         />
         {isLocked && (
-          <div className="absolute inset-0 bg-[#0a1128]/80 flex items-center justify-center">
-            <Lock size={14} style={{ color: "#F5A623" }} />
+          <div className="absolute inset-0 labs-card__lock-overlay">
+            <Lock size={14} className="labs-icon-orange" />
           </div>
         )}
       </div>
 
       <div className="flex-1 flex flex-col gap-1 min-w-0">
-        <h3 className="font-bold text-white text-[13px] line-clamp-1 group-hover:text-[#00F2FF] transition-colors leading-tight">
-          {lab.title}
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-bold text-white text-[13px] line-clamp-1 labs-card__title leading-tight">
+            {lab.title}
+          </h3>
+          {isInProgress && (
+            <span className="labs-badge labs-badge--inprogress labs-badge--sm">
+              {progressPct}%
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3 flex-wrap">
           <DifficultyBars level={lab.difficulty} />
           {lab.type === "ctf" ? (
-            <span className="text-[9px] font-extrabold uppercase" style={{ color: "#F5A623" }}>CTF</span>
+            <span className="text-[9px] font-extrabold uppercase labs-text-orange">CTF</span>
           ) : (
-            <span className="text-[9px] font-extrabold uppercase" style={{ color: "#00F2FF" }}>Labs</span>
+            <span className="text-[9px] font-extrabold uppercase labs-text-cyan">Labs</span>
           )}
         </div>
         <div className="flex items-center gap-4 text-[10px] text-slate-500 font-bold">
           <span className="flex items-center gap-1"><Users size={11} /> {lab.participants || 0}</span>
-          <span className="flex items-center gap-1 text-amber-500/80"><Zap size={11} /> {lab.points || 100} XP</span>
+          <span className="labs-xp-badge"><Zap size={11} /> {lab.points || 100} XP</span>
         </div>
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
         {isLocked ? (
-          <Link to="/premium" className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase" style={{ background: "rgba(245,166,35,0.1)", color: "#F5A623" }}>
+          <Link to="/premium" className="labs-cta-btn labs-cta-btn--locked labs-cta-btn--sm">
             Unlock
           </Link>
         ) : isCompleted ? (
-          <Link to={`/labs/${slug}`} className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1" style={{ background: "rgba(16,185,129,0.1)", color: "#10B981" }}>
-            Review
+          <Link to={`/labs/${slug}`} className="labs-cta-btn labs-cta-btn--completed labs-cta-btn--sm">
+            Replay
           </Link>
         ) : (
-          <Link to={`/labs/${slug}`} className="px-4 py-1.5 rounded-lg text-[10px] font-extrabold uppercase flex items-center gap-1 hover:brightness-110 transition-all shadow-md shadow-cyan-500/10" style={{ background: "linear-gradient(135deg, #00F2FF 0%, #0099CC 100%)", color: "#000" }}>
-            <Play size={11} /> Start
+          <Link to={`/labs/${slug}`} className="labs-cta-btn labs-cta-btn--start labs-cta-btn--row labs-cta-btn--sm">
+            <Play size={11} /> {progressPct > 0 ? "Resume" : "Start"}
           </Link>
         )}
       </div>
@@ -459,50 +491,37 @@ const Labs = memo(() => {
 
   /* ── Difficulty quick-filter chips ── */
   const diffChips = [
-    { label: "Easy", color: "#39FF14" },
-    { label: "Medium", color: "#F59E0B" },
-    { label: "Hard", color: "#EF4444" },
-    { label: "Insane", color: "#B91C1C" },
+    { label: "Easy", cls: "labs-chip--easy" },
+    { label: "Medium", cls: "labs-chip--medium" },
+    { label: "Hard", cls: "labs-chip--hard" },
+    { label: "Insane", cls: "labs-chip--insane" },
   ];
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen" style={{ background: "#0a1128" }}>
+      {/* ═══ PAGE WRAPPER — exact same background as Dashboard ═══ */}
+      <div className="labs-page min-h-screen text-white relative overflow-x-hidden">
+        {/* dot grid — same as Dashboard + Home */}
+        <div className="absolute inset-0 z-0 pointer-events-none labs-page__grid" />
+        {/* dark overlay — same as Dashboard */}
+        <div className="absolute inset-0 z-0 pointer-events-none labs-page__overlay" />
 
-        {/* ═══ HERO HEADER (THM-style) ═══ */}
-        <div
-          className="relative overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, #0a1128 0%, #1a2744 50%, #0a1128 100%)",
-          }}
-        >
-          {/* Subtle grid overlay */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.03]"
-            style={{
-              backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
-              backgroundSize: "60px 60px",
-            }}
-          />
+        <div className="relative z-10">
 
+        {/* ═══ HERO HEADER ═══ */}
+        <div className="relative overflow-hidden labs-hero">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-10">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="p-2.5 rounded-xl"
-                    style={{ background: "rgba(0, 242, 255, 0.1)", border: "1px solid rgba(0, 242, 255, 0.2)" }}
-                  >
-                    <Terminal size={22} style={{ color: "#00F2FF" }} />
+                  <div className="labs-hero__icon-box">
+                    <Terminal size={22} className="labs-icon-cyan" />
                   </div>
-                  <span
-                    className="text-xs font-bold uppercase tracking-widest"
-                    style={{ color: "#00F2FF" }}
-                  >
+                  <span className="text-xs font-bold uppercase tracking-widest labs-text-cyan">
                     Hands-On Training
                   </span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">
                   Cybersecurity Labs
                 </h1>
                 <p className="text-slate-400 text-sm max-w-lg">
@@ -517,8 +536,8 @@ const Labs = memo(() => {
                   { val: labs.filter((l) => !l.isPremium).length || "—", label: "Free Labs", icon: <Shield size={16} /> },
                   { val: Object.values(userProgress).filter((p) => p.completed).length, label: "Completed", icon: <CheckCircle2 size={16} /> },
                 ].map(({ val, label, icon }) => (
-                  <div key={label} className="text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-1" style={{ color: "#00F2FF" }}>
+                  <div key={label} className="text-center labs-stat-counter">
+                    <div className="flex items-center justify-center gap-1.5 mb-1 labs-text-cyan">
                       {icon}
                     </div>
                     <p className="text-2xl font-extrabold text-white">{val}</p>
@@ -531,7 +550,7 @@ const Labs = memo(() => {
         </div>
 
         {/* ═══ TABS + FILTERS BAR ═══ */}
-        <div style={{ background: "#0d1829", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="labs-toolbar">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-4 overflow-x-auto">
               {/* Category tabs */}
@@ -542,17 +561,11 @@ const Labs = memo(() => {
                     <button
                       key={tab.key}
                       onClick={() => setFilter("type", tab.type)}
-                      className="relative px-5 py-3.5 text-sm font-semibold transition-colors whitespace-nowrap"
-                      style={{
-                        color: isActive ? "#00F2FF" : "#94A3B8",
-                      }}
+                      className={`labs-tab ${isActive ? "labs-tab--active" : ""}`}
                     >
                       {tab.label}
                       {isActive && (
-                        <div
-                          className="absolute bottom-0 left-0 right-0 h-[2px]"
-                          style={{ background: "#00F2FF" }}
-                        />
+                        <div className="labs-tab__indicator" />
                       )}
                     </button>
                   );
@@ -565,22 +578,14 @@ const Labs = memo(() => {
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
-                    className="pl-9 pr-8 py-2 rounded-lg text-sm transition-all w-48 focus:w-64"
-                    style={{
-                      background: "#1a2332",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      color: "#fff",
-                      outline: "none",
-                    }}
+                    className="labs-search-input"
                     placeholder="Search labs…"
                     value={filters.search}
                     onChange={(e) => setFilter("search", e.target.value)}
-                    onFocus={(e) => e.target.style.borderColor = "rgba(0, 242, 255, 0.4)"}
-                    onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
                   />
                   {filters.search && (
                     <button
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors duration-200"
                       onClick={() => setFilter("search", "")}
                     >
                       <X size={14} />
@@ -590,15 +595,12 @@ const Labs = memo(() => {
 
                 {/* Mobile filter button */}
                 <button
-                  className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold"
-                  style={{ background: "#1a2332", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.08)" }}
+                  className="md:hidden labs-filter-mobile-btn"
                   onClick={() => setMobileOpen(true)}
                 >
                   <Filter size={14} /> Filters
                   {activeCount > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 rounded text-xs font-bold" style={{ background: "#00F2FF", color: "#0a1128" }}>
-                      {activeCount}
-                    </span>
+                    <span className="labs-filter-count">{activeCount}</span>
                   )}
                 </button>
               </div>
@@ -607,32 +609,27 @@ const Labs = memo(() => {
         </div>
 
         {/* ═══ FILTER CHIPS + SORT BAR ═══ */}
-        <div style={{ background: "#0f1d2e" }}>
+        <div className="labs-chipbar">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               {/* Difficulty chips + subscription */}
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Subscription filter */}
+                {/* Subscription filter — no inline style */}
                 {["all", "free", "premium"].map((sub) => {
                   const isActive = filters.subscription === sub;
                   return (
                     <button
                       key={sub}
                       onClick={() => setFilter("subscription", sub)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{
-                        background: isActive ? "rgba(136,230,54,0.12)" : "rgba(255,255,255,0.03)",
-                        color: isActive ? "#88E636" : "#64748B",
-                        border: `1px solid ${isActive ? "rgba(136,230,54,0.25)" : "rgba(255,255,255,0.06)"}`,
-                      }}
+                      className={`labs-chip labs-chip--green ${isActive ? "labs-chip--active" : ""}`}
                     >
                       {sub === "all" ? "All" : sub === "free" ? "Free" : "Premium"}
                     </button>
                   );
                 })}
-                <div className="w-px h-5 mx-1" style={{ background: "rgba(255,255,255,0.08)" }} />
-                {/* Difficulty chips */}
-                {diffChips.map(({ label, color }) => {
+                <div className="labs-chipbar__divider" />
+                {/* Difficulty chips — class-based colors, NO inline style */}
+                {diffChips.map(({ label, cls }) => {
                   const isActive = filters.difficulties?.includes(label);
                   return (
                     <button
@@ -645,23 +642,19 @@ const Labs = memo(() => {
                             : [...(filters.difficulties || []), label],
                         )
                       }
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{
-                        background: isActive ? `${color}18` : "rgba(255,255,255,0.03)",
-                        color: isActive ? color : "#64748B",
-                        border: `1px solid ${isActive ? `${color}40` : "rgba(255,255,255,0.06)"}`,
-                      }}
+                      className={`labs-chip ${cls} ${isActive ? "labs-chip--active" : ""}`}
                     >
                       {label}
                     </button>
                   );
                 })}
+                {/* Clear Filters button */}
                 {activeCount > 0 && (
                   <button
                     onClick={clearAll}
-                    className="px-2 py-1 rounded text-xs font-semibold text-slate-500 hover:text-white transition-colors flex items-center gap-1"
+                    className="labs-clear-btn"
                   >
-                    <X size={12} /> Clear
+                    <X size={12} /> Clear All
                   </button>
                 )}
               </div>
@@ -673,13 +666,7 @@ const Labs = memo(() => {
                 </span>
                 <div className="relative">
                   <select
-                    className="appearance-none pl-3 pr-7 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
-                    style={{
-                      background: "#1a2332",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      color: "#CBD5E1",
-                      outline: "none",
-                    }}
+                    className="labs-sort-select"
                     value={sortBy}
                     onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
                   >
@@ -691,23 +678,15 @@ const Labs = memo(() => {
                   </select>
                   <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 </div>
-                <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: "rgba(255,255,255,0.03)" }}>
+                <div className="labs-view-toggle">
                   <button
-                    className="p-1.5 rounded transition-colors"
-                    style={{
-                      background: viewMode === "grid" ? "rgba(136,230,54,0.12)" : "transparent",
-                      color: viewMode === "grid" ? "#88E636" : "#64748B",
-                    }}
+                    className={`labs-view-btn ${viewMode === "grid" ? "labs-view-btn--active" : ""}`}
                     onClick={() => setViewMode("grid")}
                   >
                     <Grid size={14} />
                   </button>
                   <button
-                    className="p-1.5 rounded transition-colors"
-                    style={{
-                      background: viewMode === "list" ? "rgba(0, 242, 255, 0.12)" : "transparent",
-                      color: viewMode === "list" ? "#00F2FF" : "#64748B",
-                    }}
+                    className={`labs-view-btn ${viewMode === "list" ? "labs-view-btn--active" : ""}`}
                     onClick={() => setViewMode("list")}
                   >
                     <List size={14} />
@@ -725,16 +704,12 @@ const Labs = memo(() => {
           {loading && (
             <div className={`grid gap-5 ${viewMode === "grid" ? "md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
               {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl overflow-hidden animate-pulse"
-                  style={{ background: "#1a2332", border: "1px solid rgba(255,255,255,0.06)" }}
-                >
-                  <div className="h-36" style={{ background: "#111a27" }} />
+                <div key={i} className="labs-skeleton rounded-xl overflow-hidden">
+                  <div className="h-36 labs-skeleton__img" />
                   <div className="p-4 space-y-3">
-                    <div className="h-4 rounded w-3/4" style={{ background: "rgba(255,255,255,0.06)" }} />
-                    <div className="h-3 rounded w-1/2" style={{ background: "rgba(255,255,255,0.04)" }} />
-                    <div className="h-2 rounded w-5/6" style={{ background: "rgba(255,255,255,0.03)" }} />
+                    <div className="h-4 rounded w-3/4 labs-skeleton__line" />
+                    <div className="h-3 rounded w-1/2 labs-skeleton__line labs-skeleton__line--dim" />
+                    <div className="h-2 rounded w-5/6 labs-skeleton__line labs-skeleton__line--dimmer" />
                   </div>
                 </div>
               ))}
@@ -743,14 +718,13 @@ const Labs = memo(() => {
 
           {/* Error */}
           {!loading && error && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="p-4 rounded-xl mb-4" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                <X size={32} className="text-red-400" />
+            <div className="labs-empty-state">
+              <div className="labs-empty-state__icon labs-empty-state__icon--error">
+                <AlertCircle size={32} />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">{error}</h3>
               <button
-                className="mt-4 px-6 py-2.5 rounded-lg font-bold text-sm transition-all hover:brightness-110"
-                style={{ background: "linear-gradient(135deg, #00F2FF, #0099CC)", color: "#0a1128" }}
+                className="labs-cta-btn labs-cta-btn--start mt-4"
                 onClick={() => fetchLabs()}
               >
                 Try Again
@@ -758,20 +732,26 @@ const Labs = memo(() => {
             </div>
           )}
 
-          {/* Empty */}
+          {/* Empty state */}
           {!loading && !error && sorted.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="p-4 rounded-xl mb-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                <Target size={32} className="text-slate-500" />
+            <div className="labs-empty-state">
+              <div className="labs-empty-state__icon">
+                <Target size={40} className="labs-icon-cyan" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">No labs match your filters</h3>
-              <p className="text-slate-400 text-sm mb-6">Try adjusting your search or clearing all filters.</p>
+              <p className="text-slate-400 text-sm mb-2 max-w-md text-center">
+                We couldn't find any labs matching your current criteria. Try adjusting your search, removing difficulty filters, or clearing all filters.
+              </p>
+              {activeCount > 0 && (
+                <p className="text-xs text-slate-500 mb-4">
+                  {activeCount} active filter{activeCount > 1 ? "s" : ""} applied
+                </p>
+              )}
               <button
-                className="px-6 py-2.5 rounded-lg font-bold text-sm transition-all hover:brightness-110"
-                style={{ background: "linear-gradient(135deg, #00F2FF, #0099CC)", color: "#0a1128" }}
+                className="labs-cta-btn labs-cta-btn--start"
                 onClick={clearAll}
               >
-                Clear Filters
+                Clear All Filters
               </button>
             </div>
           )}
@@ -793,8 +773,7 @@ const Labs = memo(() => {
           {!loading && totalPages > 1 && (
             <div className="flex flex-wrap items-center justify-center gap-2 pt-10">
               <button
-                className="flex items-center gap-1 px-3 py-2 rounded-lg font-semibold text-sm transition-colors disabled:opacity-40"
-                style={{ background: "#1a2332", color: "#CBD5E1", border: "1px solid rgba(255,255,255,0.06)" }}
+                className="labs-pagination-btn"
                 disabled={page === 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
@@ -804,12 +783,7 @@ const Labs = memo(() => {
                 {Array.from({ length: totalPages }).map((_, i) => (
                   <button
                     key={i}
-                    className="w-9 h-9 rounded-lg font-semibold text-sm transition-all"
-                    style={{
-                      background: page === i + 1 ? "#00F2FF" : "#1a2332",
-                      color: page === i + 1 ? "#0a1128" : "#94A3B8",
-                      border: page === i + 1 ? "none" : "1px solid rgba(255,255,255,0.06)",
-                    }}
+                    className={`labs-pagination-num ${page === i + 1 ? "labs-pagination-num--active" : ""}`}
                     onClick={() => setPage(i + 1)}
                   >
                     {i + 1}
@@ -817,8 +791,7 @@ const Labs = memo(() => {
                 ))}
               </div>
               <button
-                className="flex items-center gap-1 px-3 py-2 rounded-lg font-semibold text-sm transition-colors disabled:opacity-40"
-                style={{ background: "#1a2332", color: "#CBD5E1", border: "1px solid rgba(255,255,255,0.06)" }}
+                className="labs-pagination-btn"
                 disabled={page === totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               >
@@ -832,10 +805,10 @@ const Labs = memo(() => {
         {mobileOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-            <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm flex flex-col" style={{ background: "#0d1829" }}>
-              <div className="flex items-center justify-between p-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm flex flex-col labs-mobile-drawer">
+              <div className="flex items-center justify-between p-5 labs-mobile-drawer__header">
                 <h2 className="text-lg font-bold text-white">Filters</h2>
-                <button className="p-2 rounded-lg transition-colors" style={{ background: "rgba(255,255,255,0.04)" }} onClick={() => setMobileOpen(false)}>
+                <button className="p-2 rounded-lg labs-mobile-drawer__close" onClick={() => setMobileOpen(false)}>
                   <X size={18} className="text-slate-400" />
                 </button>
               </div>
@@ -848,12 +821,7 @@ const Labs = memo(() => {
                       <button
                         key={sub}
                         onClick={() => setFilter("subscription", sub)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                        style={{
-                          background: filters.subscription === sub ? "rgba(136,230,54,0.12)" : "rgba(255,255,255,0.03)",
-                          color: filters.subscription === sub ? "#88E636" : "#64748B",
-                          border: `1px solid ${filters.subscription === sub ? "rgba(136,230,54,0.25)" : "rgba(255,255,255,0.06)"}`,
-                        }}
+                        className={`labs-chip labs-chip--green ${filters.subscription === sub ? "labs-chip--active" : ""}`}
                       >
                         {sub === "all" ? "All" : sub.charAt(0).toUpperCase() + sub.slice(1)}
                       </button>
@@ -864,18 +832,13 @@ const Labs = memo(() => {
                 <div>
                   <h4 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Difficulty</h4>
                   <div className="flex flex-wrap gap-2">
-                    {diffChips.map(({ label, color }) => {
+                    {diffChips.map(({ label, cls }) => {
                       const on = filters.difficulties?.includes(label);
                       return (
                         <button
                           key={label}
                           onClick={() => setFilter("difficulties", on ? filters.difficulties.filter((x) => x !== label) : [...(filters.difficulties || []), label])}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                          style={{
-                            background: on ? `${color}18` : "rgba(255,255,255,0.03)",
-                            color: on ? color : "#64748B",
-                            border: `1px solid ${on ? `${color}40` : "rgba(255,255,255,0.06)"}`,
-                          }}
+                          className={`labs-chip ${cls} ${on ? "labs-chip--active" : ""}`}
                         >
                           {label}
                         </button>
@@ -894,12 +857,7 @@ const Labs = memo(() => {
                           <button
                             key={t}
                             onClick={() => setFilter("tags", on ? filters.tags.filter((x) => x !== t) : [...(filters.tags || []), t])}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                            style={{
-                              background: on ? "rgba(136,230,54,0.12)" : "rgba(255,255,255,0.03)",
-                              color: on ? "#88E636" : "#64748B",
-                              border: `1px solid ${on ? "rgba(136,230,54,0.25)" : "rgba(255,255,255,0.06)"}`,
-                            }}
+                            className={`labs-chip labs-chip--green ${on ? "labs-chip--active" : ""}`}
                           >
                             {t}
                           </button>
@@ -909,10 +867,9 @@ const Labs = memo(() => {
                   </div>
                 )}
               </div>
-              <div className="p-5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="p-5 labs-mobile-drawer__footer">
                 <button
-                  className="w-full px-4 py-3 rounded-lg font-bold text-sm transition-all hover:brightness-110"
-                  style={{ background: "#88E636", color: "#0a1128" }}
+                  className="w-full labs-cta-btn labs-cta-btn--start labs-cta-btn--row"
                   onClick={() => setMobileOpen(false)}
                 >
                   Apply Filters {activeCount > 0 ? `(${activeCount})` : ""}
@@ -921,6 +878,8 @@ const Labs = memo(() => {
             </div>
           </div>
         )}
+
+        </div>
       </div>
     </ProtectedRoute>
   );

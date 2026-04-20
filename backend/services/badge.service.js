@@ -22,7 +22,7 @@ const logger = require("../utils/logger");
  */
 async function awardBadgesOnRoomCompletion(userId, roomId, metrics = {}) {
   try {
-    logger.log(`🏆 Processing badges for room completion: ${roomId}`);
+    logger.info(`🏆 Processing badges for room completion: ${roomId}`);
 
     // Get room details for context
     const room = await Room.findOne({ slug: roomId });
@@ -59,7 +59,7 @@ async function awardBadgesOnRoomCompletion(userId, roomId, metrics = {}) {
  */
 async function awardBadgesOnLabCompletion(userId, labId, metrics = {}) {
   try {
-    logger.log(`🏆 Processing badges for lab completion: ${labId}`);
+    logger.info(`🏆 Processing badges for lab completion: ${labId}`);
 
     // Get lab details for context
     const lab = await Lab.findById(labId);
@@ -93,7 +93,7 @@ async function awardBadgesOnLabCompletion(userId, labId, metrics = {}) {
  */
 async function awardBadgesOnLogin(userId) {
   try {
-    logger.log(`📍 Checking badges on login for user: ${userId}`);
+    logger.info(`📍 Checking badges on login for user: ${userId}`);
 
     const user = await User.findById(userId);
     if (!user) {
@@ -121,7 +121,7 @@ async function awardBadgesOnLogin(userId) {
  */
 async function awardBadgesOnStreakUpdate(userId, newStreak) {
   try {
-    logger.log(
+    logger.info(
       `🔥 Checking streak badges for user: ${userId}, streak: ${newStreak}`,
     );
 
@@ -143,7 +143,7 @@ async function awardBadgesOnStreakUpdate(userId, newStreak) {
  */
 async function awardBadgesOnSkillUpdate(userId, skillName, newValue) {
   try {
-    logger.log(`💡 Checking skill badges for ${skillName}: ${newValue}`);
+    logger.info(`💡 Checking skill badges for ${skillName}: ${newValue}`);
 
     const user = await User.findById(userId);
     if (!user) {
@@ -171,7 +171,7 @@ async function awardBadgesOnSkillUpdate(userId, skillName, newValue) {
  */
 async function checkAllBadges(userId) {
   try {
-    logger.log(`🔍 Running complete badge check for user: ${userId}`);
+    logger.info(`🔍 Running complete badge check for user: ${userId}`);
 
     const user = await User.findById(userId);
     if (!user) {
@@ -235,9 +235,9 @@ async function getUserBadgesWithStats(userId) {
  */
 async function initializeBadgeSystem() {
   try {
-    logger.log("🎖️  Initializing badge system...");
+    logger.info("🎖️  Initializing badge system...");
     await syncBadgesDB();
-    logger.log("✅ Badge system initialized");
+    logger.info("✅ Badge system initialized");
     return true;
   } catch (error) {
     logger.error("Badge system initialization failed:", error);

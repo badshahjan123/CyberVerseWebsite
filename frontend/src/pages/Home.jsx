@@ -1,385 +1,407 @@
+import React, { memo, useState } from "react"
 import { Link } from "react-router-dom"
+import { Rocket, Gamepad2, Trophy, Flame, Star, Shield } from "lucide-react"
 import { useApp } from "../contexts/app-context"
 import { useRealtime } from "../contexts/realtime-context"
-import { apiCall } from "../config/api"
-import "./Home.css"
-import {
-  Shield, Terminal, Network, Code, Trophy, Crown,
-  Zap, Lock, Star, Flame, ChevronRight, CheckCircle, Swords
-} from "lucide-react"
-import { memo, useMemo, useEffect, useRef, useState, useCallback } from "react"
 
-/* ─────────────────────────────────────────
-   Animated counter hook (runs once on mount)
-───────────────────────────────────────── */
-const useCounter = (target, duration = 1800, startOnMount = true) => {
-  const [count, setCount] = useState(0)
-  const started = useRef(false)
-
-  useEffect(() => {
-    if (!startOnMount || started.current) return
-    started.current = true
-    const startTime = performance.now()
-    const step = (now) => {
-      const elapsed = now - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      // ease-out cubic
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setCount(Math.floor(eased * target))
-      if (progress < 1) requestAnimationFrame(step)
-    }
-    requestAnimationFrame(step)
-  }, [target, duration, startOnMount])
-
-  return count
+/* ── Colour tokens (single source of truth) ──────────────────────────
+   orange  → primary CTA buttons only
+   cyan    → data, stats, terminal, info highlights
+   slate   → body text, secondary labels
+   white   → headings, primary text
+──────────────────────────────────────────────────────────────────── */
+const C = {
+  orange:      "#FF6B00",
+  orangeGlow:  "rgba(255,107,0,0.25)",
+  orangeDim:   "rgba(255,107,0,0.12)",
+  orangeBorder:"rgba(255,107,0,0.3)",
+  cyan:        "#00D1FF",
+  cyanGlow:    "rgba(0,209,255,0.15)",
+  cyanDim:     "rgba(0,209,255,0.08)",
+  cyanBorder:  "rgba(0,209,255,0.2)",
 }
 
-/* ─────────────────────────────────────────
-   Stat Card
-───────────────────────────────────────── */
-const StatCard = memo(({ emoji, label, value, xp, color, subLabel = "XP Progress" }) => {
-  const formatted = value?.toLocaleString() || "0";
-
-  return (
-    <div className="cv-stat-card" style={{ "--accent-color": color }}>
-      <div className="cv-stat-icon">{emoji}</div>
-      <div className="cv-stat-value">{formatted}</div>
-      <div className="cv-stat-label">{label}</div>
-      <div className="cv-xp-bar-wrap">
-        <div className="cv-xp-bar" style={{ "--xp-pct": `${xp}%`, "--bar-color": color }} />
-      </div>
-      <div className="cv-xp-label">{xp}% {subLabel}</div>
-    </div>
-  )
-})
-
-/* ─────────────────────────────────────────
-   Feature Card
-───────────────────────────────────────── */
-const FeatureCard = memo(({ icon: Icon, title, description, xpBadge, color }) => (
-  <div className="cv-feature-card" style={{ "--feat-color": color }}>
-    <div className="cv-feature-header">
-      <div className="cv-feature-icon-wrap">
-        <Icon className="cv-feature-icon" size={22} />
-      </div>
-      <span className="cv-xp-badge">{xpBadge}</span>
-    </div>
-    <h3 className="cv-feature-title">{title}</h3>
-    <p className="cv-feature-desc">{description}</p>
-  </div>
-))
-
-/* ─────────────────────────────────────────
-   Leaderboard Row
-───────────────────────────────────────── */
-const LeaderRow = memo(({ rank, name, level, xp, color }) => (
-  <div className="cv-leader-row">
-    <div className="cv-rank-badge" style={{ "--rank-color": color }}>
-      {rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉"}
-    </div>
-    <div className="cv-leader-info">
-      <span className="cv-leader-name">{name}</span>
-      <span className="cv-leader-level">Lvl {level}</span>
-    </div>
-    <div className="cv-leader-xp" style={{ color }}>
-      <Zap size={12} /> {xp.toLocaleString()} XP
-    </div>
-  </div>
-))
-
-/* ─────────────────────────────────────────
-   Dashboard Preview Card (Hero Right)
-───────────────────────────────────────── */
-const DashboardPreview = memo(() => {
-  const { userStats } = useRealtime()
-  
-  return (
-    <div className="cv-dash-card">
-      <div className="cv-dash-header">
-        <Shield size={16} className="cv-dash-icon" />
-        <span className="cv-dash-title">CyberVerse Console</span>
-        <div className="cv-dash-dots">
-          <span style={{ background: "#FF5F57" }} />
-          <span style={{ background: "#FFBD2E" }} />
-          <span style={{ background: "#28C840" }} />
-        </div>
-      </div>
-
-      <div className="cv-dash-terminal">
-        <p><span className="cv-term-prompt">$</span> <span className="cv-term-cmd">connect --lab sql-injection-advanced</span></p>
-        <p className="cv-term-success">✓ Lab environment spawned</p>
-        <p><span className="cv-term-prompt">$</span> <span className="cv-term-cmd">nmap -sV 10.10.1.42</span></p>
-        <p className="cv-term-muted">Starting Nmap 7.94...</p>
-        <p className="cv-term-info">PORT   STATE SERVICE VERSION</p>
-        <p className="cv-term-warn">80/tcp open  http    Apache 2.4.41</p>
-        <p className="cv-term-success">3306/tcp open  mysql</p>
-      </div>
-
-      <div className="cv-dash-stats-row">
-        <div className="cv-mini-stat">
-          <Trophy size={13} style={{ color: "#FACC15" }} />
-          <span>Level {userStats?.level || 1}</span>
-        </div>
-        <div className="cv-mini-stat">
-          <Flame size={13} style={{ color: "#00F5FF" }} />
-          <span>{userStats?.streak || 0} Streak</span>
-        </div>
-        <div className="cv-mini-stat">
-          <Star size={13} style={{ color: "#39FF14" }} />
-          <span>{(userStats?.totalXP || 0).toLocaleString()} XP</span>
-        </div>
-      </div>
-    </div>
-  )
-})
-
-/* ─────────────────────────────────────────
-   Main Home Component
-───────────────────────────────────────── */
 const Home = memo(() => {
   const { isAuthenticated } = useApp()
-  const { leaderboardData, socket } = useRealtime()
-  const [stats, setStats] = useState([
-    { emoji: "👾", label: "Registered Hackers", value: "0", xp: 0, color: "#00F5FF", subLabel: "Global Scale" },
-    { emoji: "🏯", label: "Training Rooms", value: "0", xp: 0, color: "#39FF14", subLabel: "Live Courses" },
-    { emoji: "🧪", label: "Active Labs", value: "0", xp: 0, color: "#8B5CF6", subLabel: "Live Instances" },
-  ])
-  const [leaders, setLeaders] = useState([
-    { rank: 1, name: "Loading...", level: 0, xp: 0, color: "#FACC15" },
-    { rank: 2, name: "Loading...", level: 0, xp: 0, color: "#94A3B8" },
-    { rank: 3, name: "Loading...", level: 0, xp: 0, color: "#CD7F32" },
-  ])
+  const { userStats } = useRealtime()
 
-  // Fetch platform statistics
-  const fetchPlatformStats = useCallback(async () => {
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-      const res = await fetch(`${API_URL}/stats/platform`)
-      const response = await res.json()
-      
-      if (response && response.data) {
-        const { totalUsers = 0, totalLabs = 0, totalRooms = 0 } = response.data
-        setStats([
-          { emoji: "👾", label: "Registered Hackers", value: Math.max(totalUsers, 1), xp: Math.min((Math.max(totalUsers, 1) / 1000) * 100, 100).toFixed(1), color: "#00F5FF", subLabel: "Global Scale" },
-          { emoji: "🏯", label: "Training Rooms", value: Math.max(totalRooms, 1), xp: Math.min((Math.max(totalRooms, 1) / 20) * 100, 100).toFixed(1), color: "#39FF14", subLabel: "Live Courses" },
-          { emoji: "🧪", label: "Active Labs", value: Math.max(totalLabs, 1), xp: Math.min((Math.max(totalLabs, 1) / 50) * 100, 100).toFixed(1), color: "#8B5CF6", subLabel: "Live Instances" },
-        ])
-      }
-    } catch (error) {
-      console.error('Failed to fetch platform stats:', error)
-    }
-  }, [])
-
-  // Update leaderboard from realtime context
-  useEffect(() => {
-    if (leaderboardData && leaderboardData.length > 0) {
-      const topThree = leaderboardData.slice(0, 3).map((user, idx) => ({
-        rank: idx + 1,
-        name: user.username || user.name || `User ${idx + 1}`,
-        level: user.level || 1,
-        xp: user.totalXP || user.points || 0,
-        color: idx === 0 ? "#FACC15" : idx === 1 ? "#94A3B8" : "#CD7F32",
-      }))
-      setLeaders(topThree)
-    }
-  }, [leaderboardData])
-
-  // Real-time stat listener
-  useEffect(() => {
-    if (!socket) return
-
-    const handlePlatformStats = (data) => {
-      console.log('📈 Live Platform Stats Update:', data)
-      setStats([
-        { emoji: "👾", label: "Registered Hackers", value: data.totalUsers, xp: Math.min((data.totalUsers / 1000) * 100, 100).toFixed(1), color: "#00F5FF", subLabel: "Global Scale" },
-        { emoji: "🏯", label: "Training Rooms", value: data.totalRooms, xp: Math.min((data.totalRooms / 20) * 100, 100).toFixed(1), color: "#39FF14", subLabel: "Live Courses" },
-        { emoji: "🧪", label: "Active Labs", value: data.activeLabs, xp: Math.min((data.activeLabs / 50) * 100, 100).toFixed(1), color: "#8B5CF6", subLabel: "Live Instances" },
-      ])
-    }
-
-    socket.on('platform:stats', handlePlatformStats)
-    return () => socket.off('platform:stats', handlePlatformStats)
-  }, [socket])
-
-  // Fetch stats on mount
-  useEffect(() => {
-    fetchPlatformStats()
-  }, [fetchPlatformStats])
-
-  const features = useMemo(() => [
-    {
-      icon: Terminal,
-      title: "Interactive Labs",
-      description: "Practice real-world cybersecurity scenarios in isolated virtual environments with real tooling.",
-      xpBadge: "+20 XP",
-      color: "#00F5FF",
-    },
-    {
-      icon: Swords,
-      title: "Live Attack Rooms",
-      description: "Join collaborative hacking challenges with players worldwide and earn arena points.",
-      xpBadge: "+50 XP",
-      color: "#8B5CF6",
-    },
-    {
-      icon: Trophy,
-      title: "Global Leaderboard",
-      description: "Compete with hackers globally, climb the ranked system and earn exclusive titles.",
-      xpBadge: "Ranked",
-      color: "#FACC15",
-    },
-    {
-      icon: Zap,
-      title: "Skill Progression",
-      description: "Track your journey from beginner to elite. Unlock abilities, collect badges and level up.",
-      xpBadge: "Leveling",
-      color: "#39FF14",
-    },
-  ], [])
+  const [stats] = useState({
+    hackers: 7, rooms: 10, labs: 15,
+    hPct: "0.7", rPct: "50.0", lPct: "30.0",
+  })
 
   return (
-    <div className="cv-home">
+    <div style={{
+        background: `radial-gradient(circle at 0% 0%, rgba(0, 209, 255, 0.15) 0%, transparent 40%), 
+                     radial-gradient(circle at 100% 100%, rgba(255, 107, 0, 0.2) 0%, transparent 40%),
+                     #081224`
+      }}
+      className="text-white relative overflow-x-hidden">
 
-      {/* ══════════════ HERO ══════════════ */}
-      <section className="cv-hero">
-        {/* Background layers */}
-        <div className="cv-hero-glow" />
-        <div className="cv-hero-grid" aria-hidden="true" />
+      {/* ── Background grid overlay ── */}
+      <div className="absolute inset-0 z-0 pointer-events-none"
+           style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+      {/* Dark overlay — tones down background, improves card/text contrast */}
+      <div className="absolute inset-0 z-0 pointer-events-none" style={{ background: 'rgba(0,0,0,0.3)' }} />
 
-        <div className="cv-hero-inner">
-          {/* Left */}
-          <div className="cv-hero-left">
-            <div className="cv-hero-badge">
-              <Shield size={13} />
-              <span>Next-Gen Security Training</span>
-            </div>
+      {/* ══════════════════════════════════════════════
+          HERO
+      ══════════════════════════════════════════════ */}
+      <section className="relative z-10 px-6 lg:px-[80px] pt-[40px] pb-[80px]">
+        <div className="max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-12 lg:gap-16 items-center">
 
-            <h1 className="cv-hero-heading">
-              Master{" "}
-              <span className="cv-gradient-animate">Cyber Security</span>
-              <br />
-              Like a Pro
+          {/* LEFT */}
+          <div className="flex flex-col gap-6">
+            <h1 className="leading-[1.1]">
+              <span className="block text-white text-[42px] lg:text-[52px] font-black uppercase tracking-tight"
+                    style={{ fontFamily: "'Orbitron', sans-serif", letterSpacing: '-0.01em' }}>
+                UNLEASH YOUR POWER.
+              </span>
+              <span className="block text-[42px] lg:text-[52px] font-black uppercase tracking-tight"
+                    style={{ fontFamily: "'Orbitron', sans-serif", letterSpacing: '-0.01em' }}>
+                <span className="text-white">Master </span>
+                <span style={{ color: C.cyan }}>Cyber Security</span>
+              </span>
             </h1>
 
-            <p className="cv-hero-sub">
-              Hack. Learn. Compete. Rise through the ranks in the world's most
-              immersive cybersecurity training arena.
+            <p className="text-white text-[18px] lg:text-[20px] font-bold leading-snug max-w-[480px]">
+              Become an Unstoppable Pro in the Ultimate Training Arena
             </p>
 
-            <div className="cv-hero-cta">
+            <p className="text-slate-400 text-[15px] leading-relaxed max-w-[420px]">
+              Hack. Learn. Compete. Rise through the ranks in the world's most immersive cybersecurity training arena.
+            </p>
+
+            {/* CTAs — orange = primary action */}
+            <div className="flex items-center gap-4 pt-2">
               <Link
-                to={isAuthenticated ? "/dashboard" : "/signup"}
-                id="hero-enter-labs"
-                className="cv-btn-primary"
+                to={isAuthenticated ? "/labs" : "/login"}
+                className="flex items-center gap-3 px-7 py-3.5 rounded-xl text-[15px] font-bold transition-all hover:scale-[1.03] active:scale-[0.97] btn-primary"
               >
-                🚀 Enter Labs
-                <ChevronRight size={16} />
+                <div className="flex items-center gap-3">
+                  <Rocket size={18} /> <span>Enter Labs</span>
+                </div>
               </Link>
               <Link
-                to="/leaderboard"
-                id="hero-compete-now"
-                className="cv-btn-secondary"
-              >
-                🎮 Compete Now
+                to={isAuthenticated ? "/leaderboard" : "/login"}
+                className="flex items-center gap-3 px-7 py-3.5 rounded-xl bg-transparent border border-white/30 text-[15px] transition-all hover:border-white/50"
+                style={{ color: '#ffffff', fontWeight: 900 }}>
+                <Gamepad2 size={18} /> Compete Now
               </Link>
             </div>
           </div>
 
-          {/* Right */}
-          <div className="cv-hero-right">
-            <DashboardPreview />
+          {/* RIGHT — Terminal card */}
+          <div className="relative">
+            <div className="bg-[#0d1623] border border-white/[0.07] rounded-xl overflow-hidden"
+                 style={{ boxShadow: `0 0 50px ${C.cyanGlow}` }}>
+
+              {/* Bar */}
+              <div className="flex items-center justify-between px-5 py-3 bg-[#111e2e] border-b border-white/[0.05]">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
+                  <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
+                  <div className="w-3 h-3 rounded-full bg-[#28C840]" />
+                </div>
+                <span className="text-[11px] font-bold tracking-wider uppercase font-mono flex items-center gap-2"
+                      style={{ color: C.cyan }}>
+                  <Shield size={11} strokeWidth={3} /> CyberVerse Console
+                </span>
+                <span className="text-[10px] font-bold text-green-400 tracking-wider">● LIVE</span>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 font-mono text-[13px] leading-[1.8] space-y-1">
+                <p><span className="text-green-400 font-bold">$</span> <span className="text-white/85">connect --lab sql-injection-advanced</span></p>
+                <p className="text-green-400">✓ Lab environment spawned</p>
+                <p className="mt-2"><span className="text-green-400 font-bold">$</span> <span className="text-white/85">nmap -sV 10.10.1.42</span></p>
+                <p className="text-slate-600 text-[12px]">Starting Nmap 7.94...</p>
+                <p className="text-slate-600 text-[12px]">PORT &nbsp;&nbsp;STATE SERVICE &nbsp;VERSION</p>
+                <p className="text-[#FFBD2E]">80/tcp open http &nbsp;&nbsp;Apache 2.4.41</p>
+                <p className="text-green-400">3306/tcp open mysql</p>
+              </div>
+
+              {/* Stats footer — cyan = data */}
+              <div className="flex gap-3 px-5 py-4 border-t border-white/[0.05] bg-[#090f1a]">
+                {[
+                  { icon: <Trophy size={12} />, label: `Level ${userStats?.level || 1}` },
+                  { icon: <Flame size={12} />,  label: `${userStats?.streak || 0} Streak` },
+                  { icon: <Star size={12} />,   label: `${(userStats?.totalXP || 0).toLocaleString()} XP` },
+                ].map((b) => (
+                  <div key={b.label}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider"
+                    style={{ background: C.cyanDim, border: `1px solid ${C.cyanBorder}`, color: C.cyan }}>
+                    {b.icon} {b.label}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+
         </div>
       </section>
 
-      {/* ══════════════ STATS ══════════════ */}
-      <section className="cv-stats-section">
-        <div className="cv-section-inner">
-          <div className="cv-stats-grid">
-            {stats.map((s) => (
-              <StatCard key={s.label} {...s} />
+      {/* ══════════════════════════════════════════════
+          STATS + WHY CHOOSE
+      ══════════════════════════════════════════════ */}
+      <section className="relative z-10 px-6 lg:px-[80px] pb-[100px]">
+        <div className="max-w-[1300px] mx-auto flex flex-col lg:flex-row gap-12 lg:gap-16 items-start">
+
+          {/* Stat cards — cyan = data */}
+          <div className="grid grid-cols-3 gap-4 shrink-0" style={{ width: '460px' }}>
+            {[
+              { num: stats.hackers, label: "Registered Hackers", sub: `${stats.hPct}% Global Scale` },
+              { num: stats.rooms,   label: "Training Rooms",     sub: `${stats.rPct}% Live Courses` },
+              { num: stats.labs,    label: "Active Labs",        sub: `${stats.lPct}% Live Instances` },
+            ].map((s) => (
+              <div key={s.label}
+                className="flex flex-col items-center justify-center gap-2 rounded-2xl border relative overflow-hidden"
+                style={{ aspectRatio: '1', padding: '16px 12px', background: 'rgba(13,22,35,0.95)', borderColor: 'rgba(0,209,255,0.25)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+                <div className="absolute top-0 inset-x-0 h-[2px]"
+                     style={{ backgroundColor: C.cyan, boxShadow: `0 0 10px ${C.cyan}` }} />
+                <div className="text-[32px] font-black leading-none" style={{ color: C.cyan }}>{s.num}</div>
+                <div className="text-[9px] font-black tracking-[0.12em] uppercase text-center leading-tight" style={{ color: 'rgba(255,255,255,0.75)' }}>{s.label}</div>
+                <div className="w-[50%] h-[2px] rounded-full overflow-hidden mt-1" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                  <div className="h-full rounded-full" style={{ width: '40%', backgroundColor: C.cyan }} />
+                </div>
+                <div className="text-[8px] font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.sub}</div>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ══════════════ FEATURES ══════════════ */}
-      <section id="features" className="cv-features-section">
-        <div className="cv-section-inner">
-          <div className="cv-section-header">
-            <h2 className="cv-section-title">Why Choose <span className="cv-gradient-text">CyberVerse?</span></h2>
-            <p className="cv-section-sub">Professional gamified training with real-world scenarios and XP rewards</p>
-          </div>
-          <div className="cv-features-grid">
-            {features.map((f) => (
-              <FeatureCard key={f.title} {...f} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════ LEADERBOARD PREVIEW ══════════════ */}
-      <section className="cv-lb-section">
-        <div className="cv-section-inner cv-lb-inner">
-          <div className="cv-lb-left">
-            <div className="cv-section-header" style={{ textAlign: "left" }}>
-              <h2 className="cv-section-title">
-                🏆 <span className="cv-gradient-text">Top Hackers</span>
+          {/* Why Choose */}
+          <div className="flex-1 flex flex-col gap-6">
+            <div>
+              <h2 className="text-[36px] lg:text-[42px] font-black leading-tight tracking-tight">
+                Why Choose <span style={{ color: C.cyan }}>CyberVerse?</span>
               </h2>
-              <p className="cv-section-sub">The elite arena. Prove your skills and earn a spot on the global leaderboard.</p>
+              <p className="text-slate-500 text-[14px] mt-2">
+                Professional gamified training with real-world scenarios and XP rewards
+              </p>
             </div>
-            <Link to="/leaderboard" id="view-full-leaderboard" className="cv-btn-outline">
-              View Full Leaderboard <ChevronRight size={14} />
-            </Link>
-          </div>
-
-          <div className="cv-lb-card">
-            <div className="cv-lb-card-header">
-              <Trophy size={18} style={{ color: "#FACC15" }} />
-              <span>Global Rankings</span>
-              <span className="cv-lb-live">LIVE</span>
-            </div>
-            {leaders.map((l) => (
-              <LeaderRow key={l.rank} {...l} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════ PREMIUM ══════════════ */}
-      <section className="cv-premium-section">
-        <div className="cv-section-inner">
-          <div className="cv-premium-card">
-            <div className="cv-premium-glow" aria-hidden="true" />
-            <Crown size={40} className="cv-premium-crown" />
-            <h2 className="cv-premium-title">Unlock Pro Hacker Mode</h2>
-            <p className="cv-premium-sub">
-              Gain full access to exclusive labs, private attack rooms, and elite content
-              trusted by professional red teamers.
-            </p>
-
-            <div className="cv-premium-benefits">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-6">
               {[
-                "Unlimited Lab Access & Private Rooms",
-                "Exclusive CTF Competitions & Certificates",
-                "Priority Support & Community Mentorship",
-              ].map((b) => (
-                <div key={b} className="cv-premium-benefit">
-                  <CheckCircle size={16} className="cv-benefit-check" />
-                  <span>{b}</span>
+                { emoji: "🏆", title: "Gamified cybersecurity badges",       desc: "Earn exclusive markers." },
+                { emoji: "🎯", title: "Real-world scenarios and XP rewards", desc: "Practice in actual network setups." },
+                { emoji: "⚡", title: "Fast structured training",            desc: "Optimized learning path for speed." },
+                { emoji: "🛡️", title: "Security guarantee",                  desc: "Safe and isolated lab environments." },
+              ].map((f) => (
+                <div key={f.title} className="flex items-start gap-3">
+                  <span className="text-[22px] shrink-0 mt-0.5">{f.emoji}</span>
+                  <div>
+                    <h5 className="text-[13px] font-bold leading-snug" style={{ color: '#ffffff' }}>{f.title}</h5>
+                    <p className="text-[12px] mt-0.5" style={{ color: 'rgba(148,163,184,0.9)' }}>{f.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
+          </div>
 
-            <Link
-              to={isAuthenticated ? "/premium" : "/signup"}
-              id="premium-upgrade-cta"
-              className="cv-btn-gold"
-            >
-              <Crown size={16} /> Upgrade to Pro
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          LEARNING JOURNEY
+      ══════════════════════════════════════════════ */}
+      <section className="relative z-10 px-6 lg:px-[80px] py-[80px] border-t border-white/[0.04]">
+        <div className="max-w-[1300px] mx-auto">
+          <div className="mb-10">
+            <p className="text-[11px] font-bold tracking-[0.2em] text-white/30 uppercase mb-2">Your Path</p>
+            <h2 className="text-[32px] font-black text-white leading-tight">Your Learning Journey</h2>
+          </div>
+
+          <div className="flex items-stretch gap-0">
+            {[
+              { step: 1, label: "Beginner",         sub: "Linux & Networking", done: true,  active: false, locked: false },
+              { step: 2, label: "Web Exploitation",  sub: "SQLi, XSS, CSRF",   done: false, active: true,  locked: false },
+              { step: 3, label: "Network Security",  sub: "Recon & Pivoting",  done: false, active: false, locked: true  },
+              { step: 4, label: "Advanced",          sub: "Red Team Ops",      done: false, active: false, locked: true  },
+            ].map((s, i, arr) => (
+              <div key={s.step} className="flex items-center flex-1">
+                <div className="flex-1 flex flex-col gap-3 px-5 py-5 rounded-xl border transition-all"
+                  style={{
+                    background:  s.active
+                      ? 'rgba(255,107,0,0.15)'
+                      : s.done
+                      ? 'rgba(0,209,255,0.1)'
+                      : 'rgba(255,255,255,0.06)',
+                    borderColor: s.active
+                      ? 'rgba(255,107,0,0.5)'
+                      : s.done
+                      ? 'rgba(0,209,255,0.4)'
+                      : 'rgba(255,255,255,0.15)',
+                    boxShadow: s.active
+                      ? '0 0 24px rgba(255,107,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
+                      : s.done
+                      ? '0 0 20px rgba(0,209,255,0.1), inset 0 1px 0 rgba(255,255,255,0.05)'
+                      : 'inset 0 1px 0 rgba(255,255,255,0.04)',
+                  }}>
+                  <div className="flex items-center justify-between">
+                    {/* Step circle */}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black"
+                      style={{
+                        background:  s.done ? 'rgba(0,209,255,0.2)' : s.active ? 'rgba(255,107,0,0.25)' : 'rgba(255,255,255,0.1)',
+                        color:       s.done ? C.cyan : s.active ? C.orange : 'rgba(255,255,255,0.5)',
+                        border:      `1px solid ${s.done ? 'rgba(0,209,255,0.5)' : s.active ? 'rgba(255,107,0,0.6)' : 'rgba(255,255,255,0.2)'}`,
+                      }}>
+                      {s.done ? "✓" : s.step}
+                    </div>
+                    {/* Status pill */}
+                    {s.done   && <span className="text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full"
+                                       style={{ background: 'rgba(0,209,255,0.15)', color: C.cyan, border: `1px solid rgba(0,209,255,0.4)` }}>Done</span>}
+                    {s.active && <span className="text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full"
+                                       style={{ background: 'rgba(255,107,0,0.2)', color: C.orange, border: `1px solid rgba(255,107,0,0.5)` }}>Current</span>}
+                    {s.locked && <span className="text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full"
+                                       style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.15)' }}>🔒 Locked</span>}
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-bold leading-tight"
+                       style={{ color: s.locked ? 'rgba(255,255,255,0.35)' : s.active ? C.orange : '#ffffff' }}>
+                      {s.label}
+                    </p>
+                    <p className="text-[12px] mt-1"
+                       style={{ color: s.locked ? 'rgba(255,255,255,0.25)' : 'rgba(148,163,184,0.9)' }}>
+                      {s.sub}
+                    </p>
+                  </div>
+                </div>
+                {/* Connector */}
+                {i < arr.length - 1 && (
+                  <div className="w-6 shrink-0 h-[2px] mx-1"
+                       style={{ background: s.done ? 'rgba(0,209,255,0.4)' : 'rgba(255,255,255,0.12)' }} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          FEATURED LABS
+      ══════════════════════════════════════════════ */}
+      <section className="relative z-10 px-6 lg:px-[80px] py-[80px] border-t border-white/[0.04]">
+        <div className="max-w-[1300px] mx-auto">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-white/30 uppercase mb-2">Hands-On</p>
+              <h2 className="text-[32px] font-black text-white leading-tight">Featured Labs</h2>
+            </div>
+            <Link to="/labs" className="text-[13px] font-semibold text-slate-500 hover:text-white transition-colors">
+              View all →
             </Link>
+          </div>
 
-            <p className="cv-premium-note">Cancel anytime • 7-day money-back guarantee</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              { icon: "💉", title: "SQL Injection",       desc: "Extract data from a vulnerable login endpoint.",          diff: "Easy",   diffColor: "#28C840", xp: 150 },
+              { icon: "🌐", title: "XSS Attack Chain",    desc: "Craft a stored XSS payload to hijack admin sessions.",    diff: "Medium", diffColor: "#FFBD2E", xp: 250 },
+              { icon: "🔓", title: "Privilege Escalation",desc: "Exploit a misconfigured SUID binary to gain root.",       diff: "Hard",   diffColor: "#FF5F57", xp: 400 },
+            ].map((lab) => (
+              <div key={lab.title}
+                className="flex flex-col gap-4 p-5 rounded-xl border transition-all"
+                style={{ background: 'rgba(13,22,35,0.95)', borderColor: 'rgba(255,255,255,0.12)', boxShadow: '0 4px 24px rgba(0,0,0,0.35)' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.35)' }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[26px]">{lab.icon}</span>
+                  <span className="text-[10px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full border"
+                        style={{ color: lab.diffColor, borderColor: `${lab.diffColor}60`, background: `${lab.diffColor}18` }}>
+                    {lab.diff}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold" style={{ color: '#ffffff' }}>{lab.title}</h3>
+                  <p className="text-[12px] mt-1 leading-relaxed" style={{ color: 'rgba(148,163,184,0.9)' }}>{lab.desc}</p>
+                </div>
+                <div className="flex items-center justify-between mt-auto pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                  <span className="text-[12px] font-bold" style={{ color: C.cyan }}>+{lab.xp} XP</span>
+                  <Link to={isAuthenticated ? "/labs" : "/signup"}
+                    className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white transition-all hover:scale-[1.03] btn-primary"
+                    style={{ background: `linear-gradient(135deg, ${C.orange}, #cc4400)`, boxShadow: `0 0 14px ${C.orangeGlow}`, color: '#ffffff', fontWeight: 900 }}>
+                    Start Lab
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          DAILY CHALLENGE
+      ══════════════════════════════════════════════ */}
+      <section className="relative z-10 px-6 lg:px-[80px] py-[80px] border-t border-white/[0.04]">
+        <div className="max-w-[1300px] mx-auto flex justify-center">
+          <div className="w-full max-w-[600px] flex flex-col items-center gap-5 px-8 py-8 rounded-2xl border text-center"
+               style={{ background: 'rgba(13,22,35,0.95)', borderColor: 'rgba(255,107,0,0.3)', boxShadow: '0 4px 32px rgba(0,0,0,0.4)' }}>
+            {/* Label — orange = action/urgency */}
+            <span className="text-[10px] font-black tracking-[0.25em] uppercase px-3 py-1 rounded-full"
+                  style={{ color: C.orange, background: C.orangeDim, border: `1px solid ${C.orangeBorder}` }}>
+              🔥 Daily Challenge
+            </span>
+
+            <h3 className="text-[22px] font-black leading-tight" style={{ color: '#ffffff' }}>Bypass the WAF</h3>
+            <p className="text-[13px] max-w-[400px] leading-relaxed" style={{ color: 'rgba(148,163,184,0.9)' }}>
+              A firewall is blocking your injection attempts. Find a bypass and extract the admin hash.
+            </p>
+
+            <div className="flex items-center gap-6">
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[20px] font-black text-white tabular-nums">04:22:11</span>
+                <span className="text-[10px] text-white/50 uppercase tracking-widest">Time Left</span>
+              </div>
+              <div className="w-[1px] h-8 bg-white/[0.08]" />
+              {/* XP reward — cyan = data */}
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[20px] font-black tabular-nums" style={{ color: C.cyan }}>+300 XP</span>
+                <span className="text-[10px] text-white/50 uppercase tracking-widest">Reward</span>
+              </div>
+              <div className="w-[1px] h-8 bg-white/[0.08]" />
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[20px] font-black text-[#FFBD2E] tabular-nums">Medium</span>
+                <span className="text-[10px] text-white/50 uppercase tracking-widest">Difficulty</span>
+              </div>
+            </div>
+
+            {/* CTA — orange = action */}
+            <Link to={isAuthenticated ? "/rooms" : "/login"}
+              className="mt-1 px-8 py-3 rounded-xl text-[14px] font-black transition-all hover:scale-[1.03] active:scale-[0.97] btn-primary"
+              style={{ background: `linear-gradient(135deg, ${C.orange}, #cc4400)`, boxShadow: `0 0 24px ${C.orangeGlow}` }}>
+              Start Challenge
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          WHY CYBERVERSE
+      ══════════════════════════════════════════════ */}
+      <section className="relative z-10 px-6 lg:px-[80px] py-[80px] border-t border-white/[0.04]">
+        <div className="max-w-[1300px] mx-auto">
+          <div className="mb-10 text-center">
+            <p className="text-[11px] font-bold tracking-[0.2em] text-white/30 uppercase mb-2">Platform</p>
+            <h2 className="text-[32px] font-black text-white leading-tight">Why CyberVerse</h2>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { icon: "🎮", title: "Gamified Learning", line: "XP, ranks & badges keep you motivated." },
+              { icon: "🧪", title: "Real Labs",          line: "Isolated environments, real tools." },
+              { icon: "📈", title: "Skill Progression",  line: "Structured path from zero to elite." },
+              { icon: "💼", title: "Career Focus",       line: "Certs and skills employers look for." },
+            ].map((item) => (
+              <div key={item.title}
+                className="flex flex-col gap-3 px-5 py-5 rounded-xl border transition-all"
+                style={{ background: 'rgba(13,22,35,0.95)', borderColor: 'rgba(255,255,255,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.35)' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}>
+                <span className="text-[24px]">{item.icon}</span>
+                <div>
+                  <p className="text-[13px] font-bold" style={{ color: '#ffffff' }}>{item.title}</p>
+                  <p className="text-[11px] mt-1 leading-relaxed" style={{ color: 'rgba(148,163,184,0.9)' }}>{item.line}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

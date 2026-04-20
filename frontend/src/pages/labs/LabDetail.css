@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Lab Details — Command Center Design System
+   BG: #081224 → #0b1f3a (exact Dashboard match)
+   Cyan: #00D1FF   Orange: #FF6B00
+   ═══════════════════════════════════════════════════════════════════ */
+
+.lab-det-page {
+  background: linear-gradient(to right, #081224 0%, #0b1f3a 45%, #0b1f3a 72%, rgba(255,106,0,0.08) 100%) !important;
+  color: white;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.lab-det-page__grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.lab-det-page__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(0,0,0,0.18);
+}
+
+/* Ensure the content is above the background */
+.lab-det-content {
+  position: relative;
+  z-index: 10;
+}
+
+/* Additional component styles to ensure consistency */
+.lab-det-card {
+  background: rgba(8, 14, 26, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+}

@@ -3,7 +3,11 @@ const User = require('../models/User');
 
 const cookieAuth = async (req, res, next) => {
   try {
-    const token = req.cookies.adminToken;
+    let token = req.cookies.adminToken;
+
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
 
     if (!token) {
       return res.status(401).json({ message: 'Access denied. No token provided.' });

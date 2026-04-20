@@ -1,107 +1,61 @@
-const { exec, spawn } = require("child_process");
+const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
-// Store active port-forward processes
-const activeTunnels = new Map();
-
-/**
- * Kubernetes Manager - Dynamic Lab Resolution
- * Files stored in: backend/k8s-labs
- */
+// NodePort mapping — no port-forward needed ever
+const LAB_PORTS = {
+  "linux-forensics": 32083,
+  "malware":         32230,
+  "web-security":    32235,
+};
 
 const startLab = async (labId) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         try {
-            console.log(`[K8S-DEBUG] Attempting to start lab: ${labId}`);
-            
-            // 1. Resolve Path - Try multiple common locations to be safe
+            console.log(`[K8S] Starting lab: ${labId}`);
+
+            const nodePort = LAB_PORTS[labId];
+            if (!nodePort) {
+                return resolve({ success: false, error: `No NodePort configured for lab: ${labId}` });
+            }
+
+            const webTerminalUrl = `http://localhost:${nodePort}`;
+
+            // Resolve individual YAML path
             const possiblePaths = [
                 path.resolve(__dirname, '..', 'k8s-labs', `${labId}.yaml`),
                 path.join(process.cwd(), 'backend', 'k8s-labs', `${labId}.yaml`),
                 path.join(process.cwd(), 'k8s-labs', `${labId}.yaml`)
             ];
-            
+
             let yamlPath = null;
             for (const p of possiblePaths) {
-                if (fs.existsSync(p)) {
-                    yamlPath = p;
-                    break;
-                }
+                if (fs.existsSync(p)) { yamlPath = p; break; }
             }
 
             if (!yamlPath) {
-                console.error(`[K8S-ERROR] Lab file ${labId}.yaml not found in any search path.`);
-                return resolve({ 
-                    success: false, 
-                    error: `YAML configuration for "${labId}" not found on server.` 
-                });
+                return resolve({ success: false, error: `YAML for "${labId}" not found.` });
             }
 
-            console.log(`[K8S-DEBUG] Resolved YAML path: ${yamlPath}`);
-
-            // 2. Check if already running
-            const checkCmd = `kubectl get pods -l lab-id=${labId} --field-selector=status.phase=Running -o name`;
-            exec(checkCmd, (err, stdout) => {
-                
-                // Helper to start tunnel
-                const startTunnel = () => {
-                    if (activeTunnels.has(labId)) {
-                        activeTunnels.get(labId).kill();
-                    }
-                    console.log(`[TUNNEL] Starting port-forward for ${labId}...`);
-                    const tunnel = spawn("kubectl", ["port-forward", `service/cyber-lab-${labId}-service`, "8083:8083"]);
-                    
-                    tunnel.on('close', (code) => {
-                        if (code !== 0 && activeTunnels.has(labId)) {
-                            console.log("[TUNNEL] Re-attempting tunnel...");
-                            setTimeout(startTunnel, 3000);
-                        }
-                    });
-
-                    activeTunnels.set(labId, tunnel);
-                };
-
+            // Check if already running
+            exec(`kubectl get pods -l lab-id=${labId} --field-selector=status.phase=Running -o name`, (err, stdout) => {
                 if (!err && stdout.trim().length > 0) {
-                    console.log(`[K8S-DEBUG] Lab ${labId} already running.`);
-                    
-                    // Start tunnel if not active
-                    if (!activeTunnels.has(labId)) {
-                        startTunnel();
-                    }
-
-                    return resolve({ 
-                        success: true, 
-                        status: "already_running",
-                        webTerminalUrl: "http://localhost:8083" 
-                    });
+                    console.log(`[K8S] Lab ${labId} already running → ${webTerminalUrl}`);
+                    return resolve({ success: true, status: "already_running", webTerminalUrl });
                 }
 
-                // 3. Apply configuration
-                const applyCmd = `kubectl apply -f "${yamlPath}"`;
-                console.log(`[K8S-DEBUG] Executing: ${applyCmd}`);
-
-                exec(applyCmd, (error, stdout, stderr) => {
+                // Apply YAML
+                exec(`kubectl apply -f "${yamlPath}"`, (error, stdout, stderr) => {
                     if (error) {
-                        console.error(`[K8S-ERROR] Deployment Failed: ${stderr || error.message}`);
+                        console.error(`[K8S-ERROR] ${stderr || error.message}`);
                         return resolve({ success: false, error: stderr || error.message });
                     }
-
-                    console.log(`[K8S-SUCCESS] Lab ${labId} started. Establishing tunnel...`);
-                    
-                    // Wait a few seconds for pod to be ready before tunneling
-                    setTimeout(startTunnel, 3000);
-
-                    resolve({ 
-                        success: true, 
-                        status: "started",
-                        webTerminalUrl: "http://localhost:8083" 
-                    });
+                    console.log(`[K8S] Lab ${labId} started → ${webTerminalUrl}`);
+                    resolve({ success: true, status: "started", webTerminalUrl });
                 });
             });
-        } catch (criticalError) {
-            console.error(`[K8S-CRITICAL] Exception in startLab: ${criticalError.message}`);
-            resolve({ success: false, error: criticalError.message });
+        } catch (e) {
+            resolve({ success: false, error: e.message });
         }
     });
 };
@@ -110,15 +64,9 @@ const stopLab = async (labId) => {
     return new Promise((resolve) => {
         try {
             const yamlPath = path.resolve(__dirname, '..', 'k8s-labs', `${labId}.yaml`);
-            const cmd = fs.existsSync(yamlPath) 
+            const cmd = fs.existsSync(yamlPath)
                 ? `kubectl delete -f "${yamlPath}"`
                 : `kubectl delete all -l lab-id=${labId}`;
-            
-            // Kill active tunnel if exists
-            if (activeTunnels.has(labId)) {
-                activeTunnels.get(labId).kill();
-                activeTunnels.delete(labId);
-            }
 
             exec(cmd, (error, stdout, stderr) => {
                 if (error) return resolve({ success: false, error: stderr || error.message });
@@ -133,11 +81,11 @@ const stopLab = async (labId) => {
 const getLabStatus = async (labId) => {
     return new Promise((resolve) => {
         exec(`kubectl get pods -l lab-id=${labId} --field-selector=status.phase=Running -o name`, (err, stdout) => {
-            if (!err && stdout.trim().length > 0) {
-                resolve({ status: "running" });
-            } else {
-                resolve({ status: "stopped" });
-            }
+            const running = !err && stdout.trim().length > 0;
+            resolve({
+                status: running ? "running" : "stopped",
+                webTerminalUrl: running ? `http://localhost:${LAB_PORTS[labId]}` : null
+            });
         });
     });
 };

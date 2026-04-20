@@ -1,6 +1,6 @@
 import React, { useState, memo } from "react";
 import { 
-  CheckCircle, X, HelpCircle, Sparkles, Eye, EyeOff, Zap, Copy, 
+  CheckCircle, X, HelpCircle, Sparkles, Zap, Copy, 
   Terminal, Bug, AlertTriangle, Search, ShieldCheck, Crosshair, Globe,
   ShieldAlert, Unlock, Award, Check
 } from "lucide-react";
@@ -12,11 +12,9 @@ export const KnowledgeCheck = memo(({
   status, 
   answer, 
   showHint, 
-  showAnswer, 
   onAnswerChange, 
   onCheck, 
-  onToggleHint, 
-  onToggleAnswer 
+  onToggleHint 
 }) => {
   return (
     <div className={`wpr-question ${status === 'correct' ? 'wpr-question--correct' : status === 'incorrect' ? 'wpr-question--incorrect' : ''}`}>
@@ -61,22 +59,12 @@ export const KnowledgeCheck = memo(({
           <HelpCircle size={14} />
           {showHint ? 'Hide Hint' : 'Show Hint'}
         </button>
-        <button onClick={() => onToggleAnswer(question.id)} className="wpr-reveal-btn">
-          {showAnswer ? <EyeOff size={14} /> : <Eye size={14} />}
-          {showAnswer ? 'Hide Answer' : 'Reveal Answer'}
-        </button>
       </div>
 
       {showHint && (
         <div className="wpr-hint-box">
           <Sparkles size={14} />
           <span>{question.hint}</span>
-        </div>
-      )}
-      {showAnswer && (
-        <div className="wpr-answer-box">
-          <Eye size={14} />
-          <span>Answer: <strong>{question.answer}</strong></span>
         </div>
       )}
     </div>
@@ -154,7 +142,7 @@ export const ContentBlock = memo(({ block, index, animations = {} }) => {
           <div key={index} className="wpr-comparison">
             {[block.left, block.right].map((side, i) => (
               <div key={i} className="wpr-comparison-side" style={{ '--side-color': side.color }}>
-                <h4 className="wpr-comparison-title">{i === 0 ? <Eye size={16} /> : <Crosshair size={16} />}{side.title}</h4>
+                <h4 className="wpr-comparison-title">{i === 0 ? <Search size={16} /> : <Crosshair size={16} />}{side.title}</h4>
                 <ul className="wpr-comparison-list">{side.items.map((item, j) => (<li key={j}>{item}</li>))}</ul>
               </div>
             ))}

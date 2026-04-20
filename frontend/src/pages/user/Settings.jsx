@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react'
-import { User, Lock, CreditCard, Shield, Upload, Trash2, Check, Key } from 'lucide-react'
+import { useState, useEffect, useCallback, memo } from 'react'
+import { 
+  User, Lock, CreditCard, Shield, Upload, 
+  Check, Key, Settings as SettingsIcon,
+  Mail, Globe, Twitter, AlertTriangle, 
+  Trash2, ChevronRight, Zap, Fingerprint,
+  Lock as LockIcon, Crown as CrownIcon, Terminal,
+  ShieldAlert
+} from 'lucide-react'
 import { useApp } from '../../contexts/app-context'
-import { apiCall, API_BASE_URL } from '../../config/api'
+import { apiCall } from '../../config/api'
 import { useNavigate } from 'react-router-dom'
 import TwoFactorSettings from '../../components/two-factor/TwoFactorSettings'
 import './Settings.css'
 
-const T = {
-  cyan: "#00F2FF",
-  purple: "#A855F7",
-  green: "#88E636",
-  danger: "#ef4444",
-};
-
-const Settings = () => {
+const Settings = memo(() => {
   const { user, updateUserProfile, logout } = useApp()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('profile')
@@ -43,10 +43,10 @@ const Settings = () => {
   }, [user])
 
   const tabs = [
-    { id: 'profile', label: 'Operational ID', icon: User },
-    { id: 'security', label: 'Cypher Locks', icon: Shield },
-    { id: 'account', label: 'Core Access', icon: Lock },
-    { id: 'subscription', label: 'Service Tier', icon: CreditCard }
+    { id: 'profile', label: 'Operational ID', icon: Fingerprint, color: 'cyan' },
+    { id: 'security', label: 'Security Protocols', icon: Shield, color: 'orange' },
+    { id: 'account', label: 'Core Access', icon: LockIcon, color: 'cyan' },
+    { id: 'subscription', label: 'Service Tier', icon: Zap, color: 'orange' }
   ]
 
   const handleChange = (e) => {
@@ -140,187 +140,252 @@ const Settings = () => {
     }
   }
 
-  if (!user) {
-    return (
-      <div className="ms-root flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/5 border-t-cyan-400"></div>
-      </div>
-    )
-  }
+  if (!user) return (
+    <div className="set-page min-h-screen flex items-center justify-center">
+      <div className="set-spinner" />
+    </div>
+  )
 
   return (
-    <div className="ms-root">
-      <div className="ms-grid" />
-      
-      <div className="ms-page-container">
-        <header className="ms-page-header rcp-fade-in">
-           <h1 className="ms-page-title">Account Settings</h1>
-           <p className="ms-page-subtitle">Manage your profile, security protocols, and service tier</p>
-        </header>
+    <div className="set-page min-h-screen relative overflow-x-hidden text-white">
+      {/* Background Decor */}
+      <div className="absolute inset-0 z-0 pointer-events-none set-page__grid" />
+      <div className="absolute inset-0 z-0 pointer-events-none set-page__overlay" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* NAVIGATION SIDEBAR */}
-          <div className="lg:col-span-3 rcp-fade-in">
-            <div className="ms-nav-card">
-              {tabs.map(tab => {
-                const Icon = tab.icon
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`ms-nav-btn ${activeTab === tab.id ? 'ms-nav-btn--active' : ''}`}
-                  >
-                    <Icon size={18} />
-                    <span>{tab.label}</span>
-                  </button>
-                )
-              })}
+      <div className="relative z-10 pt-16">
+        
+        {/* ═══ HEADER ═══ */}
+        <div className="max-w-6xl mx-auto px-6 mb-10">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="set-hero-icon-box">
+              <SettingsIcon size={24} className="text-[#00D1FF]" />
             </div>
+            <div>
+              <h1 className="text-3xl font-black tracking-tight text-white uppercase">Manage Account</h1>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Configure Operational Parameters & Security</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ MAIN GRID ═══ */}
+        <div className="max-w-6xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* SIDEBAR NAVIGATION */}
+          <div className="lg:col-span-3 space-y-4">
+            <div className="set-nav-card p-2 rounded-2xl">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`set-nav-btn ${activeTab === tab.id ? 'set-nav-btn--active' : ''}`}
+                >
+                  <div className={`set-nav-btn__icon set-nav-btn__icon--${tab.color}`}>
+                    <tab.icon size={18} />
+                  </div>
+                  <span className="flex-1 text-left text-[11px] font-black uppercase tracking-wider">{tab.label}</span>
+                  {activeTab === tab.id && <ChevronRight size={14} className="opacity-50" />}
+                </button>
+              ))}
+            </div>
+
+            {/* Premium Callout */}
+            {!user.isPremium && (
+              <div className="set-card set-card--premium group cursor-pointer" onClick={() => navigate('/premium')}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FFB800] to-[#FF6B00] flex items-center justify-center text-white shadow-lg">
+                    <Zap size={16} />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white">Go Premium</p>
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 leading-relaxed mb-4">Unlock private labs, elite certifications, and detailed operational telemetry.</p>
+                <div className="text-[10px] font-black text-[#FF6B00] uppercase tracking-widest flex items-center justify-end gap-2 group-hover:gap-3 transition-all">
+                  Request Access <ChevronRight size={12} />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* CONTENT MODULE */}
-          <div className="lg:col-span-9 rcp-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="ms-content-card">
+          <div className="lg:col-span-9">
+            <div className="set-content-card">
               
               {/* TAB 1: OPERATIONAL ID */}
               {activeTab === 'profile' && (
-                <form onSubmit={handleSaveProfile} className="rcp-fade-in">
-                  <h2 className="cv-section-title"><User size={20} className="text-primary" /> Profile Identity</h2>
+                <form onSubmit={handleSaveProfile} className="set-fade-in space-y-10">
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                    <Fingerprint size={20} className="set-text-cyan" />
+                    <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Profile Identity</h2>
+                  </div>
                   
-                  <div className="ms-biometric-wrap">
-                    <div className="ms-avatar-container">
-                      <img
-                        src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
-                        className="ms-avatar-img"
-                        alt="Biometric ID"
-                      />
-                      <div className="ms-avatar-overlay" onClick={() => document.getElementById('avatar-upload').click()}>
-                        <Upload size={24} className="text-white" />
+                  {/* Avatar Section */}
+                  <div className="flex flex-col md:flex-row items-center gap-8">
+                    <div className="relative group">
+                      <div className="set-avatar-wrap">
+                        <img 
+                          src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
+                          className="set-avatar-img"
+                          alt="Biometric ID"
+                        />
+                      </div>
+                      <div className="set-avatar-overlay" onClick={() => document.getElementById('avatar-upload').click()}>
+                        <Upload size={24} />
                       </div>
                     </div>
-                    <div className="flex-1 text-center md:text-left">
-                       <input type="file" id="avatar-upload" className="hidden" onChange={handleAvatarUpload} />
-                       <button type="button" onClick={() => document.getElementById('avatar-upload').click()} className="rcp-primary-btn !w-fit mb-2">
-                          Update Visual ID
-                       </button>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supports PNG, JPG (MAX 2MB)</p>
+                    <div className="flex-1 text-center md:text-left space-y-3">
+                      <input type="file" id="avatar-upload" className="hidden" onChange={handleAvatarUpload} />
+                      <button type="button" onClick={() => document.getElementById('avatar-upload').click()} className="set-btn-secondary">
+                        <Upload size={14} /> Update Visual ID
+                      </button>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supports PNG, JPG (MAX 2MB)</p>
                     </div>
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="ms-input-group">
-                      <label className="ms-label">Operative Alias</label>
-                      <input name="displayName" value={formData.displayName} onChange={handleChange} className="ms-input" />
+                  {/* Form Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="set-label">Operative Alias</label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={16} />
+                        <input name="displayName" value={formData.displayName} onChange={handleChange} className="set-input pl-12" placeholder="Commander" />
+                      </div>
                     </div>
-                    <div className="ms-input-group">
-                      <label className="ms-label">Field Dossier (Bio)</label>
-                      <textarea name="bio" value={formData.bio} onChange={handleChange} rows={3} className="ms-input resize-none" />
+
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="set-label">Field Dossier (Bio)</label>
+                      <textarea name="bio" value={formData.bio} onChange={handleChange} rows={3} className="set-input !py-4 h-32 resize-none" placeholder="Strategic intelligence summary..." />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <div className="ms-input-group">
-                          <label className="ms-label">Network Node (Website)</label>
-                          <input type="url" name="website" value={formData.website} onChange={handleChange} className="ms-input" placeholder="https://..." />
-                       </div>
-                       <div className="ms-input-group">
-                          <label className="ms-label">Twitter Frequency</label>
-                          <input name="twitter" value={formData.twitter} onChange={handleChange} className="ms-input" placeholder="@alias" />
-                       </div>
+
+                    <div className="space-y-2">
+                      <label className="set-label">Network Node (Website)</label>
+                      <div className="relative">
+                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={16} />
+                        <input type="url" name="website" value={formData.website} onChange={handleChange} className="set-input pl-12" placeholder="https://..." />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="set-label">Twitter Frequency</label>
+                      <div className="relative">
+                        <Twitter className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={16} />
+                        <input name="twitter" value={formData.twitter} onChange={handleChange} className="set-input pl-12" placeholder="@alias" />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-10 flex justify-end">
-                    <button type="submit" disabled={loading} className="rcp-primary-btn !w-fit !px-10">
-                      {loading ? 'Synchronizing...' : 'Commit Changes'}
+                  <div className="flex justify-end pt-6 border-t border-white/5">
+                    <button type="submit" disabled={loading} className="set-btn-primary">
+                      {loading ? 'Synchronizing...' : 'Commit Protocol Changes'}
                     </button>
                   </div>
                 </form>
               )}
 
-              {/* TAB 2: CYPHER LOCKS (2FA) */}
+              {/* TAB 2: SECURITY PROTOCOLS */}
               {activeTab === 'security' && (
-                <div className="rcp-fade-in">
-                  <h2 className="cv-section-title"><Shield size={20} className="text-emerald-500" /> Security Protocol</h2>
+                <div className="set-fade-in space-y-10">
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                    <ShieldCheck size={20} className="text-[#88E636]" />
+                    <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Security Protocol</h2>
+                  </div>
                   <TwoFactorSettings user={user} onUpdate={() => updateUserProfile(user)} />
                 </div>
               )}
 
-              {/* TAB 3: CORE ACCESS (PASSWORD/DELETE) */}
+              {/* TAB 3: CORE ACCESS */}
               {activeTab === 'account' && (
-                <div className="space-y-12 rcp-fade-in">
+                <div className="set-fade-in space-y-12">
                   <form onSubmit={handleChangePassword}>
-                    <h2 className="cv-section-title"><Lock size={20} className="text-purple-500" /> Password Management</h2>
-                    <div className="space-y-6">
-                       <div className="ms-input-group">
-                          <label className="ms-label">Legacy Cypher</label>
-                          <input type="password" name="currentPassword" value={formData.currentPassword} onChange={handleChange} className="ms-input" />
-                       </div>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="ms-input-group">
-                             <label className="ms-label">Next-Gen Cypher</label>
-                             <input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} className="ms-input" />
-                          </div>
-                          <div className="ms-input-group">
-                             <label className="ms-label">Verify New Cypher</label>
-                             <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="ms-input" />
-                          </div>
-                       </div>
+                    <div className="flex items-center gap-3 pb-4 border-b border-white/5 mb-8">
+                      <LockIcon size={20} className="set-text-orange" />
+                      <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Access Key Management</h2>
                     </div>
-                    <div className="mt-8 flex justify-end">
-                       <button type="submit" disabled={loading} className="rcp-primary-btn !w-fit">
-                          Rotate Access Keys
-                       </button>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="set-label">Current Access Cypher</label>
+                        <input type="password" name="currentPassword" value={formData.currentPassword} onChange={handleChange} className="set-input" placeholder="••••••••" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="set-label">New Access Cypher</label>
+                          <input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} className="set-input" placeholder="••••••••" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="set-label">Verify New Cypher</label>
+                          <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="set-input" placeholder="••••••••" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-10 flex justify-end">
+                      <button type="submit" disabled={loading} className="set-btn-primary set-btn-primary--orange">
+                        Rotate Access Keys
+                      </button>
                     </div>
                   </form>
 
-                  <div className="ms-danger-zone">
-                     <h3 className="cv-section-title !text-red-500">Danger Zone: Account Deletion</h3>
-                     <p className="text-slate-500 text-xs font-bold leading-relaxed">
-                        Initializing account deletion will permanently purge your mission logs, badges, and server access. This operation is non-reversible.
-                     </p>
-                     <button onClick={handleDeleteAccount} className="ms-danger-btn">
-                        Initialize Self-Destruct
-                     </button>
+                  <div className="set-danger-zone">
+                    <div className="flex items-center gap-3 mb-4">
+                      <AlertTriangle size={20} className="text-red-500" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.25em] text-red-500">Danger Zone</h2>
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-500 leading-relaxed max-w-2xl mb-6">
+                      Initializing account deletion will permanently purge your mission logs, earned badges, and server access. This operation is non-reversible and final.
+                    </p>
+                    <button onClick={handleDeleteAccount} className="set-btn-danger">
+                      <Trash2 size={14} /> Initialize Self-Destruct
+                    </button>
                   </div>
                 </div>
               )}
 
               {/* TAB 4: SERVICE TIER */}
               {activeTab === 'subscription' && (
-                <div className="space-y-8 rcp-fade-in">
-                  <h2 className="cv-section-title"><CreditCard size={20} className="text-primary" /> Service Tier</h2>
-                  
-                  <div className="p-8 rounded-2xl relative overflow-hidden" 
-                    style={{ background: `linear-gradient(135deg, ${T.cyan}10, transparent)`, border: `1px solid rgba(0,242,255,0.2)` }}>
-                     <div className="flex justify-between items-start mb-6">
-                        <div>
-                           <h3 className="text-2xl font-bold text-white mb-1" style={{ color: user.isPremium ? T.cyan : '#fff' }}>
-                             {user.isPremium ? 'Elite Operative' : 'Standard Member'}
-                           </h3>
-                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                             STATUS: {user.isPremium ? 'FULL ACCESS' : 'RESTRICTED ACCESS'}
-                           </p>
-                        </div>
-                        <div className="text-4xl font-black italic" style={{ color: T.cyan }}>{user.isPremium ? '$9.99' : '$0.00'}</div>
-                     </div>
-                     {!user.isPremium && (
-                       <button onClick={() => navigate('/premium')} className="rcp-primary-btn !px-8">
-                          Request Elite Access Override
-                       </button>
-                     )}
+                <div className="set-fade-in space-y-10">
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                    <Zap size={20} className="set-text-orange" />
+                    <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Operational Service Tier</h2>
                   </div>
-
-                  {user.isPremium && user.premiumSubscription && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                          <div className="ms-label">Billing Status</div>
-                          <div className="text-primary font-black uppercase text-sm mt-1">{user.premiumSubscription.status}</div>
-                       </div>
-                       <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                          <div className="ms-label">Active Cycle</div>
-                          <div className="text-white font-black uppercase text-sm mt-1">{user.premiumSubscription.plan}</div>
-                       </div>
+                  
+                  <div className="set-tier-card">
+                    <div className="set-tier-card__visual">
+                      <CrownIcon size={40} className={user.isPremium ? "text-[#FFB800]" : "text-white/10"} />
                     </div>
-                  )}
+                    <div className="flex-1">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div>
+                          <h3 className="text-2xl font-black text-white">{user.isPremium ? 'Elite Operative' : 'Standard Member'}</h3>
+                          <div className={`text-[9px] font-black uppercase tracking-[0.2em] mt-1 ${user.isPremium ? 'text-[#00D1FF]' : 'text-slate-500'}`}>
+                            Status: {user.isPremium ? 'FULL ACCESS AUTHORIZED' : 'RESTRICTED CLEARANCE'}
+                          </div>
+                        </div>
+                        <div className="text-3xl font-black text-white italic">
+                          {user.isPremium ? '$9.99' : '$0.00'}
+                          <span className="text-xs font-bold text-slate-500 not-italic ml-1">/ mo</span>
+                        </div>
+                      </div>
+
+                      {!user.isPremium ? (
+                        <div className="space-y-6">
+                          <p className="text-[11px] font-bold text-slate-400 leading-relaxed">
+                            Upgrade to Elite status to gain full access to private mission environments, advanced offensive security laboratories, and international certification paths.
+                          </p>
+                          <button onClick={() => navigate('/premium')} className="set-btn-primary">
+                            Request Elite Access Override
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                          <div className="set-stat-mini">
+                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Billing Protocol</p>
+                            <p className="text-sm font-black text-white uppercase">{user.premiumSubscription?.status || 'Active'}</p>
+                          </div>
+                          <div className="set-stat-mini">
+                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Deployment Cycle</p>
+                            <p className="text-sm font-black text-white uppercase">{user.premiumSubscription?.plan || 'Monthly'}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -329,15 +394,26 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* TOAST SYSTEM */}
+      {/* TOAST SYSTEM (Hacker style) */}
       {showToast && (
-        <div className="ms-toast">
-           <Check size={18} style={{ color: T.cyan }} />
-           <span className="text-[10px] font-black text-white uppercase tracking-widest">{toastMessage}</span>
+        <div className="set-toast">
+           <div className="set-toast__icon"><Check size={14} /></div>
+           <div className="set-toast__content">
+             <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">System Message</p>
+             <p className="text-[10px] font-black text-white uppercase tracking-widest">{toastMessage}</p>
+           </div>
         </div>
       )}
     </div>
   )
-}
+})
 
+const ShieldCheck = ({ size, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+)
+
+Settings.displayName = "Settings";
 export default Settings

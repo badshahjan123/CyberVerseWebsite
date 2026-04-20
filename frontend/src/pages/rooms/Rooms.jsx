@@ -3,55 +3,49 @@ import {
   Users, Zap, Filter, Clock, Crown, Search, ChevronDown, Flame,
   Trophy, X, Play, BookOpen, TrendingUp, Bookmark, BookmarkCheck,
   SlidersHorizontal, Shield, Target, ChevronLeft, ChevronRight,
-  CheckCircle2, RotateCcw, ArrowRight, Grid, List, Globe,
+  CheckCircle2, RotateCcw, ArrowRight, Grid, List, Globe, Terminal,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getRooms } from "../../services/rooms";
 import { useBookmarks } from "../../contexts/bookmark-context";
 import { useApp } from "../../contexts/app-context";
 import { ProtectedRoute } from "../../components/protected-route";
-
-/* ══════ Shared design tokens (same as Dashboard/Labs) ══════ */
-const T = {
-  bg: "#0a1128",
-  surface: "#111a2e",
-  surfaceAlt: "#162236",
-  border: "rgba(255,255,255,0.06)",
-  text: "#E2E8F0",
-  textMuted: "#64748B",
-  cyan: "#00F2FF",
-  green: "#88E636",
-  purple: "#A855F7",
-  amber: "#FFB800",
-  orange: "#FF6B35",
-};
+import "./Rooms.css";
 
 /* ══════ Difficulty config ══════ */
 const DIFF = {
-  Beginner:     { color: "#88E636", bg: "rgba(136,230,54,0.1)",  border: "rgba(136,230,54,0.25)",  bars: 1 },
-  Easy:         { color: "#88E636", bg: "rgba(136,230,54,0.1)",  border: "rgba(136,230,54,0.25)",  bars: 1 },
-  Intermediate: { color: "#F5A623", bg: "rgba(245,166,35,0.1)",  border: "rgba(245,166,35,0.25)",  bars: 2 },
-  Medium:       { color: "#F5A623", bg: "rgba(245,166,35,0.1)",  border: "rgba(245,166,35,0.25)",  bars: 2 },
-  Advanced:     { color: "#F97316", bg: "rgba(249,115,22,0.1)",  border: "rgba(249,115,22,0.25)",  bars: 3 },
-  Hard:         { color: "#F97316", bg: "rgba(249,115,22,0.1)",  border: "rgba(249,115,22,0.25)",  bars: 3 },
-  Insane:       { color: "#FF3D71", bg: "rgba(255,61,113,0.1)",  border: "rgba(255,61,113,0.25)",  bars: 4 },
+  Beginner:     { color: "#39FF14", bars: 1 },
+  Easy:         { color: "#39FF14", bars: 1 },
+  Intermediate: { color: "#F59E0B", bars: 2 },
+  Medium:       { color: "#F59E0B", bars: 2 },
+  Advanced:     { color: "#EF4444", bars: 3 },
+  Hard:         { color: "#EF4444", bars: 3 },
+  Insane:       { color: "#B91C1C", bars: 4 },
 };
-const getDiff = (d) => DIFF[d] || { color: "#94A3B8", bg: "rgba(148,163,184,0.08)", border: "rgba(148,163,184,0.18)", bars: 2 };
+const getDiff = (d) => DIFF[d] || { color: "#94A3B8", bars: 2 };
+const DIFFICULTY_POINTS = { Beginner: 100, Easy: 100, Intermediate: 175, Medium: 175, Advanced: 250, Hard: 250, Insane: 250 };
+const getPoints = (d) => DIFFICULTY_POINTS[d] || 100;
 
-const DIFFICULTY_POINTS = { Beginner: 100, Easy: 100, Intermediate: 175, Medium: 175, Advanced: 250, Hard: 250, Expert: 250, Insane: 250 };
-const getPoints = (difficulty) => DIFFICULTY_POINTS[difficulty] || 100;
-
-/* ── Difficulty signal bars (THM-style, same as Labs) ── */
+/* ── Difficulty signal bars ── */
 const DiffBars = memo(({ level }) => {
   const dm = getDiff(level);
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex items-end gap-[2px]">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} style={{ width: 3, height: 6 + i * 3, borderRadius: 1, background: i <= dm.bars ? dm.color : "rgba(255,255,255,0.1)", transition: "background 0.2s" }} />
+          <div
+            key={i}
+            style={{
+              width: 3, height: 6 + i * 3, borderRadius: 1,
+              background: i <= dm.bars ? dm.color : "rgba(255,255,255,0.1)",
+              transition: "background 0.2s",
+            }}
+          />
         ))}
       </div>
-      <span className="text-xs font-semibold" style={{ color: dm.color }}>{level}</span>
+      <span className="text-xs font-bold" style={{ color: dm.color }}>
+        {level}
+      </span>
     </div>
   );
 });
@@ -59,13 +53,18 @@ DiffBars.displayName = "DiffBars";
 
 /* ══════ Category config ══════ */
 const CAT_META = {
-  Web:         { icon: <Globe size={13} />, color: T.cyan },
-  Networking:  { icon: <Shield size={13} />, color: T.purple },
-  Development: { icon: <Zap size={13} />,   color: T.green },
-  DevOps:      { icon: <Target size={13} />, color: T.amber },
-  Misc:        { icon: <Trophy size={13} />, color: T.orange },
+  Web:                 { icon: <Globe size={12} />,    color: "#00D1FF" },
+  Networking:          { icon: <Shield size={12} />,   color: "#A855F7" },
+  Development:         { icon: <Zap size={12} />,      color: "#88E636" },
+  DevOps:              { icon: <Target size={12} />,   color: "#FFB800" },
+  Misc:                { icon: <Trophy size={12} />,   color: "#FF6B00" },
+  System:              { icon: <Terminal size={12} />, color: "#00D1FF" },
+  Recon:               { icon: <Target size={12} />,   color: "#A855F7" },
+  Crypto:              { icon: <Shield size={12} />,   color: "#FFB800" },
+  "Reverse Engineering":{ icon: <Zap size={12} />,     color: "#EF4444" },
+  Advanced:            { icon: <Flame size={12} />,    color: "#EF4444" },
 };
-const getCat = (c) => CAT_META[c] || { icon: <BookOpen size={13} />, color: T.textMuted };
+const getCat = (c) => CAT_META[c] || { icon: <BookOpen size={12} />, color: "#64748B" };
 
 /* ── Placeholder images ── */
 const CAT_IMG = {
@@ -75,7 +74,7 @@ const CAT_IMG = {
   DevOps: "https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?auto=format&fit=crop&q=80&w=600",
   Misc: "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=600",
 };
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=600";
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800";
 const getRoomImg = (c) => CAT_IMG[c] || FALLBACK_IMG;
 
 /* ── Local rooms ── */
@@ -86,107 +85,83 @@ const LOCAL_ROOMS = [
     short_description: "Learn how real hackers identify, analyze, and exploit vulnerabilities in web applications using industry tools and techniques.",
     category: "Web", difficulty: "Advanced", estimated_time_minutes: 90, points: 250,
     tags: ["web-security", "pentesting", "owasp", "sql-injection", "xss"],
-    topics: Array(5).fill(null),
-    cover_image_url: "/images/rooms/attack-surface.png",
-    subscriberOnly: false, isPremium: false,
-    completedBy: Array(4827).fill(null),
-    createdAt: "2026-03-26T00:00:00.000Z",
-    customRoute: "/rooms/web-app-pentesting", isLocal: true,
+    topics: Array(5).fill(null), cover_image_url: "/images/rooms/attack-surface.png",
+    subscriberOnly: false, isPremium: false, completedBy: Array(4827).fill(null),
+    createdAt: "2026-03-26T00:00:00.000Z", customRoute: "/rooms/web-app-pentesting", isLocal: true,
   },
   {
     _id: "local-rest-api-mastery", id: "local-rest-api-mastery",
     slug: "rest-api-mastery", title: "Introduction to RESTful APIs",
     short_description: "Master the basics of REST APIs, HTTP methods, status codes, and JSON data structures.",
     category: "Development", difficulty: "Beginner", estimated_time_minutes: 40, points: 100,
-    tags: ["api", "rest", "backend", "http", "express"],
-    topics: Array(5).fill(null),
-    cover_image_url: "/images/rooms/api-intro.png",
-    completedBy: Array(4827).fill(null),
-    createdAt: "2026-03-26T00:00:00.000Z",
-    customRoute: "/rooms/rest-api-mastery", isLocal: true,
+    tags: ["api", "rest", "backend", "http", "express"], topics: Array(5).fill(null),
+    cover_image_url: "/images/rooms/api-intro.png", completedBy: Array(4827).fill(null),
+    createdAt: "2026-03-26T00:00:00.000Z", customRoute: "/rooms/rest-api-mastery", isLocal: true,
   },
   {
     _id: "local-networking-fundamentals", id: "local-networking-fundamentals",
     slug: "networking-fundamentals", title: "Networking Fundamentals",
     short_description: "Learn the core concepts of networking: OSI model, IP addressing, TCP/UDP, and routing.",
     category: "Networking", difficulty: "Beginner", estimated_time_minutes: 60, points: 100,
-    tags: ["networking", "osi-model", "tcp-ip", "routing", "dns"],
-    topics: Array(5).fill(null),
-    cover_image_url: "/images/rooms/osi-model.png",
-    completedBy: Array(1250).fill(null),
-    createdAt: "2026-03-26T00:00:00.000Z",
-    customRoute: "/rooms/networking-fundamentals", isLocal: true,
+    tags: ["networking", "osi-model", "tcp-ip", "routing", "dns"], topics: Array(5).fill(null),
+    cover_image_url: "/images/rooms/osi-model.png", completedBy: Array(1250).fill(null),
+    createdAt: "2026-03-26T00:00:00.000Z", customRoute: "/rooms/networking-fundamentals", isLocal: true,
   },
   {
     _id: "local-sql-injection-fundamentals", id: "local-sql-injection-fundamentals",
     slug: "sql-injection-fundamentals", title: "SQL Injection Fundamentals",
     short_description: "Learn how SQL Injection works and how attackers bypass authentication and extract data from databases.",
     category: "Web", difficulty: "Beginner", estimated_time_minutes: 50, points: 100,
-    tags: ["sqli", "database", "web-security", "injection"],
-    topics: Array(4).fill(null),
-    cover_image_url: "/images/rooms/sqli.png",
-    completedBy: Array(2100).fill(null),
-    createdAt: "2026-04-13T00:00:00.000Z",
-    customRoute: "/rooms/sql-injection-fundamentals", isLocal: true,
+    tags: ["sqli", "database", "web-security", "injection"], topics: Array(4).fill(null),
+    cover_image_url: "/images/rooms/sqli.png", completedBy: Array(2100).fill(null),
+    createdAt: "2026-04-13T00:00:00.000Z", customRoute: "/rooms/sql-injection-fundamentals", isLocal: true,
   },
   {
     _id: "local-linux-fundamentals", id: "local-linux-fundamentals",
     slug: "linux-fundamentals", title: "Linux Fundamentals",
     short_description: "Master the Linux command line, manage file systems, control user permissions, and handle system level processes like a pro.",
     category: "System", difficulty: "Intermediate", estimated_time_minutes: 60, points: 175,
-    tags: ["linux", "terminal", "sysadmin", "system-security"],
-    topics: Array(5).fill(null),
-    cover_image_url: "/images/rooms/linux.png",
-    completedBy: Array(1800).fill(null),
-    createdAt: "2026-04-13T00:00:00.000Z",
-    customRoute: "/rooms/linux-fundamentals", isLocal: true,
+    tags: ["linux", "terminal", "sysadmin", "system-security"], topics: Array(5).fill(null),
+    cover_image_url: "/images/rooms/linux.png", completedBy: Array(1800).fill(null),
+    createdAt: "2026-04-13T00:00:00.000Z", customRoute: "/rooms/linux-fundamentals", isLocal: true,
   },
   {
     _id: "local-authentication-session-attacks", id: "local-authentication-session-attacks",
     slug: "authentication-session-attacks", title: "Authentication & Session Attacks",
-    short_description: "Master the dark side of authentication. From hijacking sessions to manipulating JWT signatures and bypassing MFA, learn the advanced exploits that topple secure systems.",
+    short_description: "Master the dark side of authentication. From hijacking sessions to manipulating JWT signatures and bypassing MFA.",
     category: "Web", difficulty: "Advanced", estimated_time_minutes: 90, points: 250,
-    tags: ["auth", "sessions", "jwt", "oauth", "mfa-bypass"],
-    topics: Array(5).fill(null),
-    cover_image_url: "/images/rooms/auth/task1.png",
-    completedBy: Array(1650).fill(null),
-    createdAt: "2026-04-13T00:00:00.000Z",
-    customRoute: "/rooms/authentication-session-attacks", isLocal: true,
+    tags: ["auth", "sessions", "jwt", "oauth", "mfa-bypass"], topics: Array(5).fill(null),
+    cover_image_url: "/images/rooms/auth/task1.png", completedBy: Array(1650).fill(null),
+    createdAt: "2026-04-13T00:00:00.000Z", customRoute: "/rooms/authentication-session-attacks", isLocal: true,
   },
   {
     _id: "local-osint-investigation", id: "local-osint-investigation",
     slug: "osint-investigation", title: "OSINT Investigation",
-    short_description: "Deep dive into Open Source Intelligence. Learn to map digital footprints, exploit search engine dorks, and uncover hidden infrastructure with professional tools.",
+    short_description: "Deep dive into Open Source Intelligence. Learn to map digital footprints, exploit search engine dorks, and uncover hidden infrastructure.",
     category: "Recon", difficulty: "Advanced", estimated_time_minutes: 60, points: 250,
-    tags: ["osint", "recon", "investigation", "social-engineering"],
-    topics: Array(5).fill(null),
+    tags: ["osint", "recon", "investigation", "social-engineering"], topics: Array(5).fill(null),
     cover_image_url: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800",
-    completedBy: Array(1200).fill(null),
-    createdAt: "2026-04-13T00:00:00.000Z",
+    completedBy: Array(1200).fill(null), createdAt: "2026-04-13T00:00:00.000Z",
     customRoute: "/rooms/osint-investigation", isLocal: true,
   },
   {
     _id: "local-python-pickle-deserialization", id: "local-python-pickle-deserialization",
     slug: "python-pickle-deserialization", title: "Python Pickle Exploitation",
-    short_description: "Master the dark art of insecure deserialization. Learn how Python's Pickle module can be weaponized into a full system compromise via Remote Code Execution.",
+    short_description: "Master the dark art of insecure deserialization. Learn how Python's Pickle module can be weaponized into a full system compromise.",
     category: "Advanced", difficulty: "Advanced", estimated_time_minutes: 70, points: 250,
-    tags: ["pickle", "deserialization", "python", "rce"],
-    topics: Array(5).fill(null),
+    tags: ["pickle", "deserialization", "python", "rce"], topics: Array(5).fill(null),
     cover_image_url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800",
-    completedBy: Array(950).fill(null),
-    createdAt: "2026-04-13T00:00:00.000Z",
+    completedBy: Array(950).fill(null), createdAt: "2026-04-13T00:00:00.000Z",
     customRoute: "/rooms/python-pickle-deserialization", isLocal: true,
   },
   {
     _id: "local-cryptography-basics", id: "local-cryptography-basics",
     slug: "cryptography-basics", title: "Cryptography & Hashing",
-    short_description: "Master the fundamental pillars of digital security. Learn how to encrypt data, securely hash passwords, and understand key management protocols.",
+    short_description: "Master the fundamental pillars of digital security. Learn how to encrypt data, securely hash passwords, and understand key management.",
     category: "Crypto", difficulty: "Intermediate", estimated_time_minutes: 60, points: 175,
-    tags: ["crypto", "hashing", "encryption"],
-    topics: Array(5).fill(null),
+    tags: ["crypto", "hashing", "encryption"], topics: Array(5).fill(null),
     cover_image_url: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800",
-    completedBy: Array(1400).fill(null),
-    createdAt: "2026-04-13T00:00:00.000Z",
+    completedBy: Array(1400).fill(null), createdAt: "2026-04-13T00:00:00.000Z",
     customRoute: "/rooms/cryptography-basics", isLocal: true,
   },
   {
@@ -194,11 +169,9 @@ const LOCAL_ROOMS = [
     slug: "reverse-engineering-basics", title: "Reverse Engineering Basics",
     short_description: "Peel back the layers of compiled software. Learn how to disassemble binaries, analyze machine instructions, and uncover hidden program logic.",
     category: "Reverse Engineering", difficulty: "Advanced", estimated_time_minutes: 75, points: 250,
-    tags: ["reverse", "binary", "analysis", "malware"],
-    topics: Array(5).fill(null),
+    tags: ["reverse", "binary", "analysis", "malware"], topics: Array(5).fill(null),
     cover_image_url: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800",
-    completedBy: Array(800).fill(null),
-    createdAt: "2026-04-13T00:00:00.000Z",
+    completedBy: Array(800).fill(null), createdAt: "2026-04-13T00:00:00.000Z",
     customRoute: "/rooms/reverse-engineering-basics", isLocal: true,
   },
 ];
@@ -208,22 +181,16 @@ const RoomImg = memo(({ src, category, alt, className }) => {
   const [imgSrc, setImgSrc] = useState(src || getRoomImg(category));
   const fallbacks = [getRoomImg(category), FALLBACK_IMG];
   const fallbackIdx = useRef(0);
-
-  useEffect(() => {
-    setImgSrc(src || getRoomImg(category));
-    fallbackIdx.current = 0;
-  }, [src, category]);
-
+  useEffect(() => { setImgSrc(src || getRoomImg(category)); fallbackIdx.current = 0; }, [src, category]);
   const handleError = () => {
     const next = fallbacks[fallbackIdx.current];
     if (next && next !== imgSrc) { fallbackIdx.current++; setImgSrc(next); }
   };
-
   return <img src={imgSrc} alt={alt} onError={handleError} className={className} loading="lazy" />;
 });
 RoomImg.displayName = "RoomImg";
 
-/* ══════ Room Card (THM/HTB-style) ══════ */
+/* ══════ Room Card — premium redesign matching Labs card ══════ */
 const RoomCard = memo(({ room, userProgress, isBookmarked, onBookmark }) => {
   const dm = getDiff(room.difficulty);
   const cat = getCat(room.category);
@@ -235,120 +202,88 @@ const RoomCard = memo(({ room, userProgress, isBookmarked, onBookmark }) => {
       ? Math.round((prog.completedLectures.length / room.topics.length) * 100) : 0;
   const completions = room.completedBy?.length || 0;
   const xp = getPoints(room.difficulty);
-  const roomLink = room.customRoute || `/rooms/${room.slug}`;
-
+  const roomLink = room.customRoute || `/rooms/${room.slug || room._id}`;
   const handleBookmark = (e) => { e.preventDefault(); e.stopPropagation(); onBookmark(room); };
 
   return (
-    <div
-      className={`group relative rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col ${isCompleted ? "ring-1 ring-emerald-500/40" : ""}`}
-      style={{ background: T.surface, border: `1px solid ${T.border}` }}
-    >
-      {/* Thumbnail */}
-      <div className="relative h-32 overflow-hidden" style={{ background: "#0d1829" }}>
-        <RoomImg src={room.cover_image_url} category={room.category} alt={room.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111a2e] via-transparent to-transparent" />
+    <div className={`room-card group relative rounded-2xl overflow-hidden flex flex-col ${isCompleted ? "room-card--completed" : ""}`}>
+      {/* Top accent line — difficulty-coded */}
+      <div className="room-card__accent-line" style={{ background: dm.color, boxShadow: `0 0 10px ${dm.color}80` }} />
 
-        {/* Top right badges */}
-        <div className="absolute top-3 right-3 flex items-center gap-2">
-          {(room.subscriberOnly || room.isPremium) ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold"
-              style={{ background: "#212c42", color: T.amber, border: "1px solid rgba(255,184,0,0.3)" }}>
-              <Crown size={10} /> Premium
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold"
-              style={{ background: "rgba(136,230,54,0.12)", color: T.green, border: "1px solid rgba(136,230,54,0.25)" }}>
-              Free
-            </span>
-          )}
-          {isCompleted && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold"
-              style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}>
-              <CheckCircle2 size={10} /> Done
-            </span>
+      {/* ── HERO IMAGE ── */}
+      <div className="relative overflow-hidden room-card__hero">
+        <RoomImg
+          src={room.cover_image_url} category={room.category} alt={room.title}
+          className="room-card__hero-img"
+        />
+        <div className="room-card__hero-gradient" />
+
+        {/* Top-left: category + premium chips */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          <span className="room-badge room-badge--cat" style={{ color: cat.color, borderColor: `${cat.color}40`, background: `${cat.color}14` }}>
+            {cat.icon} {room.category}
+          </span>
+          {(room.subscriberOnly || room.isPremium) && (
+            <span className="room-badge room-badge--premium"><Crown size={8} /> PRO</span>
           )}
         </div>
 
-        {/* Bookmark */}
-        <button
-          className="absolute top-3 left-3 p-1.5 rounded-lg transition-all"
-          style={{
-            background: isBookmarked ? T.cyan : "rgba(0,0,0,0.4)",
-            color: isBookmarked ? T.bg : "#94A3B8",
-          }}
-          onClick={handleBookmark} aria-label="Bookmark"
-        >
-          {isBookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
-        </button>
+        {/* Top-right: status + bookmark */}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          {isCompleted && (
+            <span className="room-badge room-badge--completed"><CheckCircle2 size={8} /> Done</span>
+          )}
+          <button className={`room-bookmark-btn ${isBookmarked ? "room-bookmark-btn--active" : ""}`} onClick={handleBookmark}>
+            {isBookmarked ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+          </button>
+        </div>
 
-        {/* Category tag */}
-        <div className="absolute bottom-3 left-3">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold"
-            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", color: cat.color, border: `1px solid ${cat.color}30` }}>
-            {cat.icon} {room.category}
-          </span>
+        {/* Title + difficulty overlaid at bottom */}
+        <div className="room-card__hero-title-block">
+          <h3 className="room-card__title">{room.title}</h3>
+          <DiffBars level={room.difficulty} />
+        </div>
+
+        {/* Hover CTA — slides up */}
+        <div className="room-card__hover-overlay">
+          {isCompleted ? (
+            <Link to={roomLink} className="room-hover-cta room-hover-cta--completed">
+              <RotateCcw size={14} /> Replay Room
+            </Link>
+          ) : (
+            <Link to={roomLink} className="room-hover-cta room-hover-cta--enter">
+              <Play size={14} /> {isStarted ? "Resume" : "Enter Room"}
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 flex flex-col p-3.5 gap-2">
-        <div>
-          <h3 className="font-bold text-white text-sm leading-tight line-clamp-1 group-hover:text-[#00F2FF] transition-colors">{room.title}</h3>
-          <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{room.short_description}</p>
-        </div>
+      {/* ── BODY ── */}
+      <div className="room-card__body">
+        <p className="room-card__desc">{room.short_description}</p>
 
-        {/* Meta */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <DiffBars level={room.difficulty} />
+        {/* Stat pills */}
+        <div className="room-card__stat-row">
+          <span className="room-stat-pill"><Clock size={10} /> {room.estimated_time_minutes || "—"}m</span>
+          <span className="room-stat-pill"><Users size={10} /> {completions}</span>
           {room.topics?.length > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400">
-              <BookOpen size={11} /> {room.topics.length} topics
-            </span>
+            <span className="room-stat-pill"><BookOpen size={10} /> {room.topics.length} topics</span>
           )}
+          <span className="room-stat-pill room-stat-pill--xp"><Zap size={10} /> {xp} XP</span>
         </div>
 
-        {/* Stats */}
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span className="flex items-center gap-1"><Clock size={11} className="text-slate-500" /> {room.estimated_time_minutes || "—"}m</span>
-          <span className="flex items-center gap-1"><Users size={11} className="text-slate-500" /> {completions}</span>
-          <span className="flex items-center gap-1 font-semibold" style={{ color: T.amber }}><Zap size={11} /> {xp} XP</span>
-        </div>
-
-        {/* Progress */}
+        {/* Progress bar */}
         {pct > 0 && !isCompleted && (
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span style={{ color: T.textMuted }}>Progress</span>
-              <span style={{ color: T.cyan }} className="font-semibold">{pct}%</span>
+          <div className="room-card__progress">
+            <div className="room-card__progress-labels">
+              <span>Progress</span>
+              <span className="room-text-cyan">{pct}%</span>
             </div>
-            <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-              <div className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${T.cyan}, #0099CC)`, boxShadow: `0 0 6px ${T.cyan}30` }} />
+            <div className="room-progress-track">
+              <div className="room-progress-fill" style={{ width: `${pct}%` }} />
             </div>
           </div>
         )}
-
-        {/* CTA */}
-        <div className="flex gap-2 mt-auto pt-1">
-          {isCompleted ? (
-            <Link to={roomLink} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110" style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff' }}>
-              <RotateCcw size={12} /> Replay
-            </Link>
-          ) : isStarted ? (
-            <Link to={roomLink} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110" style={{ background: 'linear-gradient(135deg, #00D4FF, #0099CC)', color: '#0a1128' }}>
-              <Play size={12} /> Resume
-            </Link>
-          ) : (
-            <Link to={roomLink} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110" style={{ background: 'linear-gradient(135deg, #00D4FF, #0099CC)', color: '#0a1128' }}>
-              <Play size={12} /> Enter
-            </Link>
-          )}
-          <Link to={roomLink} className="px-2 py-1.5 rounded-lg transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }} aria-label="Details">
-            <ArrowRight size={14} className="text-slate-400" />
-          </Link>
-        </div>
       </div>
     </div>
   );
@@ -363,55 +298,46 @@ const RoomRow = memo(({ room, userProgress, isBookmarked, onBookmark }) => {
   const isCompleted = prog?.completed || false;
   const isStarted = prog?.joined || prog?.completedLectures?.length > 0;
   const xp = getPoints(room.difficulty);
-  const roomLink = room.customRoute || `/rooms/${room.slug}`;
+  const roomLink = room.customRoute || `/rooms/${room.slug || room._id}`;
   const handleBookmark = (e) => { e.preventDefault(); e.stopPropagation(); onBookmark(room); };
 
   return (
-    <div
-      className={`group flex gap-4 p-4 rounded-xl transition-all duration-300 ${isCompleted ? "ring-1 ring-emerald-500/30" : ""}`}
-      style={{ background: T.surface, border: `1px solid ${T.border}` }}
-    >
-      <div className="relative w-28 h-20 rounded-lg overflow-hidden flex-shrink-0" style={{ background: "#0d1829" }}>
+    <div className={`room-row group flex items-center gap-4 p-3 rounded-xl ${isCompleted ? "room-row--completed" : ""}`}>
+      <div className="relative w-24 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ background: "#060d1a" }}>
         <RoomImg src={room.cover_image_url} category={room.category} alt={room.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-80" />
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-90" />
       </div>
 
-      <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-        <h3 className="font-bold text-white text-sm line-clamp-1 group-hover:text-[#00F2FF] transition-colors">{room.title}</h3>
-        <div className="flex items-center gap-3 flex-wrap">
-          <DiffBars level={room.difficulty} />
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold"
-            style={{ background: `${cat.color}12`, color: cat.color }}>
-            {cat.icon} {room.category}
-          </span>
-          {(room.subscriberOnly || room.isPremium) && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold" style={{ color: T.amber }}>
-              <Crown size={10} /> Premium
-            </span>
+      <div className="flex-1 flex flex-col gap-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="room-card__title text-[13px] line-clamp-1">{room.title}</h3>
+          {isCompleted && (
+            <span className="room-badge room-badge--completed room-badge--sm"><CheckCircle2 size={8} /> Done</span>
           )}
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span className="flex items-center gap-1"><Clock size={11} /> {room.estimated_time_minutes || "—"}m</span>
-          <span className="flex items-center gap-1"><Users size={11} /> {room.completedBy?.length || 0}</span>
-          <span className="flex items-center gap-1 font-semibold" style={{ color: T.amber }}><Zap size={11} /> {xp} XP</span>
-          {room.topics?.length > 0 && <span className="flex items-center gap-1"><BookOpen size={11} /> {room.topics.length}</span>}
+        <div className="flex items-center gap-3 flex-wrap">
+          <DiffBars level={room.difficulty} />
+          <span className="text-[10px] font-bold" style={{ color: cat.color }}>{room.category}</span>
+        </div>
+        <div className="flex items-center gap-3 text-[10px] text-slate-500 font-semibold">
+          <span className="flex items-center gap-1"><Clock size={10} /> {room.estimated_time_minutes || "—"}m</span>
+          <span className="flex items-center gap-1"><Users size={10} /> {room.completedBy?.length || 0}</span>
+          <span className="room-stat-pill room-stat-pill--xp"><Zap size={10} /> {xp} XP</span>
         </div>
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          className="p-1.5 rounded-lg transition-all"
-          style={{ background: isBookmarked ? T.cyan : "rgba(255,255,255,0.04)", color: isBookmarked ? T.bg : "#64748B" }}
-          onClick={handleBookmark} aria-label="Bookmark"
-        >
-          {isBookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+        <button className={`room-bookmark-btn ${isBookmarked ? "room-bookmark-btn--active" : ""}`} onClick={handleBookmark}>
+          {isBookmarked ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
         </button>
         {isCompleted ? (
-          <Link to={roomLink} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110 whitespace-nowrap" style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff' }}><RotateCcw size={11} /> Replay</Link>
-        ) : isStarted ? (
-          <Link to={roomLink} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110 whitespace-nowrap" style={{ background: 'linear-gradient(135deg, #00D4FF, #0099CC)', color: '#0a1128' }}><Play size={11} /> Resume</Link>
+          <Link to={roomLink} className="room-cta-btn room-cta-btn--completed room-cta-btn--sm">
+            <RotateCcw size={11} /> Replay
+          </Link>
         ) : (
-          <Link to={roomLink} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110 whitespace-nowrap" style={{ background: 'linear-gradient(135deg, #00D4FF, #0099CC)', color: '#0a1128' }}><Play size={11} /> Enter</Link>
+          <Link to={roomLink} className="room-cta-btn room-cta-btn--enter room-cta-btn--sm">
+            <Play size={11} /> {isStarted ? "Resume" : "Enter"}
+          </Link>
         )}
       </div>
     </div>
@@ -452,17 +378,13 @@ const Rooms = memo(() => {
         if (filters.difficulties?.length) params.difficulty = filters.difficulties[0];
         const data = await getRooms(params);
 
+        const localSlugs = new Set(LOCAL_ROOMS.map((r) => r.slug));
         const filteredApiRooms = data.filter((r) => {
-          const title = r.title?.toLowerCase() || "";
-          const slug = r.slug?.toLowerCase() || "";
-          const isOldApiRoom = title.includes("backend development basics") || slug.includes("introduction-to-restful-apis");
-          const isOldNetworkingRoom = title === "networking fundamentals" || slug === "networking-fundamentals";
-          const isOldPentestingRoom = title.includes("web app pentesting") || slug.includes("web-app-pentesting");
-          return !isOldApiRoom && !isOldNetworkingRoom && !isOldPentestingRoom;
+          // Only exclude rooms whose slugs already exist in LOCAL_ROOMS
+          return !localSlugs.has(r.slug);
         });
 
-        const localSlugs = new Set(LOCAL_ROOMS.map((r) => r.slug));
-        const remoteToAdd = filteredApiRooms.filter((r) => !localSlugs.has(r.slug));
+        const remoteToAdd = filteredApiRooms;
         setRooms([...LOCAL_ROOMS, ...remoteToAdd]);
       } catch (err) {
         console.error("Room fetch error:", err);
@@ -542,288 +464,337 @@ const Rooms = memo(() => {
     }, [isBookmarked, addBookmark, removeBookmark],
   );
 
-  /* ── Filter chip data ── */
   const diffChips = [
-    { label: "Beginner", color: "#88E636" },
-    { label: "Intermediate", color: "#F5A623" },
-    { label: "Advanced", color: "#F97316" },
-    { label: "Hard", color: "#F97316" },
-    { label: "Insane", color: "#FF3D71" },
+    { label: "Beginner", cls: "room-chip--easy" },
+    { label: "Intermediate", cls: "room-chip--medium" },
+    { label: "Advanced", cls: "room-chip--hard" },
+    { label: "Insane", cls: "room-chip--insane" },
   ];
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen" style={{ background: T.bg }}>
+      {/* ═══ PAGE WRAPPER — exact Dashboard background ═══ */}
+      <div className="rooms-page min-h-screen text-white relative overflow-x-hidden">
+        <div className="absolute inset-0 z-0 pointer-events-none rooms-page__grid" />
+        <div className="absolute inset-0 z-0 pointer-events-none rooms-page__overlay" />
 
-        {/* ═══ HERO HEADER ═══ */}
-        <div className="relative overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #0a1128 0%, #1a2744 50%, #0a1128 100%)" }}>
-          <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
-            style={{ backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        <div className="relative z-10">
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl" style={{ background: "rgba(0,242,255,0.1)", border: "1px solid rgba(0,242,255,0.2)" }}>
-                    <Shield size={22} style={{ color: T.cyan }} />
+          {/* ═══ HERO HEADER ═══ */}
+          <div className="relative overflow-hidden rooms-hero">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-10">
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="rooms-hero__icon-box">
+                      <Shield size={22} className="rooms-icon-cyan" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-widest rooms-text-cyan">
+                      Challenge Rooms
+                    </span>
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-widest" style={{ color: T.cyan }}>Challenge Rooms</span>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">
+                    Active Rooms
+                  </h1>
+                  <p className="text-slate-400 text-sm max-w-lg">
+                    {loading
+                      ? "Loading challenge rooms…"
+                      : `${rooms.length} hacking room${rooms.length !== 1 ? "s" : ""} available — learn by doing, not just reading.`}
+                  </p>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Active Rooms</h1>
-                <p className="text-slate-400 text-sm max-w-lg">
-                  {loading ? "Loading challenge rooms…" : `${rooms.length} hacking room${rooms.length !== 1 ? "s" : ""} available — learn by doing, not just reading.`}
-                </p>
-              </div>
 
-              {/* Stats */}
-              <div className="flex items-center gap-6">
-                {[
-                  { val: stats.total, label: "Rooms", icon: <Shield size={16} /> },
-                  { val: stats.free, label: "Free", icon: <Zap size={16} /> },
-                  { val: stats.completed, label: "Completed", icon: <CheckCircle2 size={16} /> },
-                  { val: stats.inProgress, label: "Active", icon: <Flame size={16} /> },
-                ].map(({ val, label, icon }) => (
-                  <div key={label} className="text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-1" style={{ color: T.cyan }}>{icon}</div>
-                    <p className="text-2xl font-extrabold text-white">{val}</p>
-                    <p className="text-xs text-slate-400 whitespace-nowrap">{label}</p>
-                  </div>
-                ))}
+                {/* Stats counters */}
+                <div className="flex items-center gap-6">
+                  {[
+                    { val: stats.total, label: "Rooms", icon: <Shield size={16} /> },
+                    { val: stats.free, label: "Free", icon: <Zap size={16} /> },
+                    { val: stats.completed, label: "Completed", icon: <CheckCircle2 size={16} /> },
+                    { val: stats.inProgress, label: "Active", icon: <Flame size={16} /> },
+                  ].map(({ val, label, icon }) => (
+                    <div key={label} className="text-center rooms-stat-counter">
+                      <div className="flex items-center justify-center gap-1.5 mb-1 rooms-text-cyan">{icon}</div>
+                      <p className="text-2xl font-extrabold text-white">{val}</p>
+                      <p className="text-xs text-slate-400 whitespace-nowrap">{label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ═══ CATEGORY TABS ═══ */}
-        <div style={{ background: "#0d1829", borderBottom: `1px solid ${T.border}` }}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between gap-4 overflow-x-auto">
-              <div className="flex items-center">
-                {categories.map((cat) => {
-                  const isActive = filters.category === cat;
-                  const meta = cat !== "all" ? getCat(cat) : null;
-                  return (
-                    <button key={cat} onClick={() => setFilter("category", cat)}
-                      className="relative px-4 py-3.5 text-sm font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5"
-                      style={{ color: isActive ? T.cyan : T.textMuted }}>
-                      {meta && <span style={{ color: isActive ? meta.color : undefined }}>{meta.icon}</span>}
-                      {cat === "all" ? "All Rooms" : cat}
-                      {isActive && <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: T.cyan }} />}
-                    </button>
-                  );
-                })}
+          {/* ═══ CATEGORY TABS ═══ */}
+          <div className="rooms-toolbar">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between gap-4 overflow-x-auto">
+                <div className="flex items-center gap-0">
+                  {categories.map((cat) => {
+                    const isActive = filters.category === cat;
+                    const meta = cat !== "all" ? getCat(cat) : null;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setFilter("category", cat)}
+                        className={`rooms-tab ${isActive ? "rooms-tab--active" : ""}`}
+                      >
+                        {meta && <span style={{ color: isActive ? meta.color : undefined }}>{meta.icon}</span>}
+                        {cat === "all" ? "All Rooms" : cat}
+                        {isActive && <div className="rooms-tab__indicator" />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center gap-3 py-2">
+                  {/* Search */}
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      className="rooms-search-input"
+                      placeholder="Search rooms…"
+                      value={filters.search}
+                      onChange={(e) => setFilter("search", e.target.value)}
+                    />
+                    {filters.search && (
+                      <button
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                        onClick={() => setFilter("search", "")}
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <button className="lg:hidden rooms-filter-mobile-btn" onClick={() => setMobileOpen(true)}>
+                    <Filter size={14} /> Filters
+                    {activeCount > 0 && <span className="rooms-filter-count">{activeCount}</span>}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-3 py-2">
-                {/* Search */}
-                <div className="relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input
-                    className="pl-9 pr-8 py-2 rounded-lg text-sm transition-all w-48 focus:w-64"
-                    style={{ background: T.surface, border: `1px solid ${T.border}`, color: "#fff", outline: "none" }}
-                    placeholder="Search rooms…" value={filters.search}
-                    onChange={(e) => setFilter("search", e.target.value)}
-                    onFocus={(e) => e.target.style.borderColor = "rgba(0,242,255,0.4)"}
-                    onBlur={(e) => e.target.style.borderColor = T.border}
-                  />
-                  {filters.search && (
-                    <button className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white" onClick={() => setFilter("search", "")}>
-                      <X size={14} />
+            </div>
+          </div>
+
+          {/* ═══ FILTER CHIPS + SORT ═══ */}
+          <div className="rooms-chipbar">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {["all", "free", "premium"].map((sub) => {
+                    const isActive = filters.subscription === sub;
+                    return (
+                      <button
+                        key={sub}
+                        onClick={() => setFilter("subscription", sub)}
+                        className={`room-chip room-chip--green ${isActive ? "room-chip--active" : ""}`}
+                      >
+                        {sub === "all" ? "All" : sub === "free" ? "Free" : "Premium"}
+                      </button>
+                    );
+                  })}
+                  <div className="rooms-chipbar__divider" />
+                  {diffChips.map(({ label, cls }) => {
+                    const isActive = filters.difficulties?.includes(label);
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => setFilter("difficulties", isActive
+                          ? filters.difficulties.filter((x) => x !== label)
+                          : [...(filters.difficulties || []), label])}
+                        className={`room-chip ${cls} ${isActive ? "room-chip--active" : ""}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                  {activeCount > 0 && (
+                    <button onClick={clearAll} className="rooms-clear-btn">
+                      <X size={12} /> Clear All
                     </button>
                   )}
                 </div>
-                {/* Mobile filter */}
-                <button className="lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold"
-                  style={{ background: T.surface, color: T.textMuted, border: `1px solid ${T.border}` }} onClick={() => setMobileOpen(true)}>
-                  <Filter size={14} /> Filters
-                  {activeCount > 0 && <span className="px-1.5 py-0.5 rounded text-xs font-bold" style={{ background: T.cyan, color: T.bg }}>{activeCount}</span>}
-                </button>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-500">
+                    {loading ? "Loading…" : `${sorted.length} rooms`}
+                  </span>
+                  <div className="relative">
+                    <select
+                      className="rooms-sort-select"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                    >
+                      <option value="popular">Popular</option>
+                      <option value="newest">Newest</option>
+                      <option value="xp">Highest XP</option>
+                      <option value="duration">Shortest</option>
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                  </div>
+                  <div className="rooms-view-toggle">
+                    <button
+                      className={`rooms-view-btn ${viewMode === "grid" ? "rooms-view-btn--active" : ""}`}
+                      onClick={() => setViewMode("grid")}
+                    >
+                      <Grid size={14} />
+                    </button>
+                    <button
+                      className={`rooms-view-btn ${viewMode === "list" ? "rooms-view-btn--active" : ""}`}
+                      onClick={() => setViewMode("list")}
+                    >
+                      <List size={14} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ═══ FILTER CHIPS + SORT ═══ */}
-        <div style={{ background: "#0f1d2e" }}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                {["all", "free", "premium"].map((sub) => {
-                  const isActive = filters.subscription === sub;
-                  return (
-                    <button key={sub} onClick={() => setFilter("subscription", sub)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{ background: isActive ? `${T.cyan}15` : "rgba(255,255,255,0.03)", color: isActive ? T.cyan : T.textMuted, border: `1px solid ${isActive ? `${T.cyan}35` : T.border}` }}>
-                      {sub === "all" ? "All" : sub === "free" ? "Free" : "Premium"}
-                    </button>
-                  );
-                })}
-                <div className="w-px h-5 mx-1" style={{ background: T.border }} />
-                {diffChips.map(({ label, color }) => {
-                  const isActive = filters.difficulties?.includes(label);
-                  return (
-                    <button key={label} onClick={() => setFilter("difficulties", isActive ? filters.difficulties.filter((x) => x !== label) : [...(filters.difficulties || []), label])}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{ background: isActive ? `${color}18` : "rgba(255,255,255,0.03)", color: isActive ? color : T.textMuted, border: `1px solid ${isActive ? `${color}40` : T.border}` }}>
-                      {label}
-                    </button>
-                  );
-                })}
+          {/* ═══ MAIN CONTENT ═══ */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+            {/* Loading */}
+            {loading && (
+              <div className={`grid gap-5 ${viewMode === "list" ? "grid-cols-1" : "md:grid-cols-2 lg:grid-cols-3"}`}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="rooms-skeleton rounded-2xl overflow-hidden">
+                    <div className="h-40 rooms-skeleton__img" />
+                    <div className="p-4 space-y-3">
+                      <div className="h-4 rounded w-3/4 rooms-skeleton__line" />
+                      <div className="h-3 rounded w-full rooms-skeleton__line rooms-skeleton__line--dim" />
+                      <div className="h-2 rounded w-1/2 rooms-skeleton__line rooms-skeleton__line--dimmer" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Error */}
+            {!loading && error && (
+              <div className="rooms-empty-state">
+                <div className="rooms-empty-state__icon rooms-empty-state__icon--error">
+                  <X size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">{error}</h3>
+                <button className="room-cta-btn room-cta-btn--enter mt-4" onClick={fetchRooms}>
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {/* Empty */}
+            {!loading && !error && sorted.length === 0 && (
+              <div className="rooms-empty-state">
+                <div className="rooms-empty-state__icon">
+                  <Target size={40} className="rooms-icon-cyan" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">No rooms match your filters</h3>
+                <p className="text-slate-400 text-sm mb-4 max-w-md text-center">
+                  Try adjusting your search or clearing all filters to see available rooms.
+                </p>
                 {activeCount > 0 && (
-                  <button onClick={clearAll} className="px-2 py-1 rounded text-xs font-semibold text-slate-500 hover:text-white transition-colors flex items-center gap-1">
-                    <X size={12} /> Clear
-                  </button>
+                  <p className="text-xs text-slate-500 mb-4">
+                    {activeCount} active filter{activeCount > 1 ? "s" : ""} applied
+                  </p>
                 )}
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500">{loading ? "Loading…" : `${sorted.length} rooms`}</span>
-                <div className="relative">
-                  <select className="appearance-none pl-3 pr-7 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
-                    style={{ background: T.surface, border: `1px solid ${T.border}`, color: "#CBD5E1", outline: "none" }}
-                    value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                    <option value="popular">Popular</option>
-                    <option value="newest">Newest</option>
-                    <option value="xp">Highest XP</option>
-                    <option value="duration">Shortest</option>
-                  </select>
-                  <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                </div>
-                <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: "rgba(255,255,255,0.03)" }}>
-                  <button className="p-1.5 rounded transition-colors" style={{ background: viewMode === "grid" ? `${T.cyan}15` : "transparent", color: viewMode === "grid" ? T.cyan : T.textMuted }} onClick={() => setViewMode("grid")}><Grid size={14} /></button>
-                  <button className="p-1.5 rounded transition-colors" style={{ background: viewMode === "list" ? `${T.cyan}15` : "transparent", color: viewMode === "list" ? T.cyan : T.textMuted }} onClick={() => setViewMode("list")}><List size={14} /></button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ═══ MAIN CONTENT ═══ */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Loading */}
-          {loading && (
-            <div className={`grid gap-4 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"}`}>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-xl overflow-hidden animate-pulse" style={{ background: T.surface, border: `1px solid ${T.border}` }}>
-                  <div className="h-32" style={{ background: "#0d1829" }} />
-                  <div className="p-3.5 space-y-2.5">
-                    <div className="h-3.5 rounded w-3/4" style={{ background: "rgba(255,255,255,0.06)" }} />
-                    <div className="h-2.5 rounded w-full" style={{ background: "rgba(255,255,255,0.04)" }} />
-                    <div className="h-2 rounded w-1/2" style={{ background: "rgba(255,255,255,0.03)" }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Error */}
-          {!loading && error && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="p-4 rounded-xl mb-4" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                <X size={32} className="text-red-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">{error}</h3>
-              <button className="mt-4 px-6 py-2.5 rounded-lg text-sm font-bold transition-all hover:brightness-110" style={{ background: 'linear-gradient(135deg, #00D4FF, #0099CC)', color: '#0a1128' }} onClick={fetchRooms}>Try Again</button>
-            </div>
-          )}
-
-          {/* Empty */}
-          {!loading && !error && sorted.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="p-4 rounded-xl mb-4" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}` }}>
-                <Target size={32} className="text-slate-500" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">No rooms match your filters</h3>
-              <p className="text-slate-400 text-sm mb-6">Try adjusting your search or clearing all filters.</p>
-              <button className="px-6 py-2.5 rounded-lg text-sm font-bold transition-all hover:brightness-110" style={{ background: 'linear-gradient(135deg, #00D4FF, #0099CC)', color: '#0a1128' }} onClick={clearAll}>Reset Filters</button>
-            </div>
-          )}
-
-          {/* Grid / List */}
-          {!loading && !error && sorted.length > 0 && (
-            <div className={`grid gap-4 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"}`}>
-              {sorted.map((room) => {
-                const prog = userProgress[room.slug] || userProgress[room._id] || null;
-                const bmd = isBookmarked(room.slug || room._id || room.id, "room");
-                return viewMode === "grid" ? (
-                  <RoomCard key={room._id || room.id} room={room} userProgress={prog} isBookmarked={bmd} onBookmark={handleBookmark} />
-                ) : (
-                  <RoomRow key={room._id || room.id} room={room} userProgress={prog} isBookmarked={bmd} onBookmark={handleBookmark} />
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ═══ MOBILE FILTER DRAWER ═══ */}
-        {mobileOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-            <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm flex flex-col" style={{ background: "#0d1829" }}>
-              <div className="flex items-center justify-between p-5" style={{ borderBottom: `1px solid ${T.border}` }}>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <SlidersHorizontal size={18} style={{ color: T.cyan }} /> Filters
-                </h2>
-                <button className="p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }} onClick={() => setMobileOpen(false)}>
-                  <X size={18} className="text-slate-400" />
+                <button className="room-cta-btn room-cta-btn--enter" onClick={clearAll}>
+                  Reset Filters
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-5 space-y-5">
-                {/* Subscription */}
-                <div>
-                  <h4 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Subscription</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {["all", "free", "premium"].map((sub) => (
-                      <button key={sub} onClick={() => setFilter("subscription", sub)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                        style={{ background: filters.subscription === sub ? `${T.cyan}15` : "rgba(255,255,255,0.03)", color: filters.subscription === sub ? T.cyan : T.textMuted, border: `1px solid ${filters.subscription === sub ? `${T.cyan}35` : T.border}` }}>
-                        {sub === "all" ? "All" : sub.charAt(0).toUpperCase() + sub.slice(1)}
-                      </button>
-                    ))}
-                  </div>
+            )}
+
+            {/* Grid / List */}
+            {!loading && !error && sorted.length > 0 && (
+              <div className={`grid gap-5 ${viewMode === "list" ? "grid-cols-1" : "md:grid-cols-2 lg:grid-cols-3"}`}>
+                {sorted.map((room) => {
+                  const prog = userProgress[room.slug] || userProgress[room._id] || null;
+                  const bmd = isBookmarked(room.slug || room._id || room.id, "room");
+                  return viewMode === "grid" ? (
+                    <RoomCard key={room._id || room.id} room={room} userProgress={prog} isBookmarked={bmd} onBookmark={handleBookmark} />
+                  ) : (
+                    <RoomRow key={room._id || room.id} room={room} userProgress={prog} isBookmarked={bmd} onBookmark={handleBookmark} />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ═══ MOBILE FILTER DRAWER ═══ */}
+          {mobileOpen && (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+              <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm flex flex-col rooms-mobile-drawer">
+                <div className="flex items-center justify-between p-5 rooms-mobile-drawer__header">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <SlidersHorizontal size={18} className="rooms-icon-cyan" /> Filters
+                  </h2>
+                  <button className="p-2 rounded-lg rooms-mobile-drawer__close" onClick={() => setMobileOpen(false)}>
+                    <X size={18} className="text-slate-400" />
+                  </button>
                 </div>
-                {/* Difficulty */}
-                <div>
-                  <h4 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Difficulty</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {diffChips.map(({ label, color }) => {
-                      const on = filters.difficulties?.includes(label);
-                      return (
-                        <button key={label} onClick={() => setFilter("difficulties", on ? filters.difficulties.filter((x) => x !== label) : [...(filters.difficulties || []), label])}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                          style={{ background: on ? `${color}18` : "rgba(255,255,255,0.03)", color: on ? color : T.textMuted, border: `1px solid ${on ? `${color}40` : T.border}` }}>
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                {/* Tags */}
-                {allTags.length > 0 && (
+                <div className="flex-1 overflow-y-auto p-5 space-y-5">
                   <div>
-                    <h4 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Tags</h4>
+                    <h4 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Subscription</h4>
                     <div className="flex flex-wrap gap-2">
-                      {allTags.map((t) => {
-                        const on = filters.tags?.includes(t);
+                      {["all", "free", "premium"].map((sub) => (
+                        <button
+                          key={sub}
+                          onClick={() => setFilter("subscription", sub)}
+                          className={`room-chip room-chip--green ${filters.subscription === sub ? "room-chip--active" : ""}`}
+                        >
+                          {sub === "all" ? "All" : sub.charAt(0).toUpperCase() + sub.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Difficulty</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {diffChips.map(({ label, cls }) => {
+                        const on = filters.difficulties?.includes(label);
                         return (
-                          <button key={t} onClick={() => setFilter("tags", on ? filters.tags.filter((x) => x !== t) : [...(filters.tags || []), t])}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                            style={{ background: on ? `${T.cyan}15` : "rgba(255,255,255,0.03)", color: on ? T.cyan : T.textMuted, border: `1px solid ${on ? `${T.cyan}35` : T.border}` }}>
-                            {t}
+                          <button
+                            key={label}
+                            onClick={() => setFilter("difficulties", on
+                              ? filters.difficulties.filter((x) => x !== label)
+                              : [...(filters.difficulties || []), label])}
+                            className={`room-chip ${cls} ${on ? "room-chip--active" : ""}`}
+                          >
+                            {label}
                           </button>
                         );
                       })}
                     </div>
                   </div>
-                )}
-              </div>
-              <div className="p-5" style={{ borderTop: `1px solid ${T.border}` }}>
-                <button className="w-full py-3 rounded-lg text-sm font-bold transition-all hover:brightness-110" style={{ background: 'linear-gradient(135deg, #00D4FF, #0099CC)', color: '#0a1128' }} onClick={() => setMobileOpen(false)}>
-                  Apply Filters {activeCount > 0 ? `(${activeCount})` : ""}
-                </button>
+                  {allTags.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Tags</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {allTags.map((t) => {
+                          const on = filters.tags?.includes(t);
+                          return (
+                            <button
+                              key={t}
+                              onClick={() => setFilter("tags", on
+                                ? filters.tags.filter((x) => x !== t)
+                                : [...(filters.tags || []), t])}
+                              className={`room-chip room-chip--green ${on ? "room-chip--active" : ""}`}
+                            >
+                              {t}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="p-5 rooms-mobile-drawer__footer">
+                  <button className="w-full room-cta-btn room-cta-btn--enter" onClick={() => setMobileOpen(false)}>
+                    Apply Filters {activeCount > 0 ? `(${activeCount})` : ""}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+
+        </div>
       </div>
     </ProtectedRoute>
   );

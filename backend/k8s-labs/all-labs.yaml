@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyber-lab-forensics
+  labels:
+    app: cyber-lab
+    lab-id: linux-forensics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cyber-lab
+      lab-id: linux-forensics
+  template:
+    metadata:
+      labels:
+        app: cyber-lab
+        lab-id: linux-forensics
+    spec:
+      containers:
+        - name: lab-container
+          image: badshahjan/lab1:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mkdir -p /home/labuser/evidence
+              echo "The password is hidden in the binary" > /home/labuser/evidence/.secret_note
+              echo "U0VDUkVUX0tFWV8xMjM0NQ==" | base64 -d > /home/labuser/evidence/mystery.bin
+              echo 'echo "FLAG" > /tmp/flag_storage' >> /home/labuser/.bash_history
+              echo "FLAG{FORENSIC_DISCOVERY_COMPLETE}" > /home/labuser/.backup_flag.txt
+              chown -R 1000:1000 /home/labuser
+              ttyd -W -p 80 -i 0.0.0.0 bash
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cyber-lab-forensics-service
+  labels:
+    lab-id: linux-forensics
+spec:
+  selector:
+    app: cyber-lab
+    lab-id: linux-forensics
+  ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 80
+      nodePort: 32083
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyber-lab-malware
+  labels:
+    app: cyberverse-lab
+    lab-id: malware
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cyberverse-lab
+      lab-id: malware
+  template:
+    metadata:
+      labels:
+        app: cyberverse-lab
+        lab-id: malware
+    spec:
+      containers:
+        - name: malware-container
+          image: badshahjan/malware-lab:latest
+          env:
+            - name: DECRYPTION_KEY
+              value: "MALWARE_SECRET_ACCESS_KEY"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mkdir -p /etc/malware
+              echo '{"author": "badshahjan", "version": "2.4.1", "target": "finance_db"}' > /etc/malware/config.json
+              echo "Server listening on port 4444" > /var/log/network_trace.log
+              echo "The final flag is hidden in /var/tmp/.hidden_flag" >> /root/.bash_history
+              mkdir -p /var/tmp
+              echo "flag{CYBERVERSE_MALWARE_ELITE_2024}" > /var/tmp/.hidden_flag
+              ttyd -W -p 7681 sh
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 7681
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cyber-lab-malware-service
+  labels:
+    lab-id: malware
+spec:
+  selector:
+    app: cyberverse-lab
+    lab-id: malware
+  ports:
+    - protocol: TCP
+      port: 8085
+      targetPort: 7681
+      nodePort: 32230
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyber-lab-web-security
+  labels:
+    app: cyberverse-lab
+    lab-id: web-security
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cyberverse-lab
+      lab-id: web-security
+  template:
+    metadata:
+      labels:
+        app: cyberverse-lab
+        lab-id: web-security
+    spec:
+      containers:
+        - name: web-security-container
+          image: badshahjan/web-vuln-advanced:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 7681
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cyber-lab-web-security-service
+  labels:
+    lab-id: web-security
+spec:
+  selector:
+    app: cyberverse-lab
+    lab-id: web-security
+  ports:
+    - protocol: TCP
+      port: 8087
+      targetPort: 7681
+      nodePort: 32235
+  type: NodePort

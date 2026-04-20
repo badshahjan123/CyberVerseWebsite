@@ -43,25 +43,19 @@ const initSocket = (server) => {
   });
 
   // Global platform heartbeat (Every 30 seconds)
-  // Broadcasts to ALL connected clients (including guests)
   setInterval(async () => {
     try {
+      const User = require('../models/User');
+      const Lab = require('../models/Lab');
+      const Room = require('../models/Room');
       const totalUsers = await User.countDocuments({});
       const activeLabs = await Lab.countDocuments({ isActive: true });
       const totalRooms = await Room.countDocuments({ isActive: true });
-      
-      // Calculate global challenges (sum of all completed rooms)
       const challengesResult = await User.aggregate([
         { $group: { _id: null, total: { $sum: '$completedRooms' } } }
       ]);
       const totalChallenges = challengesResult[0]?.total || 0;
-
-      io.emit('platform:stats', {
-        totalUsers,
-        activeLabs,
-        totalRooms,
-        totalChallenges
-      });
+      io.emit('platform:stats', { totalUsers, activeLabs, totalRooms, totalChallenges });
     } catch (err) {
       console.error('Heartbeat error:', err);
     }

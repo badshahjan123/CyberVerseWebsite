@@ -78,7 +78,7 @@ function AppContent() {
     <div className="min-h-screen flex flex-col transition-colors duration-300">
       {!isAdminRoute && <Navbar />}
 
-      <main className="flex-1 pt-16">
+      <main className={`flex-1 ${!isAdminRoute ? "pt-20" : ""}`}>
         <Suspense fallback={<PageLoader />}>
           {isAdminRoute ? (
             <Routes>

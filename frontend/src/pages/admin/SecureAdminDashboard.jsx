@@ -155,9 +155,16 @@ const SecureAdminDashboard = () => {
           credentials: "include",
         });
         const LOCAL_ROOMS = [
+          { _id: "local-networking-fundamentals", title: "Networking Fundamentals", description: "Master the OSI model, TCP/IP, DNS, and routing fundamentals.", difficulty: "Beginner", points: 100, isLocal: true },
           { _id: "local-web-app-pentesting", title: "Web App Pentesting Mastery", description: "Learn how real hackers identify, analyze, and exploit vulnerabilities in web applications.", difficulty: "Advanced", points: 250, isLocal: true },
           { _id: "local-rest-api-mastery", title: "Introduction to RESTful APIs", description: "Learn REST API fundamentals, HTTP methods, JSON, and build your first endpoint.", difficulty: "Beginner", points: 100, isLocal: true },
-          { _id: "local-networking-fundamentals", title: "Networking Fundamentals", description: "Master the OSI model, TCP/IP, DNS, and routing fundamentals.", difficulty: "Beginner", points: 100, isLocal: true },
+          { _id: "local-sql-injection-fundamentals", title: "SQL Injection Fundamentals", description: "Understand and exploit SQL injection vulnerabilities in web applications.", difficulty: "Intermediate", points: 150, isLocal: true },
+          { _id: "local-linux-fundamentals", title: "Linux Fundamentals", description: "Learn essential Linux commands, file system navigation, and privilege escalation.", difficulty: "Beginner", points: 100, isLocal: true },
+          { _id: "local-authentication-session-attacks", title: "Authentication & Session Attacks", description: "Explore authentication flaws, session hijacking, and cookie-based attacks.", difficulty: "Intermediate", points: 150, isLocal: true },
+          { _id: "local-osint-investigation", title: "OSINT Investigation", description: "Master open-source intelligence gathering techniques and tools.", difficulty: "Beginner", points: 100, isLocal: true },
+          { _id: "local-python-pickle-deserialization", title: "Python Pickle Deserialization", description: "Understand insecure deserialization vulnerabilities using Python's pickle module.", difficulty: "Advanced", points: 200, isLocal: true },
+          { _id: "local-cryptography-basics", title: "Cryptography Basics", description: "Learn encryption, hashing, and cryptographic attack techniques.", difficulty: "Intermediate", points: 150, isLocal: true },
+          { _id: "local-reverse-engineering-basics", title: "Reverse Engineering Basics", description: "Analyze binaries, understand assembly, and reverse engineer executables.", difficulty: "Advanced", points: 200, isLocal: true },
         ];
         if (response.ok) {
           const data = await response.json();
@@ -275,14 +282,23 @@ const SecureAdminDashboard = () => {
   const deleteRoom = async (roomId) => {
     if (globalThis.confirm("Are you sure you want to delete this room?")) {
       try {
+        // Local (built-in) rooms only exist in frontend state — remove directly
+        if (roomId.startsWith("local-")) {
+          setRooms((prev) => prev.filter((r) => r._id !== roomId));
+          return;
+        }
         const token = localStorage.getItem("token");
-        await fetch(`http://localhost:5000/api/admin/rooms/${roomId}`, {
+        const response = await fetch(`http://localhost:5000/api/admin/rooms/${roomId}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
           credentials: "include",
         });
-        fetchData();
-        fetchRecentActivity();
+        if (response.ok) {
+          setRooms((prev) => prev.filter((r) => r._id !== roomId));
+        } else {
+          const data = await response.json().catch(() => ({}));
+          globalThis.alert(data.message || "Failed to delete room.");
+        }
       } catch (error) {
         console.error("Failed to delete room:", error);
       }
@@ -317,6 +333,12 @@ const SecureAdminDashboard = () => {
       const method = editingItem ? "PUT" : "POST";
       const endpoint = editingItem ? `${url}/${editingItem._id}` : url;
 
+      // Automatically set k8s fields if creating a lab
+      let payload = { ...formData };
+      if (modalType === "lab" && !editingItem && payload.slug) {
+        if (!payload.k8sYaml) payload.k8sYaml = `${payload.slug}.yaml`;
+      }
+
       await fetch(endpoint, {
         method,
         headers: {
@@ -324,7 +346,7 @@ const SecureAdminDashboard = () => {
           Authorization: `Bearer ${token}`,
         },
         credentials: "include",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       setShowModal(false);
       setFormData({});
@@ -355,6 +377,7 @@ const SecureAdminDashboard = () => {
           }
           : {
             title: "",
+            slug: "",
             description: "",
             content: "",
             difficulty: "Beginner",
@@ -362,6 +385,7 @@ const SecureAdminDashboard = () => {
             points: 100,
             estimatedTime: 30,
             tags: "",
+            k8sUrl: "",
           }
       );
     }
@@ -451,14 +475,15 @@ const SecureAdminDashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const newRoomData = {
-        slug: `new-room-${Date.now()}`,
+        slug: `room-${Date.now()}`,
         title: "New Room",
         short_description: "A new cybersecurity challenge room",
-        long_description_markdown:
-          "# New Room\n\nAdd your room description here...",
+        long_description_markdown: "# New Room\n\nAdd your room description here...",
         difficulty: "Beginner",
         category: "Web",
         estimated_time_minutes: 30,
+        creator: "CyberVerse Admin",
+        isActive: true,
         topics: [],
         exercises: [],
         quizzes: [],
@@ -477,6 +502,9 @@ const SecureAdminDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         navigate(`/admin/rooms/${data.room._id}/edit`);
+      } else {
+        const err = await response.json();
+        globalThis.alert(err.errors?.join(", ") || err.message || "Failed to create room");
       }
     } catch (error) {
       console.error("Failed to create room:", error);
@@ -1021,34 +1049,36 @@ const SecureAdminDashboard = () => {
                             {room.title || room.name}
                           </h3>
                           {room.isLocal && (
-                            <span className="text-xs text-amber-400 font-medium">Built-in (edit in roomRegistry.jsx)</span>
+                            <span className="text-xs text-amber-400 font-medium">Built-in</span>
                           )}
                         </div>
-                        {!room.isLocal && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => navigate(`/admin/rooms/${room._id}/edit`)}
-                              className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors"
-                              title="Edit Room Content"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => openModal("room", room)}
-                              className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
-                              title="Quick Edit"
-                            >
-                              <Settings className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => deleteRoom(room._id)}
-                              className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                              title="Delete Room"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex gap-2">
+                          {!room.isLocal && (
+                            <>
+                              <button
+                                onClick={() => navigate(`/admin/rooms/${room._id}/edit`)}
+                                className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors"
+                                title="Edit Room Content"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openModal("room", room)}
+                                className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                                title="Quick Edit"
+                              >
+                                <Settings className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => deleteRoom(room._id)}
+                            className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                            title="Delete Room"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                       <p className="text-gray-400 text-sm mb-4 line-clamp-2">
                         {room.description || room.short_description}
@@ -1180,32 +1210,53 @@ const SecureAdminDashboard = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="modal-title-input"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  {modalType === "room" ? "Room Name" : "Lab Title"}
-                </label>
-                <input
-                  id="modal-title-input"
-                  type="text"
-                  required
-                  value={
-                    modalType === "room"
-                      ? formData.name || ""
-                      : formData.title || ""
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      [modalType === "room" ? "name" : "title"]: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
-                  placeholder={`Enter ${modalType} ${modalType === "room" ? "name" : "title"
-                    }...`}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="modal-title-input"
+                    className="block text-sm font-medium text-gray-300 mb-2"
+                  >
+                    {modalType === "room" ? "Room Name" : "Lab Title"}
+                  </label>
+                  <input
+                    id="modal-title-input"
+                    type="text"
+                    required
+                    value={
+                      modalType === "room"
+                        ? formData.name || ""
+                        : formData.title || ""
+                    }
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        [modalType === "room" ? "name" : "title"]: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                    placeholder={`Enter ${modalType} ${modalType === "room" ? "name" : "title"
+                      }...`}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="modal-slug-input"
+                    className="block text-sm font-medium text-gray-300 mb-2"
+                  >
+                    Slug (Internal ID)
+                  </label>
+                  <input
+                    id="modal-slug-input"
+                    type="text"
+                    required
+                    value={formData.slug || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, slug: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                    placeholder="e.g. malware-analysis"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1229,24 +1280,44 @@ const SecureAdminDashboard = () => {
               </div>
 
               {modalType === "lab" && (
-                <div>
-                  <label
-                    htmlFor="modal-content"
-                    className="block text-sm font-medium text-gray-300 mb-2"
-                  >
-                    Content
-                  </label>
-                  <textarea
-                    id="modal-content"
-                    required
-                    rows={5}
-                    value={formData.content || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, content: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
-                    placeholder="Enter lab content..."
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="modal-content"
+                      className="block text-sm font-medium text-gray-300 mb-2"
+                    >
+                      Content
+                    </label>
+                    <textarea
+                      id="modal-content"
+                      required
+                      rows={5}
+                      value={formData.content || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, content: e.target.value })
+                      }
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                      placeholder="Enter lab content..."
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="modal-k8s-url"
+                      className="block text-sm font-medium text-gray-300 mb-2"
+                    >
+                      K8s Access URL (External Port)
+                    </label>
+                    <input
+                      id="modal-k8s-url"
+                      type="text"
+                      value={formData.k8sUrl || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, k8sUrl: e.target.value })
+                      }
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      placeholder="e.g. http://localhost:32230"
+                    />
+                  </div>
                 </div>
               )}
 

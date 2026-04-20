@@ -62,6 +62,7 @@ app.use("/api/admin", require("./routes/admin/index"));
 app.use("/api/user", require("./routes/user"));
 app.use("/api/payments", require("./routes/payments"));
 app.use("/api/two-factor", require("./routes/twoFactor"));
+app.use("/api/attempts", require("./routes/attempts"));
 
 // Health check
 app.get("/api/health", (req, res) => res.json({ status: "OK", timestamp: new Date() }));

@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const User = require('../../models/User');
 const Room = require('../../models/Room');
 const Lab = require('../../models/Lab');
@@ -323,35 +324,77 @@ router.post('/rooms', cookieAuth, async (req, res) => {
   }
 });
 
-// Update room
+// Update room — upsert by slug if _id not found
 router.put('/rooms/:id', cookieAuth, async (req, res) => {
   try {
-    const room = await Room.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).populate('createdBy', 'name email');
-
-    if (!room) {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(404).json({ message: 'Room not found' });
     }
 
-    res.json({ message: 'Room updated successfully', room });
-  } catch (error) {
-    console.error('Update room error:', error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        message: 'Validation error',
-        errors: Object.values(error.errors).map(e => e.message)
+    let room = await Room.findById(req.params.id);
+
+    if (!room) {
+      // Room was deleted — create fresh
+      try {
+        const newRoom = new Room({ ...req.body, createdBy: req.user._id });
+        await newRoom.save();
+        return res.json({ message: 'Room created successfully', room: newRoom });
+      } catch (createErr) {
+        if (createErr.code === 11000) {
+          // Slug conflict — find by slug and update
+          room = await Room.findOne({ slug: req.body.slug });
+          if (!room) return res.status(404).json({ message: 'Room not found' });
+        } else {
+          throw createErr;
+        }
+      }
+    }
+
+    // Never update slug on existing rooms — avoids unique-index conflicts
+    const allowed = [
+      'title','short_description','long_description_markdown',
+      'difficulty','category','estimated_time_minutes','creator','tags',
+      'cover_image_url','isActive','topics','exercises','quizzes',
+      'prerequisites','learning_objectives','additional_notes'
+    ];
+    const update = {};
+    allowed.forEach(key => { if (req.body[key] !== undefined) update[key] = req.body[key]; });
+
+    // Sanitize topics: ensure content is always an array of objects, not a string
+    if (Array.isArray(update.topics)) {
+      update.topics = update.topics.map(t => {
+        let content = t.content || [];
+        if (typeof content === 'string') { try { content = JSON.parse(content); } catch { content = []; } }
+        return { ...t, content: Array.isArray(content) ? content : [] };
       });
     }
-    res.status(500).json({ message: 'Failed to update room' });
+
+    const updated = await Room.findByIdAndUpdate(
+      room._id,
+      { $set: update },
+      { new: true }
+    );
+    res.json({ message: 'Room updated successfully', room: updated });
+  } catch (error) {
+    console.error('Update room error:', error.message);
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(e => e.message);
+      console.error('Validation errors:', errors);
+      return res.status(400).json({ message: 'Validation error', errors });
+    }
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+    res.status(500).json({ message: 'Failed to update room', detail: error.message });
   }
 });
 
 // Delete room
 router.delete('/rooms/:id', cookieAuth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
     const room = await Room.findByIdAndDelete(req.params.id);
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
@@ -369,6 +412,9 @@ router.delete('/rooms/:id', cookieAuth, async (req, res) => {
     res.json({ message: 'Room deleted successfully' });
   } catch (error) {
     console.error('Delete room error:', error);
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: 'Room not found' });
+    }
     res.status(500).json({ message: 'Failed to delete room' });
   }
 });

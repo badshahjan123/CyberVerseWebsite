@@ -287,9 +287,16 @@ const SimpleUserManagement = () => {
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-3">
                                                 <img
-                                                    src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
+                                                    src={
+                                                        user.avatar
+                                                            ? user.avatar.startsWith('http')
+                                                                ? user.avatar
+                                                                : `http://localhost:5000${user.avatar}`
+                                                            : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name)}`
+                                                    }
                                                     alt={user.name}
-                                                    className="w-10 h-10 rounded-full border-2 border-cyan-500/50"
+                                                    className="w-10 h-10 rounded-full border-2 border-cyan-500/50 object-cover"
+                                                    onError={e => { e.target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name)}` }}
                                                 />
                                                 <p className="font-semibold text-white">{user.name}</p>
                                             </div>
