@@ -1,3 +1,49 @@
+/* Force clear text visibility on all Lab detail buttons, overriding global secondary muted gray text */
+.lab-page-modern button,
+.lab-page-modern .btn,
+.lab-page-modern a.btn-primary,
+.lab-page-modern button.btn-primary {
+  -webkit-text-fill-color: initial !important;
+  text-shadow: none !important;
+}
+
+/* Deploy VM, Submit Flag, Acknowledge Intel, Open Console, Unlock Video */
+.lab-page-modern button.bg-orange-500,
+.lab-page-modern button.bg-gradient-to-r,
+.lab-page-modern a.bg-gradient-to-r,
+.lab-page-modern button.bg-orange-600,
+.lab-page-modern button.bg-red-500\/10 {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+}
+
+/* Ensure child elements inside orange/red buttons inherit white color */
+.lab-page-modern button.bg-orange-500 *,
+.lab-page-modern button.bg-gradient-to-r *,
+.lab-page-modern a.bg-gradient-to-r *,
+.lab-page-modern button.bg-orange-600 * {
+  color: #FFFFFF !important;
+  fill: #FFFFFF !important;
+}
+
+/* Need Help link */
+.lab-page-modern button.text-slate-500,
+.lab-page-modern button.text-slate-400 {
+  color: #CBD5E1 !important; /* Muted white instead of dark slate */
+}
+.lab-page-modern button.text-slate-500:hover,
+.lab-page-modern button.text-slate-400:hover {
+  color: #F97316 !important; /* Orange on hover */
+}
+
+/* Tab Headers */
+.lab-page-modern button.text-slate-400 {
+  color: #94A3B8 !important;
+}
+.lab-page-modern button.text-white {
+  color: #FFFFFF !important;
+}
+
 /* Force Primary Action Buttons to have PURE WHITE text in Lab Details */
 .btn-primary,
 .btn-primary *,
@@ -1319,5 +1365,320 @@ button.btn-primary {
 /* --- Adjustments for split sidebars --- */
 .lab-page__split-grid .lab-page__tasks {
   max-width: 800px;
+}
+
+/* ═══════════════════════════════════════════
+   OPERATOR BRIEFING & GUIDED LEARNING SYSTEM
+   ═══════════════════════════════════════════ */
+
+/* Briefing Panel */
+.lp-briefing {
+  background: linear-gradient(135deg, rgba(11,18,30,0.95) 0%, rgba(15,23,42,0.9) 100%);
+  border: 1px solid rgba(255,107,0,0.15);
+  border-radius: 24px;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+.lp-briefing::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,107,0,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.lp-briefing__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+/* Guided Mode Toggle */
+.lp-guided-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+}
+.lp-guided-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.25s ease;
+}
+.lp-guided-btn--active {
+  background: rgba(255,107,0,0.12);
+  border-color: rgba(255,107,0,0.4);
+  color: #FF6B00;
+}
+.lp-guided-btn--inactive {
+  background: rgba(255,255,255,0.03);
+  color: #64748b;
+}
+
+/* Concept Cards */
+.lp-concepts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.lp-concept-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.lp-concept-card:hover {
+  border-color: rgba(255,107,0,0.3);
+  background: rgba(255,107,0,0.03);
+  transform: translateY(-2px);
+}
+.lp-concept-card--expanded {
+  border-color: rgba(255,107,0,0.3);
+  background: rgba(255,107,0,0.04);
+}
+
+/* Skill Tree */
+.lp-skill-tree {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.lp-skill-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  transition: all 0.3s ease;
+}
+.lp-skill-node--active {
+  border-color: rgba(255,107,0,0.3);
+  color: #FF6B00;
+  background: rgba(255,107,0,0.05);
+}
+.lp-skill-node__icon {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tutorial Video Tab */
+.lp-tutorial-embed {
+  background: #000;
+  border: 1px solid rgba(255,107,0,0.2);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.lp-tutorial-embed iframe {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border: none;
+}
+
+/* Mission Flow Steps */
+.lp-mission-flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.lp-flow-step {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.01);
+  text-align: center;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #475569;
+  position: relative;
+  transition: all 0.3s ease;
+}
+.lp-flow-step--active {
+  border-color: rgba(255,107,0,0.3);
+  background: rgba(255,107,0,0.06);
+  color: #FF6B00;
+}
+.lp-flow-step--done {
+  border-color: rgba(16,185,129,0.3);
+  background: rgba(16,185,129,0.06);
+  color: #10b981;
+}
+.lp-flow-step__bar {
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 8px;
+  background: rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+.lp-flow-step__fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* Glossary Tooltip */
+.lp-glossary-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+}
+.lp-glossary-card {
+  background: #0b121e;
+  border: 1px solid rgba(255,107,0,0.2);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+}
+
+/* Content Tabs */
+.lp-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 10px;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.lp-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+  border: none;
+  background: transparent;
+}
+.lp-tab--active {
+  background: rgba(255,107,0,0.12);
+  color: #FF6B00;
+  border: 1px solid rgba(255,107,0,0.2);
+}
+
+/* Readiness Check */
+.lp-ready-check {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lp-ready-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+.lp-ready-item--ok {
+  border-color: rgba(16,185,129,0.2);
+  color: #10b981;
+}
+.lp-ready-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Section Label */
+.lp-section-label {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: #475569;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Fade In Animation */
+@keyframes lp-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.lp-animate-in {
+  animation: lp-fade-in 0.4s ease-out both;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .lp-briefing { padding: 24px; }
+  .lp-concepts { grid-template-columns: 1fr; }
+  .lp-mission-flow { grid-template-columns: repeat(3, 1fr); }
+  .lp-tabs { flex-wrap: wrap; }
+}
+
+/* Premium Glow & Pulse Utilities */
+.shadow-glow-emerald {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.02); }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-4%);
+    animation-timing-function: cubic-bezier(0.8,0,1,1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0,0,0.2,1);
+  }
 }
 

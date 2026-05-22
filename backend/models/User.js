@@ -117,6 +117,10 @@ const userSchema = new mongoose.Schema({
       type: Object,
       default: {}
     },
+    incorrectAttempts: {
+      type: Object,
+      default: {}
+    },
     quizCompleted: { type: Boolean, default: false },
     finalScore: Number,
     completed: { type: Boolean, default: false },

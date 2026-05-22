@@ -48,6 +48,14 @@ exports.register = async (req, res) => {
 
     await user.save();
 
+    // Trigger event-driven badge check
+    try {
+      const { badgeEmitter } = require('../services/badgeEventService');
+      badgeEmitter.emit('USER_REGISTERED', { userId: user._id });
+    } catch (badgeError) {
+      logger.error('Error emitting USER_REGISTERED event:', badgeError);
+    }
+
     try {
       await NotificationService.notifyWelcome(user._id, user.name);
     } catch (notificationError) {
@@ -206,6 +214,15 @@ exports.googleAuth = async (req, res) => {
         twoFactorEnabled: false
       });
       await user.save();
+
+      // Trigger event-driven badge check for Google signup
+      try {
+        const { badgeEmitter } = require('../services/badgeEventService');
+        badgeEmitter.emit('USER_REGISTERED', { userId: user._id });
+      } catch (badgeError) {
+        logger.error('Error emitting USER_REGISTERED event for Google:', badgeError);
+      }
+
       await NotificationService.notifyWelcome(user._id, user.name);
     }
 

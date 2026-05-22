@@ -286,10 +286,25 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
         roomProgress.totalPointsEarned -= taskScore.pointsEarned;
         roomProgress.taskScores = roomProgress.taskScores.filter(ts => ts.taskIndex !== lectureIndex);
       }
-      console.log('❌ Incorrect answer - progress cleared');
+      
+      // Increment incorrect attempts map
+      if (!roomProgress.incorrectAttempts) roomProgress.incorrectAttempts = {};
+      roomProgress.incorrectAttempts[lectureIndex] = (roomProgress.incorrectAttempts[lectureIndex] || 0) + 1;
+      user.markModified('roomProgress');
+      console.log('❌ Incorrect answer - progress cleared, incorrect attempt recorded');
     }
 
     await user.save();
+
+    // Trigger TASK_SUBMITTED event if correct
+    if (isCorrect) {
+      try {
+        const { badgeEmitter } = require('../services/badgeEventService');
+        badgeEmitter.emit('TASK_SUBMITTED', { userId: user._id, roomId, taskId: lectureIndex });
+      } catch (badgeError) {
+        console.error('Error emitting TASK_SUBMITTED event:', badgeError);
+      }
+    }
 
     // Broadcast real-time update to all user sessions
     if (global.io) {
@@ -518,12 +533,34 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
     await user.save();
 
     // Award badges and broadcast on first-time completion via quiz route
+    let newCertificates = [];
+    let celebrate = false;
     if (passed && allTasksDone && wasNeverCompleted) {
       const bonusEligible = false; // quiz route doesn't track hints
       await Promise.all([
         awardRoomBadges(user._id, roomId, bonusEligible, global.io),
         checkMilestoneBadges(user._id, global.io)
       ]);
+
+      try {
+        const { checkAndIssueTrackCertificate } = require('../services/certificate.service');
+        const certResult = await checkAndIssueTrackCertificate(user._id, roomId);
+        if (certResult.success) {
+          newCertificates = certResult.certificates;
+          celebrate = certResult.celebrate;
+        }
+      } catch (certError) {
+        console.error('Error issuing track certificate during quiz:', certError);
+      }
+
+      // Emit ROOM_COMPLETED event for Event-Driven Badge System
+      try {
+        const { badgeEmitter } = require('../services/badgeEventService');
+        badgeEmitter.emit('ROOM_COMPLETED', { userId: user._id, roomId });
+      } catch (badgeError) {
+        console.error('Error emitting ROOM_COMPLETED event during quiz:', badgeError);
+      }
+
       if (global.io) await RealtimeHelper.broadcastUserUpdate(user._id, global.io);
     }
 
@@ -534,6 +571,8 @@ router.post('/:roomId/quiz', auth, async (req, res) => {
       isNewBest,
       bestScore: roomProgress.quizScore?.percentage || score,
       totalPoints: user.points,
+      newCertificates,
+      celebrate,
       userStats: {
         points: user.points,
         level: user.level,
@@ -626,6 +665,28 @@ router.post('/:roomId/complete', auth, async (req, res) => {
       ]);
       const allNewBadges = [...roomBadges, ...milestoneBadges];
 
+      // TRIGGER TRACK CERTIFICATE CHECK!
+      let newCertificates = [];
+      let celebrate = false;
+      try {
+        const { checkAndIssueTrackCertificate } = require('../services/certificate.service');
+        const certResult = await checkAndIssueTrackCertificate(user._id, roomId);
+        if (certResult.success) {
+          newCertificates = certResult.certificates;
+          celebrate = certResult.celebrate;
+        }
+      } catch (certError) {
+        console.error('Error issuing track certificate during complete:', certError);
+      }
+
+      // Emit ROOM_COMPLETED event for Event-Driven Badge System
+      try {
+        const { badgeEmitter } = require('../services/badgeEventService');
+        badgeEmitter.emit('ROOM_COMPLETED', { userId: user._id, roomId });
+      } catch (badgeError) {
+        console.error('Error emitting ROOM_COMPLETED event during complete:', badgeError);
+      }
+
       // Broadcast real-time update
       if (global.io) {
         await RealtimeHelper.broadcastUserUpdate(user._id, global.io);
@@ -644,6 +705,8 @@ router.post('/:roomId/complete', auth, async (req, res) => {
           unlockReason: b.unlockReason,
           xpReward: b.xpReward
         })),
+        newCertificates,
+        celebrate,
         userStats: {
           points: user.points,
           totalXP: user.points,

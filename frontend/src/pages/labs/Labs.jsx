@@ -109,7 +109,7 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
   const isInProgress = progressPct > 0 && !isCompleted;
   const isLocked = lab.isPremium && !isPremiumUser;
 
-  /* accent color for the top glow line */
+  /* Accent color for the top glow line */
   const accentColor = isCompleted
     ? "#10B981"
     : lab.difficulty === "Easy" || lab.difficulty === "Beginner"
@@ -122,6 +122,20 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
     ? "#B91C1C"
     : "#00D1FF";
 
+  /* Terminal Snippet selection */
+  const terminalSnippetText = useMemo(() => {
+    if (lab.category?.toLowerCase().includes("web")) {
+      return "$ sqlmap -u target --batch";
+    }
+    if (lab.category?.toLowerCase().includes("priv")) {
+      return "$ find / -perm -4000 2>/dev/null";
+    }
+    return "$ nmap -sC -sV target";
+  }, [lab]);
+
+  /* Dynamic Active Operators Count */
+  const activeOperatorsCount = useMemo(() => Math.floor(Math.random() * 6) + 1, []);
+
   return (
     <div
       className={`labs-card group relative rounded-2xl overflow-hidden flex flex-col ${
@@ -132,19 +146,23 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
       <div className="labs-card__accent-line" style={{ background: accentColor, boxShadow: `0 0 12px ${accentColor}99` }} />
 
       {/* ── HERO IMAGE ── */}
-      <div className="relative overflow-hidden labs-card__hero">
+      <div className="relative overflow-hidden labs-card__hero bg-black">
         <img
           src={lab.coverImage || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800"}
           alt={lab.title}
           loading="lazy"
           className="labs-card__hero-img"
         />
-        {/* cinematic gradient — stronger at bottom so text sits on it */}
+        {/* Cinematic Gradient */}
         <div className="labs-card__hero-gradient" />
+
+        {/* Low-Opacity Tactical Terminal Snippet overlay */}
+        <div className="absolute top-10 inset-x-3 px-3 py-1 bg-black/30 border border-white/[0.02] rounded font-mono text-[8.5px] text-cyan-400/40 pointer-events-none select-none">
+          {terminalSnippetText}
+        </div>
 
         {/* ── Floating chips (top-left) ── */}
         <div className="absolute top-3 left-3 flex items-center gap-2">
-          {/* Premium / Free */}
           {lab.isPremium ? (
             <span className="labs-badge labs-badge--premium">
               <Crown size={8} /> PRO
@@ -152,7 +170,6 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
           ) : (
             <span className="labs-badge labs-badge--free">FREE</span>
           )}
-          {/* Type */}
           {lab.type === "ctf" ? (
             <span className="labs-badge labs-badge--type-ctf"><Trophy size={8} /> CTF</span>
           ) : (
@@ -213,8 +230,12 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
           {lab.description || lab.short_description || `By ${lab.creator || "CyberVerse Team"}`}
         </p>
 
-        {/* ── Stat pills row ── */}
+        {/* ── Stat pills row with active operators indicators ── */}
         <div className="labs-card__stat-row">
+          <span className="labs-stat-pill font-mono" style={{ borderColor: 'rgba(57, 255, 20, 0.15)', color: '#39FF14' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse mr-0.5" />
+            {activeOperatorsCount} ACTIVE
+          </span>
           <span className="labs-stat-pill">
             <Users size={10} /> {lab.participants || 0}
           </span>
@@ -239,7 +260,7 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
           </div>
         )}
 
-        {/* ── Footer: only show for locked (hover overlay handles start/replay) ── */}
+        {/* Footer: only show for locked */}
         {isLocked && (
           <div className="labs-card__footer">
             <Link to="/premium" className="labs-cta-btn labs-cta-btn--locked flex-1">
@@ -265,7 +286,7 @@ const LabRow = memo(({ lab, progress, isPremiumUser }) => {
     <div
       className={`labs-row group flex items-center gap-4 p-3 rounded-xl ${isCompleted ? "labs-row--completed" : ""}`}
     >
-      <div className="relative w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 labs-card__image">
+      <div className="relative w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 labs-card__image bg-black">
         <img
           src={lab.coverImage || "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=180"}
           alt={lab.title}
@@ -281,7 +302,7 @@ const LabRow = memo(({ lab, progress, isPremiumUser }) => {
 
       <div className="flex-1 flex flex-col gap-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className="font-bold text-white text-[13px] line-clamp-1 labs-card__title leading-tight">
+          <h3 className="font-bold text-white text-[13px] line-clamp-1 labs-card__title leading-tight font-mono">
             {lab.title}
           </h3>
           {isInProgress && (
@@ -293,9 +314,9 @@ const LabRow = memo(({ lab, progress, isPremiumUser }) => {
         <div className="flex items-center gap-3 flex-wrap">
           <DifficultyBars level={lab.difficulty} />
           {lab.type === "ctf" ? (
-            <span className="text-[9px] font-extrabold uppercase labs-text-orange">CTF</span>
+            <span className="text-[9px] font-extrabold uppercase labs-text-orange font-mono">CTF</span>
           ) : (
-            <span className="text-[9px] font-extrabold uppercase labs-text-cyan">Labs</span>
+            <span className="text-[9px] font-extrabold uppercase labs-text-cyan font-mono">Labs</span>
           )}
         </div>
         <div className="flex items-center gap-4 text-[10px] text-slate-500 font-bold">
@@ -499,17 +520,15 @@ const Labs = memo(() => {
 
   return (
     <ProtectedRoute>
-      {/* ═══ PAGE WRAPPER — exact same background as Dashboard ═══ */}
       <div className="labs-page min-h-screen text-white relative overflow-x-hidden">
-        {/* dot grid — same as Dashboard + Home */}
+        {/* Dot grid overlay */}
         <div className="absolute inset-0 z-0 pointer-events-none labs-page__grid" />
-        {/* dark overlay — same as Dashboard */}
         <div className="absolute inset-0 z-0 pointer-events-none labs-page__overlay" />
 
         <div className="relative z-10">
 
         {/* ═══ HERO HEADER ═══ */}
-        <div className="relative overflow-hidden labs-hero">
+        <div className="relative overflow-hidden labs-hero border-b border-white/[0.04]">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-10">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
               <div>
@@ -517,16 +536,32 @@ const Labs = memo(() => {
                   <div className="labs-hero__icon-box">
                     <Terminal size={22} className="labs-icon-cyan" />
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-widest labs-text-cyan">
-                    Hands-On Training
+                  <span className="text-xs font-bold uppercase tracking-widest labs-text-cyan font-mono">
+                    Tactical Range Telemetry
                   </span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 font-mono">
                   Cybersecurity Labs
                 </h1>
-                <p className="text-slate-400 text-sm max-w-lg">
+                <p className="text-slate-400 text-sm max-w-lg mb-4 leading-relaxed">
                   Learn cyber security the hands-on way — interactive, browser-based labs covering web security, forensics, networking, and more.
                 </p>
+
+                {/* Sub Telemetry Monitor */}
+                <div className="flex flex-wrap gap-4 font-mono text-[9px] text-slate-500 bg-black/40 border border-white/[0.04] p-3 rounded-lg max-w-lg">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    <span>12 SANDBOXES ACTIVE</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    <span>3 MALWARE NODES RUNNING</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                    <span>SANDBOX PIPELINE: ONLINE</span>
+                  </div>
+                </div>
               </div>
 
               {/* Stats counters */}
@@ -540,8 +575,8 @@ const Labs = memo(() => {
                     <div className="flex items-center justify-center gap-1.5 mb-1 labs-text-cyan">
                       {icon}
                     </div>
-                    <p className="text-2xl font-extrabold text-white">{val}</p>
-                    <p className="text-xs text-slate-400 whitespace-nowrap">{label}</p>
+                    <p className="text-2xl font-extrabold text-white font-mono">{val}</p>
+                    <p className="text-xs text-slate-400 whitespace-nowrap uppercase tracking-widest text-[9px]">{label}</p>
                   </div>
                 ))}
               </div>
@@ -553,7 +588,6 @@ const Labs = memo(() => {
         <div className="labs-toolbar">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-4 overflow-x-auto">
-              {/* Category tabs */}
               <div className="flex items-center gap-0">
                 {tabs.map((tab) => {
                   const isActive = filters.type === tab.type;
@@ -561,7 +595,7 @@ const Labs = memo(() => {
                     <button
                       key={tab.key}
                       onClick={() => setFilter("type", tab.type)}
-                      className={`labs-tab ${isActive ? "labs-tab--active" : ""}`}
+                      className={`labs-tab font-mono text-xs uppercase tracking-wider ${isActive ? "labs-tab--active" : ""}`}
                     >
                       {tab.label}
                       {isActive && (
@@ -572,14 +606,13 @@ const Labs = memo(() => {
                 })}
               </div>
 
-              {/* Right side: search + filter controls */}
               <div className="flex items-center gap-3 py-2">
                 {/* Search */}
-                <div className="relative">
+                <div className="relative font-mono">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     className="labs-search-input"
-                    placeholder="Search labs…"
+                    placeholder="Search operations…"
                     value={filters.search}
                     onChange={(e) => setFilter("search", e.target.value)}
                   />
@@ -593,9 +626,8 @@ const Labs = memo(() => {
                   )}
                 </div>
 
-                {/* Mobile filter button */}
                 <button
-                  className="md:hidden labs-filter-mobile-btn"
+                  className="md:hidden labs-filter-mobile-btn font-mono"
                   onClick={() => setMobileOpen(true)}
                 >
                   <Filter size={14} /> Filters
@@ -612,9 +644,7 @@ const Labs = memo(() => {
         <div className="labs-chipbar">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              {/* Difficulty chips + subscription */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Subscription filter — no inline style */}
+              <div className="flex items-center gap-2 flex-wrap font-mono">
                 {["all", "free", "premium"].map((sub) => {
                   const isActive = filters.subscription === sub;
                   return (
@@ -628,7 +658,6 @@ const Labs = memo(() => {
                   );
                 })}
                 <div className="labs-chipbar__divider" />
-                {/* Difficulty chips — class-based colors, NO inline style */}
                 {diffChips.map(({ label, cls }) => {
                   const isActive = filters.difficulties?.includes(label);
                   return (
@@ -638,8 +667,8 @@ const Labs = memo(() => {
                         setFilter(
                           "difficulties",
                           isActive
-                            ? filters.difficulties.filter((x) => x !== label)
-                            : [...(filters.difficulties || []), label],
+                             ? filters.difficulties.filter((x) => x !== label)
+                             : [...(filters.difficulties || []), label],
                         )
                       }
                       className={`labs-chip ${cls} ${isActive ? "labs-chip--active" : ""}`}
@@ -648,7 +677,6 @@ const Labs = memo(() => {
                     </button>
                   );
                 })}
-                {/* Clear Filters button */}
                 {activeCount > 0 && (
                   <button
                     onClick={clearAll}
@@ -659,10 +687,9 @@ const Labs = memo(() => {
                 )}
               </div>
 
-              {/* Right: sort + view toggle + results count */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500">
-                  {loading ? "Loading…" : `${sorted.length} labs`}
+              <div className="flex items-center gap-3 font-mono text-xs">
+                <span className="text-xs text-slate-500 font-mono">
+                  {loading ? "Loading…" : `${sorted.length} targets`}
                 </span>
                 <div className="relative">
                   <select
@@ -734,24 +761,20 @@ const Labs = memo(() => {
 
           {/* Empty state */}
           {!loading && !error && sorted.length === 0 && (
-            <div className="labs-empty-state">
-              <div className="labs-empty-state__icon">
-                <Target size={40} className="labs-icon-cyan" />
+            <div className="labs-empty-state font-mono text-center py-12">
+              <div className="labs-empty-state__icon mx-auto mb-4">
+                <Target size={40} className="labs-icon-cyan animate-pulse" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">No labs match your filters</h3>
-              <p className="text-slate-400 text-sm mb-2 max-w-md text-center">
-                We couldn't find any labs matching your current criteria. Try adjusting your search, removing difficulty filters, or clearing all filters.
+              <h3 className="text-lg font-black text-white uppercase tracking-wider mb-2">No active missions detected</h3>
+              <p className="text-slate-400 text-xs mb-4 max-w-md mx-auto leading-normal">
+                Your filter parameters yielded zero matches inside our central vault. Adjust query string nodes or clear filters to locate live tactical pathways.
               </p>
-              {activeCount > 0 && (
-                <p className="text-xs text-slate-500 mb-4">
-                  {activeCount} active filter{activeCount > 1 ? "s" : ""} applied
-                </p>
-              )}
               <button
-                className="labs-cta-btn labs-cta-btn--start"
+                className="labs-cta-btn labs-cta-btn--start inline-flex items-center gap-1.5 px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest"
                 onClick={clearAll}
+                style={{ background: 'linear-gradient(135deg, #FF6B00, #cc4400)', color: '#fff' }}
               >
-                Clear All Filters
+                Reset Search Matrices
               </button>
             </div>
           )}

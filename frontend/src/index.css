@@ -52,7 +52,7 @@ html.dark .bg-root,
 html.dark .rcp-root,
 html.dark .auth-page,
 html.dark .auth2-bg {
-  background: linear-gradient(180deg, #0B0F1A 0%, #04060C 100%) !important;
+  background: linear-gradient(180deg, #07111F 0%, #081421 60%, #0A1625 100%) !important;
   color: #F8FAFC !important;
 }
 
@@ -70,9 +70,10 @@ html.dark .card,
 html.dark .card-elevated,
 html.dark .card-glass,
 html.dark *[class*="card"]:not([class*="badge"]) {
-  background: rgba(15, 20, 28, 0.7) !important;
+  background: rgba(14, 26, 45, 0.85) !important;
   color: #F8FAFC !important;
-  border-color: #1E293B !important;
+  border-color: rgba(0, 209, 255, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
 }
 
 @layer base {
@@ -102,14 +103,14 @@ html.dark *[class*="card"]:not([class*="badge"]) {
   }
 
   .dark {
-    /* Dark Mode - Classy Cyber Variables */
-    --bg-primary: 10 14 26;
-    --bg-secondary: 15 20 25;
-    --bg-tertiary: 26 31 46;
+    /* Dark Mode - Comfortable Cinematic Navy Variables */
+    --bg-primary: 7 17 31;
+    --bg-secondary: 8 20 33;
+    --bg-tertiary: 10 22 37;
     
-    --surface-card: 15 20 25;
-    --surface-elevated: 26 31 46;
-    --surface-hover: 30 36 51;
+    --surface-card: 14 26 45;
+    --surface-elevated: 18 32 54;
+    --surface-hover: 22 38 64;
     
     --text-primary: 248 250 252;
     --text-secondary: 203 213 225;
@@ -124,7 +125,7 @@ html.dark *[class*="card"]:not([class*="badge"]) {
     --accent-purple: 168 85 247;
     
     --shadow-color: 6 182 212;
-    --shadow-opacity: 0.2;
+    --shadow-opacity: 0.15;
   }
 
   * {
@@ -304,5 +305,91 @@ html.dark *[class*="card"]:not([class*="badge"]) {
 
   .animate-bounce-slow {
     animation: bounce-slow 2s infinite;
+  }
+
+  /* 1. Badge Rarity Cards & Animations */
+  @keyframes pulse-legendary {
+    0%, 100% {
+      border-color: rgba(249, 115, 22, 0.3);
+      box-shadow: 0 0 12px rgba(249, 115, 22, 0.15);
+    }
+    50% {
+      border-color: rgba(249, 115, 22, 0.7);
+      box-shadow: 0 0 20px rgba(249, 115, 22, 0.35);
+    }
+  }
+
+  .badge-card-common {
+    @apply border border-slate-800 bg-slate-950/60 rounded-xl transition-all duration-300;
+  }
+
+  .badge-card-rare {
+    @apply border border-cyan-500/25 bg-slate-900/40 rounded-xl shadow-[0_0_10px_rgba(6,182,212,0.12)] hover:border-cyan-500/50 hover:shadow-[0_0_18px_rgba(6,182,212,0.25)] transition-all duration-300;
+  }
+
+  .badge-card-legendary {
+    animation: pulse-legendary 3s infinite ease-in-out;
+    @apply border border-orange-500/40 bg-slate-900/40 rounded-xl hover:scale-[1.02] transition-all duration-300;
+  }
+
+  /* 2. Input Submit Shake & Success Glow */
+  @keyframes input-shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+
+  @keyframes success-pulse {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% {
+      transform: scale(1.02);
+      box-shadow: 0 0 14px 4px rgba(16, 185, 129, 0.2);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+  }
+
+  .animate-input-error {
+    animation: input-shake 0.4s ease-in-out;
+    @apply border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.35)];
+  }
+
+  .animate-input-success {
+    animation: success-pulse 0.6s ease-in-out forwards;
+    @apply border-emerald-500;
+  }
+
+  /* 3. Hover Overlay Glass Glint Sweeper */
+  .glint-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glint-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-20deg);
+    transition: none;
+    pointer-events: none;
+  }
+
+  .glint-card:hover::after {
+    left: 150%;
+    transition: left 0.85s cubic-bezier(0.25, 1, 0.5, 1);
   }
 }

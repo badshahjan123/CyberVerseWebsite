@@ -47,8 +47,16 @@ const BadgeCard = memo(({ badge, index }) => {
   const diff = DIFF_COLOR[badge.difficulty] || DIFF_COLOR.common;
   const isBonus = badge.badgeType === "bonus";
 
+  const rarityClass = badge.earned
+    ? badge.difficulty === "legendary"
+      ? "badge-card-legendary"
+      : badge.difficulty === "rare" || badge.difficulty === "epic"
+      ? "badge-card-rare"
+      : "badge-card-common"
+    : "bdg-card--locked";
+
   return (
-    <div className={`bdg-card ${badge.earned ? "bdg-card--earned" : "bdg-card--locked"}`} style={{ animationDelay: `${index * 50}ms` }}>
+    <div className={`bdg-card ${badge.earned ? "bdg-card--earned" : ""} ${rarityClass}`} style={{ animationDelay: `${index * 50}ms` }}>
       {/* Accent glow for legendary/special badges */}
       {badge.earned && badge.difficulty === "legendary" && <div className="bdg-card__legendary-glow" />}
       <div className="bdg-card__accent-line" style={{ background: diff.color }} />

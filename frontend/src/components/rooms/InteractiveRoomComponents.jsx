@@ -85,6 +85,18 @@ export const ContentBlock = memo(({ block, index, animations = {} }) => {
       const text = block.value || block.text;
       return <p key={index} className="wpr-text" dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`(.*?)`/g, '<code>$1</code>') }} />;
     
+    case 'image':
+      return (
+        <div key={index} className="wpr-image-block" style={{ display: 'flex', justifyContent: 'center', margin: '24px 0' }}>
+          <img 
+            src={block.src} 
+            alt={block.alt || 'Content Image'} 
+            className="wpr-content-img" 
+            style={{ maxWidth: block.maxWidth || '500px', width: '100%', height: 'auto', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }} 
+          />
+        </div>
+      );
+
     case 'heading':
       return <h3 key={index} className="wpr-heading">{block.value || block.text}</h3>;
     
@@ -203,6 +215,42 @@ export const ContentBlock = memo(({ block, index, animations = {} }) => {
             ))}
           </div>
         );
+
+    case 'row':
+      return (
+        <div key={index} className="wpr-row" style={{ display: 'flex', flexDirection: 'row', gap: '20px', alignItems: 'center', margin: '20px 0', flexWrap: 'wrap' }}>
+          <div className="wpr-row-left" style={{ flex: '1 1 300px', minWidth: '280px' }}>
+            <ContentBlock block={block.left} index={0} animations={animations} />
+          </div>
+          <div className="wpr-row-right" style={{ flex: '1 1 200px', display: 'flex', justifyContent: 'center', minWidth: '200px' }}>
+            <ContentBlock block={block.right} index={1} animations={animations} />
+          </div>
+        </div>
+      );
+
+    case 'table':
+      return (
+        <div key={index} className="wpr-table-container" style={{ overflowX: 'auto', margin: '24px 0', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <table className="wpr-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', background: '#0b0f19' }}>
+            <thead>
+              <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                {block.headers.map((h, i) => (
+                  <th key={i} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#00F5FF', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: i % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.01)' }}>
+                  {row.map((cell, j) => (
+                    <td key={j} style={{ padding: '12px 16px', color: '#cbd5e1', lineHeight: '1.5' }} dangerouslySetInnerHTML={{ __html: cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
 
     default:
       return null;

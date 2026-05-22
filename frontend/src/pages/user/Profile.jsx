@@ -6,7 +6,7 @@ import {
   Compass, FlaskConical, Code, Briefcase, BadgeCheck, Crown as CrownIcon,
   Globe as GlobeIcon, Terminal, Heart, Zap as ZapIcon, EyeOff, CheckCircle2,
   Database, Network, Search, Eye, Flame, Map as MapIcon, Server, Mail, ExternalLink,
-  ChevronRight
+  ChevronRight, Lock, Sparkles
 } from "lucide-react";
 import { useApp } from "../../contexts/app-context";
 import { useRealtime } from "../../contexts/realtime-context";
@@ -122,6 +122,16 @@ const Profile = memo(() => {
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : "Member";
 
+  /* ── Operator Rank Mapping ── */
+  const rankInfo = useMemo(() => {
+    const level = ud.level || 1;
+    if (level <= 2) return { title: "Script Kiddie", nextTitle: "Sandbox Operator", tier: "Tier I", rarity: "Common" };
+    if (level <= 4) return { title: "Sandbox Operator", nextTitle: "Exploit Specialist", tier: "Tier II", rarity: "Rare" };
+    if (level <= 6) return { title: "Exploit Specialist", nextTitle: "Threat Hunter", tier: "Tier III", rarity: "Elite" };
+    if (level <= 8) return { title: "Threat Hunter", nextTitle: "Red Team Elite", tier: "Tier IV", rarity: "Legendary" };
+    return { title: "Red Team Elite", nextTitle: "Cyber Infiltrator", tier: "Tier V", rarity: "Mythic" };
+  }, [ud.level]);
+
   if (loading || !user) return (
     <div className="prof-page min-h-screen flex items-center justify-center">
       <div className="prof-spinner" />
@@ -134,7 +144,7 @@ const Profile = memo(() => {
       <div className="absolute inset-0 z-0 pointer-events-none prof-page__grid" />
       <div className="absolute inset-0 z-0 pointer-events-none prof-page__overlay" />
 
-      <div className="relative z-10 pt-16">
+      <div className="relative z-10 pt-16 font-mono">
         {/* ═══ HERO BANNER ═══ */}
         <div className="prof-hero relative">
           <div className="prof-hero__glow-cyan" />
@@ -149,7 +159,7 @@ const Profile = memo(() => {
               <div className="relative p-8 md:p-10 flex flex-col md:flex-row items-center md:items-end gap-8">
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  <div className="prof-avatar-wrap">
+                  <div className="prof-avatar-wrap" style={{ padding: "4px", background: "linear-gradient(135deg, #00D1FF, #FF6B00)" }}>
                     <img 
                       src={user.avatar?.startsWith("http") ? user.avatar : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
                       alt={user.name} 
@@ -167,25 +177,23 @@ const Profile = memo(() => {
                 <div className="flex-1 text-center md:text-left">
                   <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-3">
                     <h1 className="text-3xl font-black tracking-tight text-white">{user.name}</h1>
-                    {ud.isPremium && (
-                      <span className="prof-badge-premium">Elite Infiltrator</span>
-                    )}
+                    <span className="prof-badge-premium flex items-center gap-1"><Sparkles size={11} /> {rankInfo.title} ({rankInfo.tier})</span>
                   </div>
                   <div className="flex flex-wrap justify-center md:justify-start items-center gap-5 text-slate-400">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
                       <Mail size={13} className="prof-text-cyan" /> {user.email}
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
-                      <Calendar size={13} className="prof-text-cyan" /> Since {joinDate}
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                      <Calendar size={13} className="prof-text-cyan" /> Joined {joinDate}
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
-                      <Trophy size={13} className="prof-text-orange" /> Rank #{ud.rank}
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                      <Trophy size={13} className="prof-text-orange" /> standing #{ud.rank}
                     </div>
                   </div>
                 </div>
 
                 {/* Socials */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 font-mono">
                   {[Github, Twitter, Linkedin].map((Icon, i) => (
                     <button key={i} className="prof-social-btn">
                       <Icon size={16} />
@@ -209,16 +217,32 @@ const Profile = memo(() => {
               <div className="relative">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Deployment Level</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Combat Level</p>
                     <p className="text-5xl font-black text-white">{ud.level || 1}</p>
                   </div>
                   <div className="prof-card__icon-box prof-card__icon-box--cyan">
                     <Zap size={24} />
                   </div>
                 </div>
+
+                <div className="mb-4 p-3.5 bg-white/[0.02] border border-white/[0.04] rounded-xl flex items-center justify-between font-mono text-[9px]">
+                  <div>
+                    <span className="text-slate-500 uppercase tracking-wider font-bold block mb-0.5">Operator Rank</span>
+                    <span className="text-white font-extrabold uppercase tracking-wide">{rankInfo.title}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-widest ${
+                    rankInfo.rarity === 'Mythic' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/25' :
+                    rankInfo.rarity === 'Legendary' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/25' :
+                    rankInfo.rarity === 'Elite' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/25' :
+                    'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                  }`}>
+                    {rankInfo.rarity}
+                  </span>
+                </div>
+
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Combat XP</span>
-                  <span className="text-sm font-black prof-text-cyan">{(ud.points || 0).toLocaleString()}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Force XP</span>
+                  <span className="text-sm font-black prof-text-cyan">{(ud.points || 0).toLocaleString()} XP</span>
                 </div>
                 <div className="prof-progress-track">
                   <div 
@@ -226,9 +250,20 @@ const Profile = memo(() => {
                     style={{ width: `${Math.min(((ud.points % 1000) / 1000) * 100, 100)}%` }} 
                   />
                 </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <p className="text-[10px] font-bold text-slate-500">{1000 - (ud.points % 1000)} XP to Next Rank</p>
-                  <TrendingUp size={12} className="prof-text-cyan opacity-40" />
+                <div className="mt-3 flex items-center justify-between text-[10px] font-mono">
+                  <p className="font-bold text-slate-500">{1000 - (ud.points % 1000)} XP to {rankInfo.nextTitle}</p>
+                  <TrendingUp size={12} className="prof-text-cyan opacity-40 animate-pulse" />
+                </div>
+
+                <div className="mt-4 pt-3.5 border-t border-white/[0.04] font-mono text-[9px] text-slate-500 space-y-1">
+                  <div className="flex justify-between">
+                    <span>NEXT UNLOCK PREVIEW</span>
+                    <span className="text-cyan-400 font-bold">{rankInfo.nextTitle}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>UNLOCKED PRESTIGE REWARD</span>
+                    <span className="text-yellow-500/80">🏆 Red Team Elite Designation</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -238,20 +273,20 @@ const Profile = memo(() => {
               <div className="prof-stat-mini">
                 <p className="prof-stat-mini__val">{ud.streak || 0}</p>
                 <p className="prof-stat-mini__label">Day Streak</p>
-                <Flame size={12} className="prof-text-orange absolute top-3 right-3 opacity-30" />
+                <Flame size={12} className="prof-text-orange absolute top-3 right-3 opacity-30 animate-pulse" />
               </div>
               <div className="prof-stat-mini">
                 <p className="prof-stat-mini__val">{ud.longestStreak || 0}</p>
-                <p className="prof-stat-mini__label">Best Record</p>
+                <p className="prof-stat-mini__label">Longest Streak</p>
                 <Star size={12} className="prof-text-cyan absolute top-3 right-3 opacity-30" />
               </div>
               <div className="prof-stat-mini">
                 <p className="prof-stat-mini__val">{ud.completedRooms || 0}</p>
-                <p className="prof-stat-mini__label">Rooms Mastered</p>
+                <p className="prof-stat-mini__label">Rooms Solved</p>
               </div>
               <div className="prof-stat-mini">
                 <p className="prof-stat-mini__val">{ud.completedLabs || 0}</p>
-                <p className="prof-stat-mini__label">Labs Deployed</p>
+                <p className="prof-stat-mini__label">Sandbox Deploys</p>
               </div>
             </div>
 
@@ -262,15 +297,16 @@ const Profile = memo(() => {
                   <Award size={18} className="prof-text-orange" />
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Recent Merit</h3>
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 bg-white/5 py-1 px-3 rounded-lg border border-white/5">
+                <span className="text-[10px] font-bold text-slate-500 bg-white/5 py-1 px-3 rounded-lg border border-white/5 font-mono">
                   {badges.length} Total
                 </span>
               </div>
               
               {badges.length === 0 ? (
-                <div className="prof-empty-mini">
-                  <Shield size={24} className="opacity-20 mx-auto mb-2" />
-                  <p className="text-[10px] uppercase font-bold text-slate-500">No medals recorded</p>
+                <div className="prof-empty-mini text-center py-6 border border-dashed border-white/5 rounded-2xl">
+                  <Shield size={24} className="opacity-20 mx-auto mb-2 animate-pulse" />
+                  <p className="text-[10px] uppercase font-bold text-slate-500 font-mono">No medals acquired</p>
+                  <p className="text-[8px] text-slate-600 uppercase mt-1 font-mono">Operational telemetry inactive.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-4 gap-3">
@@ -303,8 +339,8 @@ const Profile = memo(() => {
                   <Activity size={18} className="prof-text-cyan" />
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Training Persistence</h3>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-[10px] font-bold text-slate-500">Last 365 Operations</span>
+                <div className="flex items-center gap-4 font-mono">
+                  <span className="text-[10px] font-bold text-slate-500">Telemetry Heatmap</span>
                   <div className="flex items-center gap-1.5 opacity-60">
                     <span className="text-[9px] font-bold text-slate-600">Less</span>
                     {heatmapColors.map((c, i) => (
@@ -312,6 +348,26 @@ const Profile = memo(() => {
                     ))}
                     <span className="text-[9px] font-bold text-slate-600">More</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Dynamic Operational Metadata */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] font-mono text-[9px] tracking-wide">
+                <div>
+                  <span className="text-slate-500 block mb-0.5">DEPLOYMENT STATUS</span>
+                  <span className="text-white font-bold uppercase">ACTIVE MONITOR</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block mb-0.5">STREAK SIGNAL</span>
+                  <span className="text-orange-400 font-bold uppercase">{ud.streak > 0 ? "STABLE STREAM" : "SIGNAL INACTIVE"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block mb-0.5">ACTIVE DAYS RECORDED</span>
+                  <span className="text-cyan-400 font-bold">{Math.max(1, user.roomProgress?.length || 0)} Operational Days</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block mb-0.5">MATRIX COMPLETION</span>
+                  <span className="text-[#39FF14] font-bold">{Math.round(((ud.completedRooms + ud.completedLabs) / 20) * 100) || 5}% Resolved</span>
                 </div>
               </div>
               
@@ -335,17 +391,17 @@ const Profile = memo(() => {
             {/* Real Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { icon: <Trophy size={20} />, label: "Global Standing", val: `#${ud.rank}`, color: "cyan" },
+                { icon: <Trophy size={20} />, label: "Global standing", val: `#${ud.rank}`, color: "cyan" },
                 { icon: <Target size={20} />, label: "Target Rooms", val: ud.completedRooms || 0, color: "orange" },
-                { icon: <FlaskConical size={20} />, label: "Lab Deploys", val: ud.completedLabs || 0, color: "cyan" },
+                { icon: <FlaskConical size={20} />, label: "Sandbox Deploys", val: ud.completedLabs || 0, color: "cyan" },
                 { icon: <Zap size={20} />, label: "Force Points", val: (ud.points || 0).toLocaleString(), color: "orange" },
               ].map((s, i) => (
-                <div key={i} className="prof-card prof-card--stat-box">
+                <div key={i} className="prof-card prof-card--stat-box font-mono">
                   <div className={`prof-card__icon-mini prof-card__icon-mini--${s.color}`}>
                     {s.icon}
                   </div>
-                  <p className="text-2xl font-black text-white mt-1">{s.val}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{s.label}</p>
+                  <p className="text-2xl font-black text-white mt-1.5">{s.val}</p>
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -354,7 +410,7 @@ const Profile = memo(() => {
             <div className="prof-card">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <Terminal size={18} className="prof-text-cyan" />
+                  <Terminal size={18} className="prof-text-cyan animate-pulse" />
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Operational Log</h3>
                 </div>
                 <button className="text-[10px] font-black uppercase tracking-widest text-[#00D1FF] hover:opacity-70 transition-opacity">
@@ -362,10 +418,11 @@ const Profile = memo(() => {
                 </button>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-3 font-mono">
                 {user.roomProgress?.filter(rp => rp.completed).slice(0, 5).length === 0 ? (
                   <div className="prof-empty-timeline py-12 text-center border border-dashed border-white/5 rounded-2xl">
-                    <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">No operations recorded</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono">No missions executed yet</p>
+                    <p className="text-[9px] text-slate-600 uppercase mt-1 font-mono">Operational telemetry inactive. Deploy your first sandbox.</p>
                   </div>
                 ) : (
                   user.roomProgress.filter(rp => rp.completed).sort((a,b) => new Date(b.completedAt) - new Date(a.completedAt)).slice(0, 5).map((log, i) => (
@@ -374,7 +431,7 @@ const Profile = memo(() => {
                         <CheckCircle2 size={16} className="text-emerald-500" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-bold text-white group-hover:prof-text-cyan transition-colors">Target Neutralized</p>
+                        <p className="text-sm font-bold text-white group-hover:prof-text-cyan transition-colors uppercase">Target Neutralized</p>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
                           {new Date(log.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                         </p>

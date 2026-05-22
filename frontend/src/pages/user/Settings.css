@@ -258,3 +258,32 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Tactical Self-Destruct Overlay Modal */
+.set-destruct-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(4, 8, 16, 0.95);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(12px);
+  animation: set-fade 0.3s ease-out;
+  font-family: monospace;
+}
+
+.set-destruct-modal {
+  width: 100%; max-width: 520px;
+  background: #080d1a;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 20px 80px rgba(239, 68, 68, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.set-destruct-glow {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 200px; height: 100px;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%);
+  filter: blur(30px); pointer-events: none;
+}
+

@@ -1340,7 +1340,7 @@ const RoomDetail = () => {
                                 <div className="rdp-ans-row">
                                   <input
                                     type="text"
-                                    className={`rdp-inp ${status === "wrong" ? "border-red-500" : ""}`}
+                                    className={`rdp-inp ${status === "wrong" ? "animate-input-error" : ""} ${status === "correct" ? "animate-input-success" : ""}`}
                                     placeholder="Your answer..."
                                     value={tqAnswers[key] || ""}
                                     onChange={(e) => setTqAnswers((p) => ({ ...p, [key]: e.target.value }))}
@@ -1377,7 +1377,7 @@ const RoomDetail = () => {
                           <div className="rdp-ans-row">
                             <input
                               type="text"
-                              className="rdp-inp"
+                              className={`rdp-inp ${submissionStatus[activeTask.id] === "error" ? "animate-input-error" : ""} ${submissionStatus[activeTask.id] === "success" ? "animate-input-success" : ""}`}
                               placeholder="Decrypt flag..."
                               value={taskAnswers[activeTask.id] || ""}
                               onChange={(e) => setTaskAnswers((p) => ({ ...p, [activeTask.id]: e.target.value }))}

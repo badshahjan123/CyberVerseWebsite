@@ -99,6 +99,34 @@ const BADGE_REGISTRY = [
   },
 
   // ─────────────────────────────────────────────
+  // ROOM: governance-and-regulations
+  // ─────────────────────────────────────────────
+  {
+    name: 'GRC Initiate',
+    description: 'Demonstrated initial understanding of cybersecurity governance, risk management, and compliance frameworks.',
+    unlockReason: 'Complete the Governance & Regulations room',
+    category: 'room',
+    badgeType: 'primary',
+    roomId: 'governance-and-regulations',
+    bonusCondition: null,
+    difficulty: 'common',
+    xpReward: 0,
+    icon: 'shield'
+  },
+  {
+    name: 'Compliance Officer',
+    description: 'Completed the Governance & Regulations room with 100% accuracy and zero hints.',
+    unlockReason: 'Complete Governance & Regulations with 100% accuracy and no hints',
+    category: 'room',
+    badgeType: 'bonus',
+    roomId: 'governance-and-regulations',
+    bonusCondition: 'perfect_no_hints',
+    difficulty: 'rare',
+    xpReward: 200,
+    icon: 'user-lock'
+  },
+
+  // ─────────────────────────────────────────────
   // GLOBAL MILESTONE BADGES
   // ─────────────────────────────────────────────
   {

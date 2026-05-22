@@ -1,37 +1,41 @@
-/* ═══════════════════════════════════════════════════════════════════
-   CyberVerse Navbar v4  (Pixel-Perfect Spec)
-   Background : #06090F  |  Orange : #FF4D00→#FF8700  |  Blue : #00D1FF
-   Links      : Inter 14px, medium (500), 48px gap
-   SIGN UP    : Orange gradient + 15px outer neon glow
-   ═══════════════════════════════════════════════════════════════════ */
+/* 🌌 CyberVerse Premium Floating Glassmorphic Navbar */
 
 .cv-navbar-matte {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 15px;
+  left: 2.5%;
+  right: 2.5%;
   z-index: 1000;
-  height: 80px;
-  background: transparent;
-  border-bottom: none;
+  height: 70px;
+  background: rgba(8, 14, 28, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 209, 255, 0.08);
+  border-radius: 16px;
   display: flex;
   align-items: center;
-  padding: 0 4rem;
-  transition: background 0.35s ease, backdrop-filter 0.35s ease;
+  padding: 0 2.5rem;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
 }
 
+/* Beautiful neon glow on scroll */
 .cv-navbar-matte.scrolled {
+  top: 10px;
   background: rgba(6, 9, 15, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-color: rgba(0, 209, 255, 0.28);
+  box-shadow: 
+    0 10px 40px rgba(0, 209, 255, 0.12), 
+    0 4px 30px rgba(0, 0, 0, 0.6), 
+    inset 0 1px rgba(255, 255, 255, 0.05);
 }
 
-/* ── 3-column grid: logo | links | actions ── */
 .cv-nav-container {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
 }
 
 /* ── LEFT: Logo ── */
@@ -41,154 +45,160 @@
 }
 
 .cv-nav-logo {
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   white-space: nowrap;
 }
 
-.cv-logo-white { color: #ffffff; }
-.cv-logo-blue { color: #00D1FF; }
-
-/* ── CENTER: Nav links ── */
+/* ── CENTER: Links ── */
 .cv-nav-links {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 16px;
+  margin-left: 24px;
 }
 
 .cv-nav-link-item {
   text-decoration: none;
   font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 400;
-  color: #94A3B8;
-  transition: color 0.2s ease, background 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #94a3b8;
+  transition: all 0.3s ease;
   position: relative;
-  padding: 5px 12px;
-  border-radius: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
   white-space: nowrap;
 }
 
 .cv-nav-link-item:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 209, 255, 0.06);
 }
 
 .cv-nav-link-item.active {
-  color: #00D1FF !important;
-  background: rgba(0, 209, 255, 0.08) !important;
-  font-weight: 600;
+  color: #00d1ff !important;
+  background: rgba(0, 209, 255, 0.10) !important;
+  font-weight: 700;
 }
 
+/* Glowing underline for the active route */
 .cv-nav-link-item.active::after {
   content: '';
   position: absolute;
-  bottom: -4px; left: 12px; right: 12px;
+  bottom: -6px;
+  left: 14px;
+  right: 14px;
   height: 2px;
-  background: #00D1FF;
+  background: #00d1ff;
   border-radius: 99px;
-  box-shadow: 0 0 8px rgba(0, 209, 255, 0.9), 0 0 16px rgba(0, 209, 255, 0.4);
+  box-shadow: 0 0 10px #00d1ff, 0 0 20px rgba(0, 209, 255, 0.5);
 }
 
-/* ── RIGHT: Actions ── */
+/* ── RIGHT: Telemetry & Profile ── */
 .cv-nav-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   justify-content: flex-end;
 }
 
-/* Search wrapper */
+/* Search bar wrapper */
 .cv-nav-search-wrapper {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  padding: 0 10px;
-  height: 34px;
-  width: 180px;
-  transition: width 0.25s ease, border-color 0.2s;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 38px;
+  width: 170px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cv-nav-search-wrapper:focus-within {
-  width: 220px;
-  border-color: rgba(0, 209, 255, 0.30);
+  width: 210px;
+  border-color: rgba(0, 209, 255, 0.4);
+  box-shadow: 0 0 12px rgba(0, 209, 255, 0.15);
+  background: rgba(0, 209, 255, 0.02);
 }
 
 .cv-nav-search-input {
   background: transparent;
   border: none;
-  color: #E5E7EB;
-  font-size: 0.8rem;
+  color: #e5e7eb;
+  font-size: 0.78rem;
   padding: 0 8px;
   width: 100%;
   outline: none;
 }
 
-.cv-nav-search-input::placeholder { color: #4B5563; }
+.cv-nav-search-input::placeholder {
+  color: #4b5563;
+}
 
-/* Stats row */
+/* Telemetry Stats Rows */
 .cv-nav-stats {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding-right: 14px;
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 14px;
+  padding-right: 12px;
 }
 
 .cv-nav-stat-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-}
-
-.cv-nav-stat-item span {
-  font-size: 0.78rem;
+  gap: 6px;
   font-weight: 700;
-  color: #D1D5DB;
-  letter-spacing: -0.01em;
+  font-size: 0.78rem;
+  color: #cbd5e1;
 }
 
-/* Pro badge */
+/* Pro upgrade badge */
 .cv-nav-pro-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
-  background: rgba(234, 179, 8, 0.08);
-  border: 1px solid rgba(234, 179, 8, 0.22);
-  border-radius: 6px;
-  color: #EAB308;
+  padding: 4px 10px;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 8px;
+  color: #eab308;
   font-size: 0.7rem;
   font-weight: 900;
   text-decoration: none;
   transition: all 0.2s;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.05);
 }
 
 .cv-nav-pro-badge:hover {
-  background: rgba(234, 179, 8, 0.14);
-  border-color: rgba(234, 179, 8, 0.40);
+  background: rgba(234, 179, 8, 0.16);
+  border-color: rgba(234, 179, 8, 0.5);
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);
 }
 
-/* Avatar */
+/* Profile Avatar Wrapper */
 .cv-nav-avatar-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 7px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: all 0.3s;
   flex-shrink: 0;
 }
 
-.cv-nav-avatar-btn:hover { border-color: rgba(0, 209, 255, 0.40); }
+.cv-nav-avatar-btn:hover {
+  border-color: rgba(0, 209, 255, 0.5);
+  box-shadow: 0 0 12px rgba(0, 209, 255, 0.3);
+  transform: scale(1.04);
+}
 
 .cv-nav-avatar-btn img {
   width: 100%;
@@ -196,61 +206,30 @@
   object-fit: cover;
 }
 
-/* Icon button */
-.cv-icon-btn {
-  background: transparent;
-  border: none;
-  color: #9CA3AF;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  transition: color 0.2s;
-  position: relative;
-}
-
-.cv-icon-btn:hover { color: #ffffff; }
-
-/* ── "Log In" text link ── */
-.cv-nav-login-link {
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  color: #ffffff;
-  margin-right: 24px;
-  text-decoration: none;
-  transition: opacity 0.2s;
-  white-space: nowrap;
-}
-
-.cv-nav-login-link:hover { color: #ffffff; }
-
-/* ── Buttons ── */
+/* SIGN UP primary button styling */
 .cv-nav-signup-btn {
   display: inline-flex;
   align-items: center;
-  padding: 10px 24px;
-  background: linear-gradient(135deg, #FF6B00 0%, #FF8A00 100%);
-  color: #ffffff;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #ff6b00 0%, #ff8a00 100%);
+  color: #ffffff !important;
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   letter-spacing: 0.05em;
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: 0 4px 20px rgba(255, 107, 0, 0.4);
-  text-shadow: 0 0 6px rgba(0,0,0,0.4);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 107, 0, 0.4);
 }
 
 .cv-nav-signup-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 20px rgba(255,77,0,0.9), 0 0 40px rgba(255,77,0,0.5);
+  box-shadow: 0 0 20px rgba(255, 107, 0, 0.6), 0 0 40px rgba(255, 107, 0, 0.3);
 }
 
-/* ── Mobile toggle ── */
 .cv-mobile-toggle {
   display: none;
   background: transparent;
@@ -260,27 +239,41 @@
   padding: 4px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════════ */
+/* ── RESPONSIVE COMPATIBILITY ── */
+@media (max-width: 1200px) {
+  .cv-navbar-matte {
+    padding: 0 1.5rem;
+  }
+}
+
 @media (max-width: 1024px) {
   .cv-nav-container {
-    grid-template-columns: auto auto auto;
-    justify-content: space-between;
-    gap: 30px;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
   }
   .cv-nav-links {
-    gap: 32px;
+    display: none;
   }
-  .cv-nav-search-wrapper { display: none; }
+  .cv-nav-search-wrapper {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
-  .cv-nav-container {
-    grid-template-columns: 1fr auto;
+  .cv-navbar-matte {
+    top: 0;
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    height: 64px;
+    padding: 0 1.25rem;
   }
-  .cv-nav-links  { display: none; }
-  .cv-nav-stats  { display: none; }
-  .cv-mobile-toggle { display: flex; }
-  .cv-navbar-matte  { padding: 0 1.25rem; }
+  .cv-navbar-matte.scrolled {
+    top: 0;
+  }
+  .cv-mobile-toggle {
+    display: flex;
+  }
 }

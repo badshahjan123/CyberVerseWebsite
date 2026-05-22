@@ -592,6 +592,35 @@ const badgeRegistry = [
       context.roomId === "reverse-engineering-basics" &&
       context.perfectScore === true,
   },
+  {
+    name: "GRC Initiate",
+    description: "You've taken your first steps into information security governance, risk, and compliance.",
+    unlockReason: "Complete Governance & Regulations",
+    category: "milestone",
+    badgeType: "progress",
+    difficulty: "common",
+    xpReward: 150,
+    icon: "shield",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "room_completion" &&
+      context.roomId === "governance-and-regulations",
+  },
+  {
+    name: "Compliance Officer",
+    description: "Demonstrated flawless alignment with cybersecurity standards, policies, and regulations.",
+    unlockReason: "Complete Governance & Regulations with a perfect score",
+    category: "special",
+    badgeType: "achievement",
+    difficulty: "rare",
+    xpReward: 400,
+    icon: "user-lock",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "room_completion" &&
+      context.roomId === "governance-and-regulations" &&
+      context.perfectScore === true,
+  },
 ];
 
 module.exports = badgeRegistry;

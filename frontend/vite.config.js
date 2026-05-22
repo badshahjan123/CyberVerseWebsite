@@ -38,11 +38,11 @@ export default defineConfig(({ mode }) => ({
           'ui-icons': ['lucide-react'],
           'ui-components': ['@radix-ui/react-slot'],
           // Page chunks - split by functionality
-          'pages-auth': ['./src/pages/Login.jsx', './src/pages/Register.jsx'],
-          'pages-main': ['./src/pages/Dashboard.jsx', './src/pages/Profile.jsx'],
-          'pages-labs': ['./src/pages/Labs.jsx', './src/pages/LabDetail.jsx'],
-          'pages-rooms': ['./src/pages/Rooms.jsx', './src/pages/RoomDetail.jsx'],
-          'pages-other': ['./src/pages/Leaderboard.jsx', './src/pages/Premium.jsx', './src/pages/Settings.jsx'],
+          'pages-auth': ['./src/pages/auth/Login.jsx', './src/pages/auth/Register.jsx'],
+          'pages-main': ['./src/pages/Dashboard.jsx', './src/pages/user/Profile.jsx'],
+          'pages-labs': ['./src/pages/labs/Labs.jsx', './src/pages/labs/LabDetail.jsx'],
+          'pages-rooms': ['./src/pages/rooms/Rooms.jsx', './src/pages/rooms/RoomDetail.jsx'],
+          'pages-other': ['./src/pages/Leaderboard.jsx', './src/pages/payments/Premium.jsx', './src/pages/user/Settings.jsx'],
         },
         // Optimize chunk file names
         chunkFileNames: 'assets/js/[name]-[hash].js',

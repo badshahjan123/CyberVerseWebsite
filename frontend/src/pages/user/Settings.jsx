@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, memo } from 'react'
 import { 
-  User, Lock, CreditCard, Shield, Upload, 
-  Check, Key, Settings as SettingsIcon,
-  Mail, Globe, Twitter, AlertTriangle, 
-  Trash2, ChevronRight, Zap, Fingerprint,
-  Lock as LockIcon, Crown as CrownIcon, Terminal,
-  ShieldAlert
+   User, Lock, CreditCard, Shield, Upload, 
+   Check, Key, Settings as SettingsIcon,
+   Mail, Globe, Twitter, AlertTriangle, 
+   Trash2, ChevronRight, Zap, Fingerprint,
+   Lock as LockIcon, Crown as CrownIcon, Terminal,
+   ShieldAlert, Eye, EyeOff, ShieldCheck, Cpu, Flame, Info, Sparkles, AlertCircle
 } from 'lucide-react'
 import { useApp } from '../../contexts/app-context'
 import { apiCall } from '../../config/api'
@@ -20,11 +20,17 @@ const Settings = memo(() => {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showDestructModal, setShowDestructModal] = useState(false)
+  const [destructVerify, setDestructVerify] = useState('')
+
   const [formData, setFormData] = useState({
     displayName: '',
     bio: '',
     website: '',
     twitter: '',
+    specialization: 'Red Team Trainee',
+    faction: 'Sector 7',
+    deploymentTitle: 'Recon Specialist',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
@@ -37,7 +43,10 @@ const Settings = memo(() => {
         displayName: user.name || '',
         bio: user.bio || '',
         website: user.website || '',
-        twitter: user.twitter || ''
+        twitter: user.twitter || '',
+        specialization: user.specialization || 'Red Team Trainee',
+        faction: user.faction || 'Sector 7',
+        deploymentTitle: user.deploymentTitle || 'Recon Specialist'
       }))
     }
   }, [user])
@@ -73,7 +82,10 @@ const Settings = memo(() => {
           name: formData.displayName,
           bio: formData.bio,
           website: formData.website,
-          twitter: formData.twitter
+          twitter: formData.twitter,
+          specialization: formData.specialization,
+          faction: formData.faction,
+          deploymentTitle: formData.deploymentTitle
         })
       })
       if (response) {
@@ -134,9 +146,11 @@ const Settings = memo(() => {
   }
 
   const handleDeleteAccount = () => {
-    if (window.confirm('WARNING: Initializing account erasure. All mission data will be purged. Proceed?')) {
+    if (destructVerify.toUpperCase() === 'CONFIRM PURGE') {
       logout()
       navigate('/')
+    } else {
+      showSuccessToast('Mismatched Purge Token')
     }
   }
 
@@ -147,7 +161,7 @@ const Settings = memo(() => {
   )
 
   return (
-    <div className="set-page min-h-screen relative overflow-x-hidden text-white">
+    <div className="set-page min-h-screen relative overflow-x-hidden text-white font-mono">
       {/* Background Decor */}
       <div className="absolute inset-0 z-0 pointer-events-none set-page__grid" />
       <div className="absolute inset-0 z-0 pointer-events-none set-page__overlay" />
@@ -155,15 +169,35 @@ const Settings = memo(() => {
       <div className="relative z-10 pt-16">
         
         {/* ═══ HEADER ═══ */}
-        <div className="max-w-6xl mx-auto px-6 mb-10">
+        <div className="max-w-6xl mx-auto px-6 mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="set-hero-icon-box">
-              <SettingsIcon size={24} className="text-[#00D1FF]" />
+              <SettingsIcon size={24} className="text-[#00D1FF] animate-spin-slow" />
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tight text-white uppercase">Manage Account</h1>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Configure Operational Parameters & Security</p>
+              <h1 className="text-3xl font-black tracking-tight text-white uppercase font-mono">Operator Console</h1>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mt-1 font-mono">Configure Operational Parameters & Security Protocols</p>
             </div>
+          </div>
+        </div>
+
+        {/* ═══ LIVE TELEMETRY STATUS GRID ═══ */}
+        <div className="max-w-6xl mx-auto px-6 mb-8 grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-[9px] tracking-wide">
+          <div className="p-3 bg-[#0a1220]/60 border border-white/[0.04] rounded-xl flex items-center justify-between">
+            <span className="text-slate-500">IDENTITY SYNC:</span>
+            <span className="text-emerald-400 font-extrabold flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> ACTIVE</span>
+          </div>
+          <div className="p-3 bg-[#0a1220]/60 border border-white/[0.04] rounded-xl flex items-center justify-between">
+            <span className="text-slate-500">ENCRYPTION:</span>
+            <span className="text-cyan-400 font-extrabold">AES-256</span>
+          </div>
+          <div className="p-3 bg-[#0a1220]/60 border border-white/[0.04] rounded-xl flex items-center justify-between">
+            <span className="text-slate-500">THREAT LEVEL:</span>
+            <span className="text-orange-400 font-extrabold">MODERATE</span>
+          </div>
+          <div className="p-3 bg-[#0a1220]/60 border border-white/[0.04] rounded-xl flex items-center justify-between">
+            <span className="text-slate-500">TELEMETRY LINK:</span>
+            <span className="text-[#39FF14] font-extrabold flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#39FF14] animate-ping" /> STABLE</span>
           </div>
         </div>
 
@@ -212,9 +246,12 @@ const Settings = memo(() => {
               {/* TAB 1: OPERATIONAL ID */}
               {activeTab === 'profile' && (
                 <form onSubmit={handleSaveProfile} className="set-fade-in space-y-10">
-                  <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                    <Fingerprint size={20} className="set-text-cyan" />
-                    <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Profile Identity</h2>
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/5 justify-between">
+                    <div className="flex items-center gap-3">
+                      <Fingerprint size={20} className="set-text-cyan animate-pulse" />
+                      <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Profile Identity</h2>
+                    </div>
+                    <span className="text-[8px] bg-cyan-950 border border-cyan-500/20 px-2 py-0.5 rounded text-cyan-400 font-bold uppercase tracking-widest">Operator File Verified</span>
                   </div>
                   
                   {/* Avatar Section */}
@@ -231,7 +268,7 @@ const Settings = memo(() => {
                         <Upload size={24} />
                       </div>
                     </div>
-                    <div className="flex-1 text-center md:text-left space-y-3">
+                    <div className="flex-1 text-center md:text-left space-y-3 font-mono text-xs">
                       <input type="file" id="avatar-upload" className="hidden" onChange={handleAvatarUpload} />
                       <button type="button" onClick={() => document.getElementById('avatar-upload').click()} className="set-btn-secondary">
                         <Upload size={14} /> Update Visual ID
@@ -241,13 +278,34 @@ const Settings = memo(() => {
                   </div>
 
                   {/* Form Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-xs">
                     <div className="md:col-span-2 space-y-2">
                       <label className="set-label">Operative Alias</label>
                       <div className="relative">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={16} />
                         <input name="displayName" value={formData.displayName} onChange={handleChange} className="set-input pl-12" placeholder="Commander" />
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="set-label">Operator Specialization</label>
+                      <select name="specialization" value={formData.specialization} onChange={handleChange} className="set-input">
+                        <option value="Red Team Trainee">Red Team Specialist</option>
+                        <option value="Malware Analyst">Malware Analyst</option>
+                        <option value="Recon Specialist">Recon Specialist</option>
+                        <option value="Threat Hunter">Threat Hunter</option>
+                        <option value="Cloud Security Architect">Cloud Architect</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="set-label">Faction Alignment</label>
+                      <select name="faction" value={formData.faction} onChange={handleChange} className="set-input">
+                        <option value="Sector 7">Sector 7</option>
+                        <option value="Ghost Protocol">Ghost Protocol</option>
+                        <option value="Cipher Command">Cipher Command</option>
+                        <option value="Void Infiltrators">Void Infiltrators</option>
+                      </select>
                     </div>
 
                     <div className="md:col-span-2 space-y-2">
@@ -272,7 +330,10 @@ const Settings = memo(() => {
                     </div>
                   </div>
 
-                  <div className="flex justify-end pt-6 border-t border-white/5">
+                  <div className="flex justify-between items-center pt-6 border-t border-white/5">
+                    <div className="font-mono text-[9px] text-slate-500">
+                      PROFILE COMPLETION: <span className="text-cyan-400 font-bold">100% SECURE SYNCHRONIZED</span>
+                    </div>
                     <button type="submit" disabled={loading} className="set-btn-primary">
                       {loading ? 'Synchronizing...' : 'Commit Protocol Changes'}
                     </button>
@@ -282,36 +343,60 @@ const Settings = memo(() => {
 
               {/* TAB 2: SECURITY PROTOCOLS */}
               {activeTab === 'security' && (
-                <div className="set-fade-in space-y-10">
-                  <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                    <ShieldCheck size={20} className="text-[#88E636]" />
-                    <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Security Protocol</h2>
+                <div className="set-fade-in space-y-10 font-mono text-xs">
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/5 justify-between">
+                    <div className="flex items-center gap-3">
+                      <ShieldCheck size={20} className="text-[#88E636] animate-pulse" />
+                      <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Security Protocol</h2>
+                    </div>
+                    <span className="text-[8px] bg-emerald-950 border border-emerald-500/20 px-2 py-0.5 rounded text-emerald-400 font-bold uppercase tracking-widest">Shield Active</span>
                   </div>
+
+                  {/* Defense Integrity score widget */}
+                  <div className="p-5 rounded-2xl bg-[#0a1220]/60 border border-white/[0.04] space-y-4">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-500 uppercase font-black">Defense Layer Integrity Score</span>
+                      <span className={user.isTwoFactorEnabled ? "text-emerald-400 font-black" : "text-orange-400 font-black"}>
+                        {user.isTwoFactorEnabled ? "98% (ENHANCED SHIELD)" : "42% (SHIELD INACTIVE)"}
+                      </span>
+                    </div>
+                    <div className="w-full h-2 rounded-full overflow-hidden bg-white/[0.04]">
+                      <div className={`h-full rounded-full transition-all duration-500 ${user.isTwoFactorEnabled ? "bg-[#88E636]" : "bg-orange-400"}`} style={{ width: user.isTwoFactorEnabled ? "98%" : "42%" }} />
+                    </div>
+                    <div className="flex justify-between text-[8px] text-slate-500 uppercase tracking-widest pt-1">
+                      <span>Status: {user.isTwoFactorEnabled ? "INTEGRITY SECURED" : "VULNERABILITIES DETECTED"}</span>
+                      <span>ALGORITHM: SHA-512 MATRIX</span>
+                    </div>
+                  </div>
+
                   <TwoFactorSettings user={user} onUpdate={() => updateUserProfile(user)} />
                 </div>
               )}
 
               {/* TAB 3: CORE ACCESS */}
               {activeTab === 'account' && (
-                <div className="set-fade-in space-y-12">
+                <div className="set-fade-in space-y-12 font-mono text-xs">
                   <form onSubmit={handleChangePassword}>
-                    <div className="flex items-center gap-3 pb-4 border-b border-white/5 mb-8">
-                      <LockIcon size={20} className="set-text-orange" />
-                      <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Access Key Management</h2>
+                    <div className="flex items-center gap-3 pb-4 border-b border-white/5 mb-8 justify-between">
+                      <div className="flex items-center gap-3">
+                        <LockIcon size={20} className="set-text-orange" />
+                        <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Access Key Management</h2>
+                      </div>
+                      <span className="text-[8px] bg-orange-950 border border-orange-500/20 px-2 py-0.5 rounded text-orange-400 font-bold uppercase tracking-widest">Access Restrict</span>
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <label className="set-label">Current Access Cypher</label>
-                        <input type="password" name="currentPassword" value={formData.currentPassword} onChange={handleChange} className="set-input" placeholder="••••••••" />
+                        <input type="password" name="currentPassword" value={formData.currentPassword} onChange={handleChange} className="set-input font-mono" placeholder="••••••••" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className="set-label">New Access Cypher</label>
-                          <input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} className="set-input" placeholder="••••••••" />
+                          <input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} className="set-input font-mono" placeholder="••••••••" />
                         </div>
                         <div className="space-y-2">
                           <label className="set-label">Verify New Cypher</label>
-                          <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="set-input" placeholder="••••••••" />
+                          <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="set-input font-mono" placeholder="••••••••" />
                         </div>
                       </div>
                     </div>
@@ -330,7 +415,7 @@ const Settings = memo(() => {
                     <p className="text-[10px] font-bold text-slate-500 leading-relaxed max-w-2xl mb-6">
                       Initializing account deletion will permanently purge your mission logs, earned badges, and server access. This operation is non-reversible and final.
                     </p>
-                    <button onClick={handleDeleteAccount} className="set-btn-danger">
+                    <button type="button" onClick={() => setShowDestructModal(true)} className="set-btn-danger">
                       <Trash2 size={14} /> Initialize Self-Destruct
                     </button>
                   </div>
@@ -339,14 +424,17 @@ const Settings = memo(() => {
 
               {/* TAB 4: SERVICE TIER */}
               {activeTab === 'subscription' && (
-                <div className="set-fade-in space-y-10">
-                  <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                    <Zap size={20} className="set-text-orange" />
-                    <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Operational Service Tier</h2>
+                <div className="set-fade-in space-y-10 font-mono text-xs">
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/5 justify-between">
+                    <div className="flex items-center gap-3">
+                      <Zap size={20} className="set-text-orange" />
+                      <h2 className="text-sm font-black uppercase tracking-[0.25em] text-white">Operational Service Tier</h2>
+                    </div>
+                    <span className="text-[8px] bg-orange-950 border border-orange-500/20 px-2 py-0.5 rounded text-orange-400 font-bold uppercase tracking-widest">Clearance Matrix</span>
                   </div>
                   
-                  <div className="set-tier-card">
-                    <div className="set-tier-card__visual">
+                  <div className="set-tier-card flex flex-col md:flex-row gap-6 p-6 items-center bg-[#0d1623]/90 border border-white/5">
+                    <div className="set-tier-card__visual flex-shrink-0">
                       <CrownIcon size={40} className={user.isPremium ? "text-[#FFB800]" : "text-white/10"} />
                     </div>
                     <div className="flex-1">
@@ -368,6 +456,15 @@ const Settings = memo(() => {
                           <p className="text-[11px] font-bold text-slate-400 leading-relaxed">
                             Upgrade to Elite status to gain full access to private mission environments, advanced offensive security laboratories, and international certification paths.
                           </p>
+
+                          {/* Locked features previews */}
+                          <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-black/40 border border-white/[0.04] text-[9px] text-slate-500 uppercase tracking-wider font-bold">
+                            <span className="flex items-center gap-1.5"><Lock size={12} className="text-orange-400" /> Private Malware Labs</span>
+                            <span className="flex items-center gap-1.5"><Lock size={12} className="text-orange-400" /> Red Team Operations</span>
+                            <span className="flex items-center gap-1.5"><Lock size={12} className="text-orange-400" /> Elite Certifications</span>
+                            <span className="flex items-center gap-1.5"><Lock size={12} className="text-orange-400" /> Global Operator Events</span>
+                          </div>
+
                           <button onClick={() => navigate('/premium')} className="set-btn-primary">
                             Request Elite Access Override
                           </button>
@@ -394,6 +491,61 @@ const Settings = memo(() => {
         </div>
       </div>
 
+      {/* TACTICAL SELF-DESTRUCT MODAL OVERLAY */}
+      {showDestructModal && (
+        <div className="set-destruct-overlay">
+          <div className="set-destruct-modal">
+            <div className="set-destruct-glow" />
+            <div className="space-y-6 text-center font-mono">
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 animate-pulse">
+                <ShieldAlert size={32} />
+              </div>
+              
+              <div className="space-y-1.5">
+                <span className="text-[9px] bg-red-950 border border-red-500/20 px-2 py-0.5 rounded text-red-400 font-bold uppercase tracking-widest">CRITICAL WARNING CLASSIFICATION</span>
+                <h3 className="text-lg font-black text-white uppercase tracking-wide">INITIALIZE SELF-DESTRUCT</h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider leading-relaxed">
+                  This process permanently destroys your operative record. The following items will be irreversibly deleted:
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-black/40 border border-white/[0.04] text-left text-[9px] text-red-400 uppercase tracking-wider font-bold space-y-2">
+                <p>✗ Permanent deletion of earned certifications & PDF credentials</p>
+                <p>✗ Complete erase of completed target rooms & logs</p>
+                <p>✗ Removal of all standing XP & global ranking standing</p>
+                <p>✗ Deactivation of secure two-factor encryption tokens</p>
+              </div>
+
+              <div className="space-y-3 text-left">
+                <label className="text-[9px] text-slate-500 uppercase font-black tracking-widest">Type "CONFIRM PURGE" to verify</label>
+                <input 
+                  type="text" 
+                  value={destructVerify} 
+                  onChange={(e) => setDestructVerify(e.target.value)}
+                  className="w-full bg-black/40 border border-red-500/10 rounded-xl p-3 px-4 outline-none text-white focus:border-red-500 transition-colors"
+                  placeholder="CONFIRM PURGE"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => setShowDestructModal(false)}
+                  className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDeleteAccount}
+                  className="flex-1 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:brightness-110 shadow-lg shadow-red-500/10 transition-all"
+                >
+                  PURGE COMMAND
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TOAST SYSTEM (Hacker style) */}
       {showToast && (
         <div className="set-toast">
@@ -408,7 +560,7 @@ const Settings = memo(() => {
   )
 })
 
-const ShieldCheck = ({ size, className }) => (
+const ShieldCheckComponent = ({ size, className }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
     <path d="m9 12 2 2 4-4" />

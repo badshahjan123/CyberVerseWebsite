@@ -1,102 +1,225 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Saved Items — Tactical Archive Design System
-   BG: #081224 → #0b1f3a (exact Dashboard match)
-   Cyan: #00D1FF   Orange: #FF6B00
+   Saved Items — Tactical Archive Gamified Design System
+   BG: #081224 → #0b1f3a
+   Cyan: #00D1FF   Orange: #FF6B00   Green: #39FF14
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ═══════ PAGE BACKGROUND ═══════ */
-
 .si-page {
-  background: linear-gradient(to right, #081224 0%, #0b1f3a 45%, #0b1f3a 72%, rgba(255,106,0,0.08) 100%) !important;
+  background: radial-gradient(circle at 50% 0%, #0a1730 0%, #050b16 100%) !important;
+  font-family: 'Courier New', Courier, monospace;
 }
 
 .si-page__grid {
   background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 60px 60px;
+    linear-gradient(rgba(0, 209, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 209, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 .si-page__overlay {
-  background: rgba(0,0,0,0.18);
+  background: radial-gradient(circle at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.8) 100%);
 }
 
-/* ═══════ HEADER & HERO ═══════ */
+/* ═══════ TELEMETRY PANEL ═══════ */
+
+.si-telemetry {
+  background: rgba(8, 16, 32, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 209, 255, 0.15);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(0, 209, 255, 0.03);
+}
+
+.si-telemetry::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00D1FF, transparent);
+}
+
+.si-telemetry__scanline {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 100%;
+  background: linear-gradient(to bottom, 
+    rgba(0, 209, 255, 0) 0%,
+    rgba(0, 209, 255, 0.03) 10%,
+    rgba(0, 209, 255, 0) 20%
+  );
+  animation: telemetry-scan 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes telemetry-scan {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(100%); }
+}
+
+.si-telemetry__stat {
+  border-right: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.si-telemetry__stat:last-child {
+  border-right: none;
+}
+
+.si-status-dot {
+  width: 8px;
+  height: 8px;
+  background: #39FF14;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #39FF14;
+  animation: si-blink 1.5s infinite ease-in-out;
+}
+
+@keyframes si-blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* ═══════ HERO HEADER ═══════ */
 
 .si-hero-icon {
-  width: 52px; height: 52px; border-radius: 12px;
-  background: rgba(0,209,255,0.08); border: 1px solid rgba(0,209,255,0.2);
+  width: 48px; height: 48px; border-radius: 12px;
+  background: rgba(0,209,255,0.06); border: 1px solid rgba(0,209,255,0.25);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 0 20px rgba(0,209,255,0.1);
+  position: relative;
+}
+
+.si-hero-icon__ping {
+  position: absolute;
+  inset: -1px;
+  border: 1px solid #00D1FF;
+  border-radius: 12px;
+  animation: si-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes si-ping {
+  75%, 100% { transform: scale(1.4); opacity: 0; }
 }
 
 /* ═══════ BUTTONS ═══════ */
 
 .si-btn-primary {
-  padding: 12px 28px; border-radius: 12px;
-  background: linear-gradient(135deg, #FF6B00, #CC4400);
-  color: #fff; font-size: 12px; font-weight: 900;
-  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 12px 28px; border-radius: 8px;
+  background: linear-gradient(135deg, #00D1FF, #007799);
+  color: #050b16; font-size: 11px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.15em;
   display: flex; align-items: center; gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 15px rgba(255,107,0,0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 15px rgba(0,209,255,0.25);
+  border: 1px solid rgba(0,209,255,0.4);
 }
 
 .si-btn-primary:hover {
-  transform: translateY(-2px); filter: brightness(1.1);
-  box-shadow: 0 10px 25px rgba(255,107,0,0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(0,209,255,0.45);
+  color: #fff;
 }
 
 .si-btn-secondary {
-  padding: 12px 28px; border-radius: 12px;
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-  color: #94A3B8; font-size: 12px; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 12px 28px; border-radius: 8px;
+  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);
+  color: #94A3B8; font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.15em;
   transition: all 0.3s ease;
 }
 
 .si-btn-secondary:hover {
-  background: rgba(255,255,255,0.06); color: white; border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.15);
 }
 
 .si-btn-outline-danger {
-  padding: 10px 18px; border-radius: 10px;
-  background: transparent; border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #EF4444; font-size: 10px; font-weight: 900;
+  padding: 10px 18px; border-radius: 8px;
+  background: transparent; border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #EF4444; font-size: 9px; font-weight: 900;
   text-transform: uppercase; letter-spacing: 0.15em;
   display: flex; align-items: center; gap: 8px;
   transition: all 0.3s ease;
+  box-shadow: inset 0 0 10px rgba(239, 68, 68, 0);
 }
 
 .si-btn-outline-danger:hover {
-  background: rgba(239, 68, 68, 0.1); border-color: #EF4444;
+  background: rgba(239, 68, 68, 0.05);
+  border-color: #EF4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.25), inset 0 0 10px rgba(239, 68, 68, 0.15);
 }
 
-/* ═══════ CARDS ═══════ */
+/* ═══════ GAMIFIED DATA CARTRIDGES ═══════ */
 
 .si-card {
-  background: rgba(8, 14, 26, 0.85);
-  backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 24px; overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(8, 16, 32, 0.85) 0%, rgba(4, 8, 16, 0.95) 100%);
+  backdrop-filter: blur(20px); 
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px; 
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
 
-.si-card:hover {
-  transform: translateY(-8px); border-color: rgba(0,209,255,0.25);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(0,209,255,0.05);
+/* Diagonal Shine Glint effect on hover */
+.si-card::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -60%;
+  width: 30%; height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: rotate(35deg);
+  transition: all 0.6s ease;
+  pointer-events: none;
 }
 
-/* Hero Section of Card */
+.si-card:hover::after {
+  left: 130%;
+}
 
+/* Hover glowing highlights based on type */
+.si-card--room:hover {
+  border-color: rgba(0, 209, 255, 0.4);
+  box-shadow: 0 0 25px rgba(0, 209, 255, 0.15), 0 10px 40px rgba(0,0,0,0.6);
+  transform: translateY(-6px);
+}
+
+.si-card--lab:hover {
+  border-color: rgba(255, 107, 0, 0.4);
+  box-shadow: 0 0 25px rgba(255, 107, 0, 0.15), 0 10px 40px rgba(0,0,0,0.6);
+  transform: translateY(-6px);
+}
+
+/* Corner plus markers for high-tech blueprint feel */
+.si-card__corner {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-color: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+}
+.si-card:hover .si-card__corner {
+  border-color: rgba(0, 209, 255, 0.5);
+}
+.si-card--lab:hover .si-card__corner {
+  border-color: rgba(255, 107, 0, 0.5);
+}
+
+.si-card__corner--tl { top: 8px; left: 8px; border-top: 1.5px solid; border-left: 1.5px solid; }
+.si-card__corner--tr { top: 8px; right: 8px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.si-card__corner--bl { bottom: 8px; left: 8px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.si-card__corner--br { bottom: 8px; right: 8px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
+/* Top Section of Card */
 .si-card__hero {
-  height: 120px; background: #060d1a; position: relative;
-  background-image: radial-gradient(circle at 50% 120%, rgba(0,209,255,0.1), transparent 70%);
+  height: 80px; 
+  background: rgba(0, 0, 0, 0.3); 
+  position: relative;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
 }
 
 .si-card__hero-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, transparent, rgba(8, 14, 26, 0.95));
+  background: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.02), transparent 80%);
 }
 
 .si-card__hero-content {
@@ -104,81 +227,113 @@
 }
 
 /* Floating Actions */
-
 .si-card__unsave {
   position: absolute; top: 12px; right: 12px; z-index: 20;
-  width: 32px; height: 32px; border-radius: 8px;
-  background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.1); color: #64748B;
+  width: 28px; height: 28px; border-radius: 6px;
+  background: rgba(0,0,0,0.6); 
+  border: 1px solid rgba(255,255,255,0.08); 
+  color: #64748B;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .si-card__unsave:hover {
   background: #EF4444; border-color: #EF4444; color: white;
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 /* Badges */
-
 .si-card__type-badge {
-  display: flex; align-items: center; gap: 6px;
-  padding: 4px 10px; border-radius: 6px;
-  font-size: 9px; font-weight: 900; text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
   letter-spacing: 0.1em;
+  font-family: monospace;
 }
 
-.si-card__type-badge--room { background: rgba(0,209,255,0.1); color: #00D1FF; border: 1px solid rgba(0,209,255,0.2); }
-.si-card__type-badge--lab { background: rgba(255,107,0,0.1); color: #FF6B00; border: 1px solid rgba(255,107,0,0.2); }
+.si-card__type-badge--room { background: rgba(0,209,255,0.06); color: #00D1FF; border: 1px solid rgba(0,209,255,0.25); }
+.si-card__type-badge--lab { background: rgba(255,107,0,0.06); color: #FF6B00; border: 1px solid rgba(255,107,0,0.25); }
 
 .si-card__diff-badge {
   position: absolute; top: 12px; left: 12px;
   font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em;
   padding: 2px 6px; border-radius: 4px; border: 1px solid transparent;
+  font-family: monospace;
 }
 
-.si-card__diff-badge--easy { color: #88E636; background: rgba(136,230,54,0.1); border-color: rgba(136,230,54,0.2); }
-.si-card__diff-badge--medium { color: #F5A623; background: rgba(245,166,35,0.1); border-color: rgba(245,166,35,0.2); }
-.si-card__diff-badge--hard { color: #FF6B00; background: rgba(255,107,0,0.1); border-color: rgba(255,107,0,0.2); }
+.si-card__diff-badge--easy { color: #88E636; background: rgba(136,230,54,0.06); border-color: rgba(136,230,54,0.2); }
+.si-card__diff-badge--medium { color: #F5A623; background: rgba(245,166,35,0.06); border-color: rgba(245,166,35,0.2); }
+.si-card__diff-badge--hard { color: #FF6B00; background: rgba(255,107,0,0.06); border-color: rgba(255,107,0,0.2); }
 
 /* Body */
+.si-card__body { padding: 16px 20px 20px; }
 
-.si-card__body { padding: 20px 24px 24px; }
+.si-card__title {
+  font-family: system-ui, -apple-system, sans-serif;
+}
 
 .si-card__xp {
   display: flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 900; color: #fff;
+  background: rgba(255, 107, 0, 0.06);
+  border: 1px solid rgba(255, 107, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .si-card__cta {
   font-size: 9px; font-weight: 900; text-transform: uppercase;
   color: #00D1FF; display: flex; align-items: center; gap: 4px;
   opacity: 0.6; transition: all 0.3s ease;
+  letter-spacing: 0.1em;
 }
 
-.si-card:hover .si-card__cta { opacity: 1; transform: translateX(2px); }
+.si-card:hover .si-card__cta { opacity: 1; transform: translateX(3px); }
+.si-card--lab:hover .si-card__cta { color: #FF6B00; }
 
 /* ═══════ EMPTY STATE ═══════ */
 
 .si-empty-state {
-  text-align: center; padding: 80px 40px; border-radius: 2rem;
-  background: rgba(8, 14, 26, 0.4); border: 1px solid rgba(255,255,255,0.05);
+  text-align: center; padding: 80px 40px; border-radius: 16px;
+  background: rgba(8, 16, 32, 0.3); border: 1px dashed rgba(0, 209, 255, 0.15);
+  position: relative;
+  overflow: hidden;
 }
 
 .si-empty-state__icon-box {
-  width: 100px; height: 100px; border-radius: 50%;
-  background: rgba(0,209,255,0.05); border: 1px solid rgba(0,209,255,0.15);
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(0,209,255,0.03); border: 1px solid rgba(0,209,255,0.15);
   display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 32px; color: #00D1FF; opacity: 0.5;
+  margin: 0 auto 24px; color: #00D1FF; opacity: 0.7;
+  position: relative;
 }
 
-/* ═══════ MISC ═══════ */
+.si-empty-state__icon-box::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 1px dashed rgba(0, 209, 255, 0.15);
+  border-radius: 50%;
+  animation: si-rotate 20s linear infinite;
+}
+
+@keyframes si-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ═══════ MISC & ANIMATIONS ═══════ */
 
 .si-fade-in {
-  animation: si-fade 0.5s ease-out both;
+  animation: si-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes si-fade {
-  from { opacity: 0; transform: translateY(15px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }

@@ -59,11 +59,17 @@ export default {
       },
       animation: {
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
+        'shake': 'shake 0.3s cubic-bezier(.36,.07,.19,.97) both',
       },
       keyframes: {
         'glow-pulse': {
           '0%, 100%': { boxShadow: '0 0 10px rgba(56, 189, 248, 0.3)' },
           '50%': { boxShadow: '0 0 20px rgba(56, 189, 248, 0.6)' },
+        },
+        'shake': {
+          '0%, 100%': { marginLeft: '0px', marginRight: '0px' },
+          '10%, 30%, 50%, 70%, 90%': { marginLeft: '-4px', marginRight: '4px' },
+          '20%, 40%, 60%, 80%': { marginLeft: '4px', marginRight: '-4px' },
         },
       },
     },

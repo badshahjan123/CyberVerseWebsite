@@ -105,6 +105,16 @@ const rooms = [
     estimatedTime: 75,
     tags: ['reverse', 'binary', 'analysis', 'malware', 'assembly'],
   },
+  {
+    slug: 'governance-and-regulations',
+    title: 'Governance & Regulations',
+    category: 'Misc',
+    difficulty: 'Beginner',
+    description: 'Understand the foundation of GRC, international standards (ISO 27001, NIST 800-53), laws, and security policies.',
+    points: 100,
+    estimatedTime: 45,
+    tags: ['governance', 'grc', 'compliance', 'policy', 'regulations'],
+  },
 ];
 
 const roomSchema = new mongoose.Schema({

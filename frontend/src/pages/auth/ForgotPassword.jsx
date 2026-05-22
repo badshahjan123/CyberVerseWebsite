@@ -238,7 +238,7 @@ const ForgotPassword = () => {
           <span className="auth2-logo-text">CyberVerse</span>
         </Link>
 
-        <div className="auth2-card">
+        <div className={`auth2-card ${error ? "animate-shake" : ""}`}>
           {/* Decorative top border */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, height: 2,
@@ -279,7 +279,7 @@ const ForgotPassword = () => {
                     type="email" placeholder="agent@cyberverse.io"
                     value={email} onChange={e => setEmail(e.target.value)}
                     required autoComplete="email"
-                    className="auth2-input" style={{ paddingLeft: "2.75rem" }}
+                    className="auth2-input focus:shadow-[0_0_15px_rgba(6,182,212,0.25)] focus:border-cyan-400 focus:outline-none transition-all duration-200" style={{ paddingLeft: "2.75rem" }}
                   />
                   <Mail size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#4A5568" }} />
                 </div>
@@ -298,7 +298,8 @@ const ForgotPassword = () => {
 
               {error && <div className="auth2-error"><span>⚠</span>{error}</div>}
 
-              <button type="submit" disabled={loading} className="auth2-submit">
+              <button type="submit" disabled={loading} className="auth2-submit relative overflow-hidden group">
+                <span className="absolute inset-0 w-[200%] -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12 pointer-events-none" />
                 {loading
                   ? <><Loader2 size={16} className="auth2-btn-spin" /> Sending Code...</>
                   : <><Mail size={16} /> Send Reset Code</>}
@@ -366,7 +367,8 @@ const ForgotPassword = () => {
 
               {error && <div className="auth2-error"><span>⚠</span>{error}</div>}
 
-              <button type="submit" disabled={loading || otp.length !== 6} className="auth2-submit">
+              <button type="submit" disabled={loading || otp.length !== 6} className="auth2-submit relative overflow-hidden group">
+                <span className="absolute inset-0 w-[200%] -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12 pointer-events-none" />
                 {loading
                   ? <><Loader2 size={16} className="auth2-btn-spin" /> Verifying...</>
                   : <><Check size={16} /> Verify Code</>}
@@ -391,7 +393,7 @@ const ForgotPassword = () => {
                     type={showPwd ? "text" : "password"}
                     placeholder="Min 6 chars · upper · lower · number · symbol"
                     value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                    required autoComplete="new-password" className="auth2-input"
+                    required autoComplete="new-password" className="auth2-input focus:shadow-[0_0_15px_rgba(6,182,212,0.25)] focus:border-cyan-400 focus:outline-none transition-all duration-200"
                     style={{ paddingRight: "2.75rem" }}
                   />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} className="auth2-eye">
@@ -409,7 +411,7 @@ const ForgotPassword = () => {
                     placeholder="Repeat new password"
                     value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                     required autoComplete="new-password"
-                    className={`auth2-input ${confirmPassword && confirmPassword !== newPassword ? "auth2-input--err" : confirmPassword && confirmPassword === newPassword ? "auth2-input--ok" : ""}`}
+                    className={`auth2-input focus:shadow-[0_0_15px_rgba(6,182,212,0.25)] focus:border-cyan-400 focus:outline-none transition-all duration-200 ${confirmPassword && confirmPassword !== newPassword ? "auth2-input--err" : confirmPassword && confirmPassword === newPassword ? "auth2-input--ok" : ""}`}
                     style={{ paddingRight: "2.75rem" }}
                   />
                   <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="auth2-eye">
@@ -423,7 +425,8 @@ const ForgotPassword = () => {
 
               {error && <div className="auth2-error"><span>⚠</span>{error}</div>}
 
-              <button type="submit" disabled={loading} className="auth2-submit">
+              <button type="submit" disabled={loading} className="auth2-submit relative overflow-hidden group">
+                <span className="absolute inset-0 w-[200%] -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12 pointer-events-none" />
                 {loading
                   ? <><Loader2 size={16} className="auth2-btn-spin" /> Resetting...</>
                   : <><KeyRound size={16} /> Reset Password</>}

@@ -84,7 +84,7 @@ const RegisterPage = memo(() => {
         </Link>
 
         {/* Card */}
-        <div className="auth2-card auth2-card--wide">
+        <div className={`auth2-card auth2-card--wide ${error ? "animate-shake" : ""}`}>
           <div className="auth2-card-header">
             <h1 className="auth2-card-title">Create Account</h1>
             <p className="auth2-card-sub">Join thousands of hackers worldwide — it's free</p>
@@ -107,7 +107,7 @@ const RegisterPage = memo(() => {
               <label className="auth2-label">Username</label>
               <input id="reg-username" type="text" placeholder="e.g. 0xShadow"
                 value={username} onChange={e => setUsername(e.target.value)}
-                required autoComplete="username" className="auth2-input auth2-input--purple" />
+                required autoComplete="username" className="auth2-input auth2-input--purple focus:shadow-[0_0_15px_rgba(139,92,246,0.25)] focus:border-purple-400 focus:outline-none transition-all duration-200" />
             </div>
 
             {/* Email */}
@@ -115,7 +115,7 @@ const RegisterPage = memo(() => {
               <label className="auth2-label">Gmail Address</label>
               <input id="reg-email" type="email" placeholder="hacker@gmail.com"
                 value={email} onChange={e => setEmail(e.target.value)}
-                required autoComplete="email" className="auth2-input auth2-input--purple" />
+                required autoComplete="email" className="auth2-input auth2-input--purple focus:shadow-[0_0_15px_rgba(139,92,246,0.25)] focus:border-purple-400 focus:outline-none transition-all duration-200" />
             </div>
 
             {/* Password */}
@@ -125,7 +125,7 @@ const RegisterPage = memo(() => {
                 <input id="reg-password" type={showPassword ? "text" : "password"}
                   placeholder="Min 6 chars, upper, lower, number, symbol"
                   value={password} onChange={e => setPassword(e.target.value)}
-                  required autoComplete="new-password" className="auth2-input auth2-input--purple" />
+                  required autoComplete="new-password" className="auth2-input auth2-input--purple focus:shadow-[0_0_15px_rgba(139,92,246,0.25)] focus:border-purple-400 focus:outline-none transition-all duration-200" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="auth2-eye">
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -141,7 +141,7 @@ const RegisterPage = memo(() => {
                   placeholder="Repeat your password"
                   value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                   required autoComplete="new-password"
-                  className={`auth2-input auth2-input--purple ${confirmPassword && confirmPassword !== password ? "auth2-input--err" : confirmPassword && confirmPassword === password ? "auth2-input--ok" : ""}`} />
+                  className={`auth2-input auth2-input--purple focus:shadow-[0_0_15px_rgba(139,92,246,0.25)] focus:border-purple-400 focus:outline-none transition-all duration-200 ${confirmPassword && confirmPassword !== password ? "auth2-input--err" : confirmPassword && confirmPassword === password ? "auth2-input--ok" : ""}`} />
                 <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="auth2-eye">
                   {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -156,7 +156,8 @@ const RegisterPage = memo(() => {
             {success && <div className="auth2-success auth2-success--full"><Check size={13} /> Account created! Redirecting to login...</div>}
 
             <button type="submit" id="register-submit" disabled={loading || success}
-              className="auth2-submit auth2-submit--purple auth2-submit--full">
+              className="auth2-submit auth2-submit--purple auth2-submit--full relative overflow-hidden group">
+              <span className="absolute inset-0 w-[200%] -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12 pointer-events-none" />
               {success ? <><Check size={16} /> Account Created!</>
                 : loading ? <><Loader2 size={16} className="auth2-btn-spin" /> Creating account...</>
                 : <>Create Account <ArrowRight size={16} /></>}

@@ -209,3 +209,77 @@
   box-shadow: 0 4px 15px rgba(255,107,0,0.2);
   text-decoration: none;
 }
+
+/* Hologram Preview Card Styling */
+.hologram-preview-card {
+  box-shadow: 0 12px 48px rgba(0, 209, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: linear-gradient(135deg, rgba(9, 21, 38, 0.9) 0%, rgba(5, 12, 24, 0.95) 100%) !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hologram-preview-card:hover {
+  border-color: rgba(0, 209, 255, 0.4) !important;
+  box-shadow: 0 16px 56px rgba(0, 209, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Slow Bounce keyframes for the hologram award medal */
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 4s infinite ease-in-out;
+}
+
+/* Locked Credentials refinements */
+.cert-card--locked {
+  background: rgba(11, 20, 38, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  transition: all 0.3s ease;
+}
+
+.cert-card--locked:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(11, 20, 38, 0.45) !important;
+}
+
+/* Premium Structural Section Separation */
+.cert-page-section {
+  padding: 42px 30px;
+  background: rgba(13, 22, 35, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.3s ease;
+}
+
+.cert-page-section:hover {
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+.cert-page-section--alt {
+  background: rgba(8, 14, 25, 0.45);
+  border-color: rgba(255, 255, 255, 0.03);
+}
+
+.cert-section-label {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  color: #64748B;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  border-left: 2px solid #FF6B00;
+  padding-left: 10px;
+}
+
+.cert-section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03) 50%, transparent);
+  margin: 40px 0;
+  border: none;
+}

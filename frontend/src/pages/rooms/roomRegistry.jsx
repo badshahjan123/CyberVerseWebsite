@@ -20,6 +20,7 @@ import { OSINT_ROOM_DATA, OSINT_BADGES, OSINT_QUIZ } from "./room_data/osint";
 import { PICKLE_ROOM_DATA, PICKLE_BADGES, PICKLE_QUIZ } from "./room_data/pickle";
 import { CRYPTO_ROOM_DATA, CRYPTO_BADGES, CRYPTO_QUIZ } from "./room_data/crypto";
 import { RE_ROOM_DATA, RE_BADGES, RE_QUIZ } from "./room_data/re";
+import { GOVERNANCE_ROOM_DATA, GOVERNANCE_BADGES, GOVERNANCE_QUIZ } from "./room_data/governance";
 
 const ICON_SETS = {
   networking: {
@@ -64,6 +65,10 @@ const ICON_SETS = {
     cpu: <Cpu size={18} />, box: <Box size={18} />, search: <Search size={18} />,
     activity: <Activity size={18} />, unlock: <Unlock size={18} />,
   },
+  governance: {
+    book: <BookOpen size={18} />,
+    shield: <Shield size={18} />,
+  },
 };
 
 const makeGetIcon = (set) => (name) => ICON_SETS[set][name] || <BookOpen size={18} />;
@@ -104,6 +109,9 @@ const ANIMATIONS = {
   },
   re: (taskId) => {
     return <ReAnimation taskId={taskId} />;
+  },
+  governance: (taskId) => {
+    return null;
   },
 };
 
@@ -176,6 +184,13 @@ const ROOM_REGISTRY = {
     quiz: RE_QUIZ,
     getAnimation: ANIMATIONS.re,
     getIcon: makeGetIcon("re"),
+  },
+  "governance-and-regulations": {
+    data: GOVERNANCE_ROOM_DATA,
+    badges: GOVERNANCE_BADGES,
+    quiz: GOVERNANCE_QUIZ,
+    getAnimation: ANIMATIONS.governance,
+    getIcon: makeGetIcon("governance"),
   },
 };
 

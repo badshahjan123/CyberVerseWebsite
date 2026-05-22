@@ -159,7 +159,7 @@ html.light .ch-card:hover {
 a[style], button[style] {
   color: #ffffff !important;
   font-weight: 700 !important;
-  text-shadow: 0 0 6px rgba(0,0,0,0.4) !important;
+  text-shadow: none !important;
   opacity: 1 !important;
 }
 
@@ -489,13 +489,13 @@ html.light .text-accent {
 }
 
 /* Active States — exclude navbar links to avoid overriding NavLink active */
-html.dark [class*="active"]:not(.cv-nav-link-item),
+html.dark [class*="active"]:not([class*="active:"]):not(.cv-nav-link-item),
 html.dark .active:not(.cv-nav-link-item) {
   color: #38BDF8 !important;
   border-color: #38BDF8 !important;
 }
 
-html.light [class*="active"]:not(.cv-nav-link-item),
+html.light [class*="active"]:not([class*="active:"]):not(.cv-nav-link-item),
 html.light .active:not(.cv-nav-link-item) {
   color: #38BDF8 !important;
   border-color: #38BDF8 !important;

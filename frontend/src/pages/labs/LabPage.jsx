@@ -29,12 +29,53 @@ import {
   ChevronRight,
   Download,
   Key,
-  ShieldAlert
+  ShieldAlert,
+  Target,
+  Shield,
+  Eye,
+  X,
+  Sparkles,
+  Youtube,
+  MessageSquare,
+  Crosshair
 } from "lucide-react";
 import { labsService } from "../../services/labs";
 import { attemptsService } from "../../services/attempts";
 import { useApp } from "../../contexts/app-context";
 import "./LabPage.css";
+
+/* ─── Glossary Terms ─── */
+const GLOSSARY = {
+  "reverse shell": "A connection where the target machine connects back to the attacker, giving remote command-line access.",
+  "environment variable": "A dynamic value stored in the OS that programs can read — often used to pass secrets like API keys.",
+  "flag": "A hidden string you must find to prove you completed a challenge, like flag{example}.",
+  "forensics": "The practice of collecting and analyzing digital evidence from computer systems after a security incident.",
+  "C2 server": "Command & Control server — the attacker's remote system used to send orders to compromised machines.",
+  "lateral movement": "Techniques attackers use to move through a network after initial access to reach more valuable targets.",
+  "privilege escalation": "Exploiting a bug to gain higher-level permissions than originally granted on a system."
+};
+
+/* ─── Tutorial Video Map ─── */
+const TUTORIAL_MAP = {
+  "Web Security": "https://www.youtube.com/embed/nkkcQcl4vPU",
+  "Network Security": "https://www.youtube.com/embed/E75OjnlOhKk",
+  "Cryptography": "https://www.youtube.com/embed/jhXCTbFnK8o",
+  "Forensics": "https://www.youtube.com/embed/FccI31kzZao",
+  "Reverse Engineering": "https://www.youtube.com/embed/gh2RXE9BIN8",
+  "OSINT": "https://www.youtube.com/embed/qwA6MmbeGNo",
+  "Cloud Security": "https://www.youtube.com/embed/hEGGp9XqDjI"
+};
+
+/* ─── Skill Tree Map ─── */
+const SKILL_TREES = {
+  "Web Security": ["HTTP Analysis", "XSS Detection", "SQL Injection", "Auth Bypass"],
+  "Network Security": ["Packet Capture", "Port Scanning", "Firewall Rules", "DNS Audit"],
+  "Forensics": ["Log Analysis", "File Carving", "Memory Dump", "Timeline Reconstruction"],
+  "Reverse Engineering": ["Binary Analysis", "Disassembly", "Malware Triage", "Config Extraction"],
+  "Cryptography": ["Hash Cracking", "Cipher Analysis", "Key Management", "PKI"],
+  "OSINT": ["Recon", "Metadata Extraction", "Social Engineering", "Domain Intel"],
+  "Cloud Security": ["IAM Audit", "S3 Misconfig", "Lambda Injection", "Container Escape"]
+};
 
 /* ─── Command Box ─── */
 const CommandBox = memo(({ command }) => {
@@ -74,6 +115,73 @@ const CommandBox = memo(({ command }) => {
   );
 });
 
+/* ─── Markdown / Formatting Clean Up Utilities ─── */
+const parseBoldText = (text) => {
+  if (!text) return "";
+  const parts = text.split('**');
+  return parts.map((part, i) => {
+    if (i % 2 === 1) {
+      return <strong key={i} className="text-white font-bold">{part}</strong>;
+    }
+    return part;
+  });
+};
+
+const renderCleanBriefing = (text) => {
+  if (!text) return null;
+  
+  const lines = text.split('\n');
+  const elements = [];
+  let inList = false;
+  let listItems = [];
+
+  const flushList = (key) => {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={`list-${key}`} className="list-disc pl-5 my-3 space-y-2 text-slate-300 text-xs leading-relaxed">
+          {listItems.map((item, index) => (
+            <li key={index} className="opacity-90">{item}</li>
+          ))}
+        </ul>
+      );
+      listItems = [];
+      inList = false;
+    }
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList(index);
+      return;
+    }
+
+    if (trimmed.startsWith('##')) {
+      flushList(index);
+      const headingText = trimmed.replace(/^##\s*/, '').replace(/\*\*/g, '');
+      elements.push(
+        <h4 key={index} className="text-sm font-bold text-orange-400 mt-4 mb-2 uppercase tracking-wide">
+          {headingText}
+        </h4>
+      );
+    } else if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
+      inList = true;
+      const itemText = trimmed.substring(1).trim();
+      listItems.push(parseBoldText(itemText));
+    } else {
+      flushList(index);
+      elements.push(
+        <p key={index} className="text-slate-300 text-xs leading-relaxed opacity-95 mb-3">
+          {parseBoldText(trimmed)}
+        </p>
+      );
+    }
+  });
+
+  flushList('final');
+  return <div className="space-y-1">{elements}</div>;
+};
+
 /* ─── Difficulty Badge ─── */
 const DifficultyBadge = memo(({ level }) => {
   const bars = { Beginner: 1, Intermediate: 2, Advanced: 3, Expert: 4 }[level] || 2;
@@ -99,16 +207,88 @@ const DifficultyBadge = memo(({ level }) => {
   );
 });
 
+/* ─── Gamified Concept Modal ─── */
+const ConceptModal = memo(({ term, content, onClose }) => {
+  if (!term) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in">
+      <div className="absolute inset-0 cursor-default" onClick={onClose} />
+      
+      <div className="relative bg-[#0d1424] border border-orange-500/30 rounded-2xl max-w-md w-full overflow-hidden shadow-[0_0_40px_rgba(249,115,22,0.15)] animate-scale-up z-10">
+        
+        <div className="bg-slate-950 px-5 py-4 border-b border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+            </span>
+            <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-widest">
+              Intel Decrypted
+            </span>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="text-slate-500 hover:text-white transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 shadow-inner">
+              <BookOpen size={20} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white uppercase tracking-wider">{term}</h3>
+              <p className="text-[9px] text-slate-500 font-mono uppercase tracking-wider">Concept Node: Level 1</p>
+            </div>
+          </div>
+
+          <div className="h-px bg-white/5" />
+
+          <div className="bg-slate-950/60 border border-white/5 rounded-xl p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/[0.02] blur-xl rounded-full" />
+            <p className="text-xs text-slate-300 leading-relaxed relative z-10 font-medium">
+              {content}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between text-[9px] font-mono text-slate-500 pt-1">
+            <span>KNOWLEDGE INDEX: SECURE</span>
+            <span className="text-emerald-400 flex items-center gap-1 font-bold">
+              <Zap size={10} className="fill-emerald-500/20" /> READINESS BOOSTED
+            </span>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:brightness-110 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-orange-500/10"
+          >
+            Acknowledge Intel
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+});
+
 /* ─── Lab Task Component ─── */
 const LabTask = memo(({ task, isCompleted, isActive, isLocked, onSubmit }) => {
-  const [expanded, setExpanded] = useState(isActive || !isCompleted);
+  const [expanded, setExpanded] = useState(isActive);
   const [answer, setAnswer] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (isActive) setExpanded(true);
-  }, [isActive]);
+    if (isActive) {
+      setExpanded(true);
+    } else if (isCompleted) {
+      setExpanded(false);
+    }
+  }, [isActive, isCompleted]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,136 +297,126 @@ const LabTask = memo(({ task, isCompleted, isActive, isLocked, onSubmit }) => {
     const success = await onSubmit(task.id, answer);
     if (success) {
       setAnswer("");
-      setExpanded(false);
     }
     setSubmitting(false);
   };
 
   return (
     <div
-      className={`lab-task-modern mb-6 rounded-2xl transition-all duration-500 overflow-hidden ${
+      className={`mb-4 rounded-xl border transition-all duration-300 ${
         isCompleted 
-          ? "border border-emerald-500/20 bg-[#0b121e]" 
+          ? "border-emerald-500/20 bg-slate-900/10" 
           : isActive
-            ? "border border-orange-500/30 bg-[#0d131f] ring-1 ring-orange-500/20 shadow-2xl shadow-orange-500/10"
-            : isLocked
-              ? "opacity-50 grayscale border border-white/5 bg-[#0b121e]/40 pointer-events-none"
-              : "border border-white/5 bg-[#0b121e]"
-      }`}
+            ? "border-orange-500/50 bg-[#0d1424] shadow-lg shadow-orange-500/5 ring-1 ring-orange-500/20"
+            : "border-white/5 bg-slate-950/20"
+      } ${isLocked ? "opacity-50 pointer-events-none select-none" : ""}`}
     >
+      {/* Header Bar */}
       <button
-        onClick={() => !isLocked && setExpanded(!expanded)}
-        className={`w-full flex items-center justify-between p-5 px-6 text-left transition-colors ${
-          isActive ? "hover:bg-blue-500/5" : "hover:bg-white/5"
-        }`}
+        onClick={() => !isLocked && !isCompleted && setExpanded(!expanded)}
+        disabled={isLocked || isCompleted}
+        className={`w-full flex items-center justify-between text-left transition-all duration-300 ${
+          isCompleted || isLocked ? "cursor-default" : "cursor-pointer"
+        } ${expanded ? "p-6 pb-3" : "p-4"}`}
       >
-        <div className="flex items-center gap-5">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg transition-all duration-300 ${
+        <div className="flex items-center gap-4">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
             isCompleted 
-              ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30" 
+              ? "bg-emerald-500/20 text-emerald-400" 
               : isActive
-                ? "bg-orange-600 text-white shadow-xl shadow-orange-500/30 scale-110"
+                ? "bg-orange-500 text-white"
                 : "bg-white/5 text-slate-500"
           }`}>
-            {isCompleted ? <CheckCircle size={22} /> : isLocked ? <Lock size={20} /> : task.id}
+            {isCompleted ? <Check size={16} className="text-emerald-400 font-bold" /> : isLocked ? <Lock size={12} /> : task.id}
           </div>
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${
-                isCompleted ? "text-emerald-500" : isActive ? "text-orange-400" : "text-slate-500"
-              }`}>
-                TASK {task.id}
-              </p>
-              {isActive && !isCompleted && (
-                <span className="flex items-center gap-1.5 text-[8px] font-black bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/20 animate-pulse">
-                  <Activity size={8} /> ACTIVE SESSION
-                </span>
-              )}
-            </div>
-            <h3 className={`font-black text-lg tracking-tight transition-colors ${
-              isCompleted ? "text-slate-200" : isActive ? "text-white" : "text-slate-400"
+            <h4 className={`text-sm font-bold tracking-tight transition-colors duration-300 ${
+              isCompleted ? "text-slate-400 line-through" : "text-white"
             }`}>
               {task.title}
-            </h3>
+            </h4>
+            {isActive && (
+              <span className="text-[10px] text-orange-400 font-bold uppercase tracking-wider block mt-0.5 animate-pulse">
+                Active Objective
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-4">
-           {isCompleted && (
-             <span className="hidden sm:flex items-center gap-1.5 text-[9px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-lg tracking-widest uppercase">
-               <Check size={10} /> Verified
-             </span>
-           )}
-           {!isLocked && (
-             <div className={`p-2 rounded-lg transition-colors ${expanded ? "bg-white/5" : ""}`}>
-               {expanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
-             </div>
-           )}
-        </div>
+        {!isLocked && !isCompleted && (
+          <div className="text-slate-500">
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </div>
+        )}
       </button>
 
+      {/* Expanded content */}
       {!isLocked && expanded && (
-        <div className="px-6 pb-8 pt-2 animate-fade-in">
-          <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mb-8" />
-          
-          <div className="text-slate-300 leading-relaxed text-[14px] font-medium space-y-4 mb-8">
-            <p className="opacity-90">{task.instructions}</p>
-          </div>
+        <div className="px-6 pb-6 pt-1 space-y-4 border-t border-white/5">
+          <p className="text-slate-300 text-xs leading-relaxed mt-3">{task.instructions}</p>
 
-          {task.commands && task.commands.length > 0 && (
-            <div className="space-y-4 mb-10">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Engagement Commands</span>
-              {task.commands.map((cmd, i) => (
-                <CommandBox key={i} command={cmd} />
-              ))}
+          {/* View Hints & Commands Toggle */}
+          {(task.commands?.length > 0 || task.hint || task.hints) && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowHint(!showHint)}
+                className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 font-bold transition-colors mt-2"
+              >
+                <span>💡 {showHint ? "Hide Hints & Commands" : "View Hints & Commands"}</span>
+              </button>
+
+              {showHint && (
+                <div className="mt-3 bg-slate-950 p-4 rounded-xl border border-white/5 space-y-3 animate-fade-in font-mono text-xs text-green-400">
+                  {(task.hint || task.hints) && (
+                    <p className="text-xs text-slate-300 leading-relaxed italic font-sans mb-2">
+                      <span className="font-bold text-orange-400 font-sans">Hint:</span> {task.hint || task.hints}
+                    </p>
+                  )}
+                  {task.commands && task.commands.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans">Suggested Commands:</p>
+                      {task.commands.map((cmd, i) => (
+                        <CommandBox key={i} command={cmd} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000"></div>
-            <form onSubmit={handleSubmit} className="relative flex gap-3">
-              <div className="relative flex-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-                  <Key size={16} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Enter flag or answer here..."
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  disabled={isCompleted || submitting}
-                  className="w-full bg-[#0d1117] border border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 transition-all font-mono text-sm"
-                />
-              </div>
+          {/* Form Flag Input */}
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3 mt-4">
+            <div className="relative flex-1 w-full">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                <Key size={14} />
+              </span>
+              <input
+                type="text"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                disabled={isCompleted || submitting}
+                placeholder="Enter flag here (e.g., FLAG{...})"
+                className="w-full bg-slate-950 border border-white/10 rounded-lg py-2.5 pl-9 pr-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-orange-500/50 transition-colors font-mono"
+              />
+            </div>
+            <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+              <button
+                type="button"
+                onClick={() => setShowHint(true)}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors font-medium underline underline-offset-4 whitespace-nowrap"
+              >
+                Need Help?
+              </button>
               <button
                 type="submit"
                 disabled={isCompleted || submitting || !answer.trim()}
-                className={`px-8 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${
-                  isCompleted
-                    ? "bg-emerald-500/10 text-emerald-400 cursor-default"
-                    : "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/20 hover:scale-[1.02] active:scale-[0.98]"
-                }`}
+                className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 shadow-md shadow-orange-500/15"
               >
-                {submitting ? <Loader className="animate-spin" size={16} /> : isCompleted ? <CheckCircle size={16} /> : "Submit"}
-                {!submitting && !isCompleted && <ArrowRight size={14} />}
+                {submitting ? <Loader className="animate-spin" size={12} /> : "Submit Flag"}
               </button>
-            </form>
-          </div>
-          
-          <div className="mt-6 flex items-center justify-between px-2">
-            <button 
-              onClick={() => setShowHint(!showHint)}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 transition-colors"
-            >
-              <HelpCircle size={12} /> {showHint ? "Hide Hint" : "Need a Hint?"}
-            </button>
-            <span className="text-[10px] font-bold text-slate-600">MISSION OBJS: TASK DATA INSPECTION REQUIRED</span>
-          </div>
-          
-          {showHint && (
-            <div className="mt-4 p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl text-[12px] text-amber-200/80 leading-relaxed italic">
-              <strong>Forensic Hint:</strong> Search the current directory for strings using the 'strings' command, or inspect hidden files if you're stuck.
             </div>
-          )}
+          </form>
         </div>
       )}
     </div>
@@ -277,6 +447,22 @@ const LabPage = () => {
   const [attemptsCount, setAttemptsCount] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
   const [newHighScore, setNewHighScore] = useState(false);
+
+  // Guided Learning State
+  const [guidedMode, setGuidedMode] = useState(true);
+  const [activeContentTab, setActiveContentTab] = useState('briefing'); // briefing | tutorial | concepts
+  const [glossaryTerm, setGlossaryTerm] = useState(null);
+  const [expandedConcept, setExpandedConcept] = useState(null);
+  const [tutorialWatched, setTutorialWatched] = useState(() => {
+    try { return localStorage.getItem(`tutorial_watched_${window.location.pathname.split('/').pop()}`) === 'true'; } catch { return false; }
+  });
+
+  // UI Refactoring States
+  const [videoUnlocked, setVideoUnlocked] = useState(false);
+  const [assistanceTab, setAssistanceTab] = useState("concepts"); // concepts | video
+  const [briefingOpen, setBriefingOpen] = useState(true);
+  const [copiedIp, setCopiedIp] = useState(false);
+  const [selectedConcept, setSelectedConcept] = useState(null);
 
   /* ─── Fetch Lab Data & Initialize Attempt ─── */
   useEffect(() => {
@@ -381,6 +567,12 @@ const LabPage = () => {
     }
   };
 
+  const handleCopyIp = () => {
+    navigator.clipboard.writeText("10.10.142.5");
+    setCopiedIp(true);
+    setTimeout(() => setCopiedIp(false), 2000);
+  };
+
   const handleSubmitAnswer = async (taskId, answer) => {
     setOperationError(null);
     const task = lab?.tasks?.find((t) => Number(t.id) === Number(taskId));
@@ -467,253 +659,335 @@ const LabPage = () => {
 
   return (
     <div className="lab-page-modern min-h-screen text-slate-300 font-sans selection:bg-orange-500/30 selection:text-white pb-32">
-      {/* Dynamic Background */}
+      {/* Background decoration */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-orange-600/10 blur-[150px] rounded-full animate-pulse-slow" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-emerald-600/10 blur-[150px] rounded-full animate-pulse-slow delay-1000" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-orange-600/5 blur-[150px] rounded-full animate-pulse-slow" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full animate-pulse-slow delay-1000" />
       </div>
 
       <div className="relative z-10">
-        {/* Top Navbar */}
-        <div className="fixed top-20 left-0 right-0 z-40 bg-[#070b14]/80 backdrop-blur-md border-b border-white/5 overflow-hidden">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Link to="/labs" className="p-2 hover:bg-white/5 rounded-lg transition-colors group">
-                <ArrowLeft size={20} className="text-slate-400 group-hover:text-white transition-colors" />
-              </Link>
-              <div className="flex items-center gap-3 text-[10px] font-black tracking-widest">
-                <Link to="/labs" className="text-slate-500 hover:text-orange-400 transition-colors uppercase">ARCHIVE</Link>
-                <ChevronRight size={12} className="text-slate-700" />
-                <span className="text-orange-500 uppercase truncate max-w-[200px]">{lab.title}</span>
-              </div>
+        {/* Top Navigation / Breadcrumb */}
+        <div className="max-w-7xl mx-auto px-6 pt-24 pb-6 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link to="/labs" className="p-2 hover:bg-white/5 rounded-lg transition-colors group">
+              <ArrowLeft size={16} className="text-slate-400 group-hover:text-white transition-colors" />
+            </Link>
+            <div className="flex items-center gap-2.5 text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+              <Link to="/labs" className="hover:text-orange-400 transition-colors">Archive</Link>
+              <ChevronRight size={10} className="text-slate-700" />
+              <span className="text-orange-500 truncate max-w-[200px]">{lab.title}</span>
             </div>
           </div>
         </div>
 
-        {/* Hero Header */}
-        <div className="max-w-7xl mx-auto px-6 pt-32 pb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-          <div className="flex-1">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-600 to-orange-700 rounded-2xl flex items-center justify-center shadow-2xl">
-                <Terminal size={28} className="text-white" />
+        {/* ═══ 3-COLUMN WORKSPACE GRID ═══ */}
+        <div className="max-w-7xl mx-auto px-6 py-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+          {/* COLUMN 1: LEFT SIDEBAR (Span 3) - "The Mission Hub" */}
+          <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
+            
+            {/* Top card: Lab Title, Category, Reward, Time Limit */}
+            <div className="bg-[#0b121e]/80 border border-white/5 rounded-2xl p-5 space-y-4 backdrop-blur-md">
+              <div>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-orange-500">{lab.category || "Infrastructure Forensics"}</span>
+                <h2 className="text-xl font-bold text-white uppercase tracking-tight mt-1 leading-tight">{lab.title}</h2>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-black tracking-[0.3em] text-orange-500 uppercase">Lab Mission</span>
+              <div className="h-px bg-white/5" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Reward</p>
+                  <p className="text-sm font-bold text-amber-500 flex items-center gap-1 mt-0.5">
+                    <Trophy size={14} />
+                    {lab.points} XP
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Estimated Time</p>
+                  <p className="text-sm font-bold text-blue-400 flex items-center gap-1 mt-0.5">
+                    <Clock size={14} />
+                    {lab.estimatedTime || lab.duration || "45m"}
+                  </p>
+                </div>
+              </div>
+              <div className="pt-2">
                 <DifficultyBadge level={lab.difficulty} />
               </div>
             </div>
-            <h1 className="text-4xl sm:text-6xl font-black text-white mb-6 uppercase tracking-tight">{lab.title}</h1>
-            <div className="flex flex-wrap items-center gap-8">
-              <div className="flex items-center gap-2.5">
-                <Trophy size={16} className="text-amber-500" />
-                <span className="text-sm font-black">{lab.points} XP pts</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Clock size={16} className="text-orange-400" />
-                <span className="text-sm font-black">45 MINS</span>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-[#0f172a] p-8 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-8">
-            <div className="relative w-24 h-24">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle cx="48" cy="48" r="42" className="stroke-white/5" strokeWidth="6" fill="transparent" />
-                <circle 
-                  cx="48" cy="48" r="42" 
-                  className="stroke-orange-500 transition-all duration-1000" 
-                  strokeWidth="6" 
-                  strokeDasharray={2 * Math.PI * 42} 
-                  strokeDashoffset={2 * Math.PI * 42 * (1 - stats.pct / 100)} 
-                  strokeLinecap="round" 
-                  fill="transparent" 
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                 <span className="text-2xl font-black text-white">{stats.pct}%</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.25em] mb-2 px-1 border-l-2 border-orange-500">Task Progress</h3>
-              <p className="text-2xl font-black text-white">{stats.completed} <span className="text-slate-600">/</span> {stats.total} Tasks</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Layout */}
-        <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-8 space-y-10">
-            {/* Machine Control */}
-            <div className={`rounded-3xl border transition-all duration-500 p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 ${
-              machineStatus === 'running' ? "bg-[#0b121e] border-emerald-500/20" : "bg-[#0b121e] border-orange-500/20"
-            }`}>
-               <div>
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Virtual Machine</h3>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${machineStatus === 'running' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{machineStatus === 'running' ? 'Running' : 'Stopped'}</span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-4">
-                 {machineStatus === "stopped" ? (
-                    <button onClick={handleStartMachine} disabled={operationLoading} className="px-8 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#CC4400] font-black rounded-xl transition-all shadow-xl shadow-orange-600/20 uppercase tracking-widest text-xs flex items-center gap-2 hover:brightness-110 active:translate-y-0.5 btn-primary lp-btn-primary" style={{ color: '#FFFFFF' }}>
-                      {operationLoading ? (
-                        <Loader className="animate-spin" size={14} style={{ color: '#FFFFFF' }} />
-                      ) : stats.pct === 100 ? (
-                        <RotateCcw size={14} style={{ color: '#FFFFFF' }} />
-                      ) : (
-                        <Play size={14} fill="#FFFFFF" style={{ color: '#FFFFFF' }} />
-                      )}
-                      {stats.pct === 100 ? "Restart Mission" : "Start Mission"}
+            {/* Middle card: Deployment Button */}
+            <div className="bg-[#0b121e]/80 border border-white/5 rounded-2xl p-5 space-y-3 backdrop-blur-md">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Environment Controller</span>
+              
+              {machineStatus === "stopped" ? (
+                <button 
+                  onClick={handleStartMachine} 
+                  disabled={operationLoading} 
+                  className="w-full py-3.5 bg-orange-500 hover:bg-orange-600 active:scale-95 transition-all text-white font-bold rounded-xl shadow-lg shadow-orange-500/15 uppercase tracking-wider text-xs flex items-center justify-center gap-2" style={{ color: '#FFFFFF' }}
+                >
+                  <Play size={14} fill="#fff" style={{ color: '#FFFFFF' }} />
+                  DEPLOY VIRTUAL MACHINE
+                </button>
+              ) : machineStatus === "booting" ? (
+                <div className="w-full py-3.5 bg-slate-900 border border-white/5 text-slate-500 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-not-allowed">
+                  <Loader className="animate-spin text-orange-500" size={14} />
+                  Spawning Instance...
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-slate-900/40 border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between shadow-lg shadow-emerald-500/5 backdrop-blur-md relative overflow-hidden">
+                    <div className="absolute inset-0 bg-emerald-500/[0.02] pointer-events-none" />
+                    <div className="flex items-center gap-3 relative z-10">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                      </span>
+                      <span className="text-xs font-mono text-slate-300 font-bold">Target IP: 10.10.142.5</span>
+                    </div>
+                    <button 
+                      onClick={handleCopyIp}
+                      className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors animate-fade-in"
+                      title={copiedIp ? "Copied!" : "Copy IP to clipboard"}
+                    >
+                      {copiedIp ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                     </button>
-                 ) : machineStatus === "booting" ? (
-                    <div className="flex items-center gap-4 px-10 py-3.5 bg-white/5 text-slate-400 rounded-xl border border-white/10 uppercase tracking-widest text-[11px] font-black">
-                      <Loader className="animate-spin" size={18} /> Loading...
-                    </div>
-                 ) : (
-                    <div className="flex flex-col md:flex-row items-center gap-4">
-                       {terminalUrl && (
-                         <a href={terminalUrl} target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#CC4400] font-black rounded-xl transition-all shadow-lg flex items-center gap-2 uppercase tracking-widest text-xs hover:brightness-110 active:translate-y-0.5 shadow-orange-600/20 btn-primary lp-btn-primary" style={{ color: '#FFFFFF' }}>
-                            <ExternalLink size={14} style={{ color: '#FFFFFF' }} /> Open Terminal
-                         </a>
-                       )}
-                       <button onClick={handleStopLab} disabled={operationLoading} className="px-6 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-black rounded-xl transition-all border border-red-500/20 uppercase tracking-widest text-xs">
-                          Stop
-                       </button>
-                    </div>
-                 )}
-               </div>
-            </div>
-
-            {/* Error Alert */}
-            {operationError && (
-              <div className="bg-red-500/10 border border-red-500/20 p-5 rounded-2xl flex items-center gap-4 text-red-400 text-sm font-bold">
-                <AlertCircle size={20} /> {operationError}
-              </div>
-            )}
-
-            {/* Lab Content */}
-            <div className="bg-[#0b121e] border border-white/5 rounded-3xl p-10">
-              <div className="prose prose-invert prose-orange max-w-none">
-                <div 
-                  dangerouslySetInnerHTML={{ __html: lab.content }} 
-                  className="text-slate-400 font-medium leading-[1.8] text-lg space-y-4"
-                />
-              </div>
-            </div>
-
-            {/* Success Celebration Card */}
-            {(labCompleted || stats.pct === 100) && (
-              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-10 text-center shadow-2xl animate-fade-in relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-50" />
-                <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/30">
-                  <Trophy size={40} className="animate-bounce-slow" />
-                </div>
-                <h2 className="text-3x font-black text-white italic uppercase tracking-[0.1em] mb-4">CONGRATULATIONS!</h2>
-                <p className="text-emerald-400 font-black text-xs uppercase tracking-widest mb-2">Mission Accomplished</p>
-                <p className="text-slate-400 mb-8 font-medium leading-relaxed max-w-md mx-auto">
-                  You have successfully neutralized all threats and captured all flags in the <span className="text-white font-bold">{lab.title}</span> environment.
-                </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  </div>
+                  {terminalUrl && (
+                    <a 
+                      href={terminalUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:brightness-110 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-transform active:scale-95 shadow-md shadow-orange-600/10 btn-primary" style={{ color: '#FFFFFF' }}
+                    >
+                      <ExternalLink size={12} style={{ color: '#FFFFFF' }} /> Open Console
+                    </a>
+                  )}
                   <button 
-                    onClick={handleStartMachine}
-                    className="px-8 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black rounded-xl transition-all shadow-xl shadow-orange-600/20 uppercase tracking-widest text-xs flex items-center gap-2 hover:scale-[1.05] active:scale-[0.95]"
+                    onClick={handleStopLab} 
+                    disabled={operationLoading} 
+                    className="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors"
                   >
-                    <RotateCcw size={16} /> Restart Mission
+                    {operationLoading ? <Loader className="animate-spin" size={12} /> : "Terminate VM"}
                   </button>
-                  <Link 
-                    to="/leaderboard"
-                    className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white font-black rounded-xl transition-all border border-white/10 uppercase tracking-widest text-xs flex items-center gap-2"
-                  >
-                    <Trophy size={16} className="text-amber-500" /> View Leaderboard
-                  </Link>
+                </div>
+              )}
+
+              {operationError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] text-red-400 font-medium">
+                  {operationError}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom card: Global lab stats */}
+            <div className="bg-[#0b121e]/80 border border-white/5 rounded-2xl p-5 backdrop-blur-md">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-4">Readiness & Progress</span>
+              <div className="flex flex-col items-center justify-center">
+                <div className="relative w-24 h-24 mb-4">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle cx="48" cy="48" r="40" className="stroke-white/5" strokeWidth="6" fill="transparent" />
+                    <circle 
+                      cx="48" cy="48" r="40" 
+                      className="stroke-orange-500 transition-all duration-1000" 
+                      strokeWidth="6" 
+                      strokeDasharray={2 * Math.PI * 40} 
+                      strokeDashoffset={2 * Math.PI * 40 * (1 - stats.pct / 100)} 
+                      strokeLinecap="round" 
+                      fill="transparent" 
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                     <span className="text-xl font-bold text-white leading-none">{stats.pct}%</span>
+                     <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider mt-1">Cleared</span>
+                  </div>
+                </div>
+                <div className="w-full flex justify-between items-center text-[10px] border-t border-white/5 pt-4">
+                  <span className="text-slate-400 font-medium uppercase tracking-wider">Total Attempts</span>
+                  <span className="text-white font-bold">{attemptsCount}</span>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Tasks Section */}
-            <div className="space-y-8">
-               <div className="flex items-center justify-between mb-8 px-2">
-                 <h2 className="text-2xl font-black text-white uppercase tracking-tight">Mission Objectives</h2>
-                 <span className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em]">Phase 1 Deployment</span>
-               </div>
-               
+          </div>
+
+          {/* COLUMN 2: CENTER PANEL (Span 6) - "The Briefing & Objective Arena" */}
+          <div className="lg:col-span-6 space-y-6">
+            
+            {/* Top Card: Collapsible Briefing Accordion */}
+            <div className="bg-[#0b121e]/80 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-md">
+              <button 
+                onClick={() => setBriefingOpen(!briefingOpen)}
+                className="w-full p-5 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                    <Info size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Mission Intelligence & Case File</h3>
+                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Dossier operational parameters</p>
+                  </div>
+                </div>
+                <div className="text-slate-500">
+                  {briefingOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </div>
+              </button>
+              
+              {briefingOpen && (
+                <div className="p-6 pt-3 border-t border-white/5 space-y-4 animate-fade-in">
+                  <div className="border-l-2 border-orange-500/40 pl-4 py-1">
+                    <span className="text-[9px] font-bold text-orange-500 uppercase tracking-widest block mb-1">Operational Briefing</span>
+                    <p className="text-slate-300 text-xs leading-relaxed">{lab.description}</p>
+                  </div>
+                  <div className="h-px bg-white/5 my-2" />
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Technical Intelligence Parameters</span>
+                  <div className="space-y-2 text-slate-300 text-xs leading-relaxed">
+                    {renderCleanBriefing(lab.content)}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Active Tasks Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <div>
+                  <span className="text-[9px] font-bold text-orange-500 uppercase tracking-widest block">Objective Checklist</span>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-tight">Mission Objectives</h3>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded">
+                  {stats.completed} / {stats.total} Cleared
+                </span>
+              </div>
+
+              <div className="space-y-3">
                 {lab.tasks.map((task, idx) => (
                   <LabTask
                     key={task.id}
                     task={task}
                     isCompleted={completedTasks.includes(task.id)}
                     isActive={idx === currentTaskIdx}
-                    isLocked={false}
+                    isLocked={idx > currentTaskIdx}
                     onSubmit={handleSubmitAnswer}
                   />
                 ))}
+              </div>
             </div>
+
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-4 space-y-8">
-            <div className="bg-[#0b121e] border border-white/5 rounded-3xl p-8 sticky top-24 overflow-hidden">
-               {/* Decorative background element */}
-               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl -mr-16 -mt-16 rounded-full" />
-               
-               <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.25em] mb-8 border-l-2 border-blue-500 px-3">Intelligence Summary</h3>
-               
-               <div className="space-y-6">
-                 {/* Points Card */}
-                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-center gap-4">
-                   <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
-                     <Trophy size={18} />
-                   </div>
-                   <div>
-                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Max Points</p>
-                     <p className="text-lg font-black text-white">{lab.points} XP</p>
-                   </div>
-                 </div>
+          {/* COLUMN 3: RIGHT SIDEBAR (Span 3) - "Assistance & Resources" */}
+          <div className="lg:col-span-3 lg:sticky lg:top-24">
+            
+            <div className="bg-[#0b121e]/80 border border-white/5 rounded-2xl overflow-hidden flex flex-col backdrop-blur-md">
+              {/* Tab headers */}
+              <div className="flex border-b border-white/5 bg-white/[0.01] relative">
+                <button 
+                  onClick={() => setAssistanceTab("concepts")}
+                  className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-wider relative transition-colors ${
+                    assistanceTab === "concepts" 
+                      ? "text-white font-medium" 
+                      : "text-slate-400 hover:text-slate-200 transition-colors"
+                  }`}
+                >
+                  Concepts
+                  {assistanceTab === "concepts" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                  )}
+                </button>
+                <button 
+                  onClick={() => setAssistanceTab("video")}
+                  className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-wider relative transition-colors ${
+                    assistanceTab === "video" 
+                      ? "text-white font-medium" 
+                      : "text-slate-400 hover:text-slate-200 transition-colors"
+                  }`}
+                >
+                  Walkthrough
+                  {assistanceTab === "video" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                  )}
+                </button>
+              </div>
 
-                 {/* History Card */}
-                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-center gap-4">
-                   <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
-                     <Activity size={18} />
-                   </div>
-                   <div>
-                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Best Score</p>
-                     <p className="text-lg font-black text-white">{bestScore} XP</p>
-                   </div>
-                 </div>
+              {/* Tab Content */}
+              <div className="p-5 min-h-[340px] flex flex-col justify-between">
+                {assistanceTab === "concepts" && (
+                  <div className="space-y-3 flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BookOpen size={14} className="text-slate-400" />
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Concept Explainer</h4>
+                    </div>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                      {Object.keys(GLOSSARY).map(term => {
+                        return (
+                          <button 
+                            key={term}
+                            onClick={() => setSelectedConcept(term)}
+                            className="w-full p-2.5 rounded-lg border bg-white/[0.01] border-white/5 hover:border-orange-500/30 hover:bg-orange-500/5 text-left transition-all duration-300 flex items-center justify-between group active:scale-[0.98]"
+                          >
+                            <span className="text-[10px] font-bold text-slate-200 uppercase tracking-wide group-hover:text-white transition-colors">{term}</span>
+                            <span className="text-[9px] font-mono text-orange-500/60 group-hover:text-orange-400 group-hover:translate-x-0.5 transition-all uppercase font-bold flex items-center gap-1">
+                              Decrypt <ChevronRight size={10} />
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-                 {/* Attempts Card */}
-                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-center gap-4">
-                   <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-500">
-                     <RotateCcw size={18} />
-                   </div>
-                   <div>
-                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Attempts</p>
-                     <p className="text-lg font-black text-white">{attemptsCount}</p>
-                   </div>
-                 </div>
-               </div>
-
-               <div className="mt-10 p-6 bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/10 rounded-2xl">
-                 <div className="flex items-center gap-3 mb-4">
-                    <ShieldAlert size={16} className="text-blue-400" />
-                    <h4 className="text-xs font-black text-white uppercase tracking-widest">Rules of Engagement</h4>
-                 </div>
-                 <ul className="space-y-3">
-                   <li className="flex gap-3 text-[11px] text-slate-400 font-medium">
-                     <span className="text-blue-500 font-black">01</span>
-                     <span>Accessing unauthorized systems outside of the lab range is strictly prohibited.</span>
-                   </li>
-                   <li className="flex gap-3 text-[11px] text-slate-400 font-medium">
-                     <span className="text-blue-500 font-black">02</span>
-                     <span>Use only the provided tools within the secure browser-based terminal.</span>
-                   </li>
-                 </ul>
-               </div>
+                {assistanceTab === "video" && (
+                  <div className="flex-1 flex flex-col justify-between">
+                    {!videoUnlocked ? (
+                      <div className="flex-1 flex flex-col items-center justify-center text-center p-4 bg-slate-950/40 rounded-xl border border-white/5 min-h-[260px]">
+                        <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 mb-3 animate-pulse">
+                          <Youtube size={20} />
+                        </div>
+                        <h5 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Need direct guidance?</h5>
+                        <p className="text-[10px] text-slate-500 mb-4 max-w-[180px] leading-relaxed">
+                          Stuck? Unlock Video Walkthrough (Reduces XP)
+                        </p>
+                        <button 
+                          onClick={() => setVideoUnlocked(true)}
+                          className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg text-[9px] uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-md shadow-orange-600/10"
+                        >
+                          Unlock Video
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 animate-fade-in">
+                        <div className="aspect-video rounded-xl overflow-hidden border border-white/10 bg-black">
+                          <iframe
+                            src={TUTORIAL_MAP[lab.category] || TUTORIAL_MAP['Web Security']}
+                            title="Walkthrough Video"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="w-full h-full"
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-relaxed">
+                          Carefully trace the terminal input values demonstrated in the guide to identify target flags.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+
           </div>
+
         </div>
       </div>
+
+      {/* Concept Modal Popup */}
+      {selectedConcept && (
+        <ConceptModal 
+          term={selectedConcept}
+          content={GLOSSARY[selectedConcept]}
+          onClose={() => setSelectedConcept(null)}
+        />
+      )}
     </div>
   );
 };

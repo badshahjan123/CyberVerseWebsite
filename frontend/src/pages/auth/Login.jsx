@@ -96,7 +96,7 @@ const LoginPage = () => {
         </Link>
 
         {/* Card */}
-        <div className="auth2-card">
+        <div className={`auth2-card ${error ? "animate-shake" : ""}`}>
           {/* Header */}
           <div className="auth2-card-header">
             {isTimeout && (
@@ -131,7 +131,7 @@ const LoginPage = () => {
               <label className="auth2-label">Email Address</label>
               <input id="login-email" type="email" placeholder="hacker@cyberverse.io"
                 value={email} onChange={e => setEmail(e.target.value)}
-                required autoComplete="email" className="auth2-input" />
+                required autoComplete="email" className="auth2-input focus:shadow-[0_0_15px_rgba(6,182,212,0.25)] focus:border-cyan-400 focus:outline-none transition-all duration-200" />
             </div>
 
             <div className="auth2-field">
@@ -145,7 +145,7 @@ const LoginPage = () => {
                 <input id="login-password" type={showPassword ? "text" : "password"}
                   placeholder="••••••••" value={password}
                   onChange={e => setPassword(e.target.value)}
-                  required autoComplete="current-password" className="auth2-input" />
+                  required autoComplete="current-password" className="auth2-input focus:shadow-[0_0_15px_rgba(6,182,212,0.25)] focus:border-cyan-400 focus:outline-none transition-all duration-200" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   className="auth2-eye" aria-label="Toggle password">
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -155,7 +155,8 @@ const LoginPage = () => {
 
             {error && <div className="auth2-error"><span>⚠</span>{error}</div>}
 
-            <button type="submit" id="login-submit" disabled={loading || success} className="auth2-submit">
+            <button type="submit" id="login-submit" disabled={loading || success} className="auth2-submit relative overflow-hidden group">
+              <span className="absolute inset-0 w-[200%] -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12 pointer-events-none" />
               {success ? <><Check size={16} /> Authenticated!</>
                 : loading ? <><Loader2 size={16} className="auth2-btn-spin" /> Verifying...</>
                 : <>Sign In <ArrowRight size={16} /></>}

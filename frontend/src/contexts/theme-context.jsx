@@ -3,42 +3,25 @@ import { createContext, useContext, useState, useEffect } from 'react'
 const ThemeContext = createContext()
 
 export const ThemeProvider = ({ children }) => {
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-        const saved = localStorage.getItem('cyberverse-theme')
-        if (saved) {
-            return saved === 'dark'
-        }
-        return true
-    })
+    const isDarkMode = true
 
     useEffect(() => {
         const root = document.documentElement
         const body = document.body
         
-        // Remove both classes first
-        root.classList.remove('dark', 'light')
+        // Lock system classes permanently into dark mode
+        root.classList.remove('light')
+        root.classList.add('dark')
+        root.setAttribute('data-theme', 'dark')
+        body.setAttribute('data-theme', 'dark')
+        localStorage.setItem('cyberverse-theme', 'dark')
         
-        if (isDarkMode) {
-            // Dark mode
-            root.classList.add('dark')
-            root.setAttribute('data-theme', 'dark')
-            body.setAttribute('data-theme', 'dark')
-            localStorage.setItem('cyberverse-theme', 'dark')
-        } else {
-            // Light mode
-            root.classList.add('light')
-            root.setAttribute('data-theme', 'light')
-            body.setAttribute('data-theme', 'light')
-            localStorage.setItem('cyberverse-theme', 'light')
-        }
-        
-        // Force repaint
+        // Repaint
         void document.body.offsetHeight
-    }, [isDarkMode])
+    }, [])
 
     const toggleTheme = () => {
-        console.log('Toggling theme from:', isDarkMode ? 'dark' : 'light', 'to:', isDarkMode ? 'light' : 'dark')
-        setIsDarkMode(prev => !prev)
+        console.log('Operational Status: Theme locked in permanent classified Dark-Ops mode.')
     }
 
     return (
