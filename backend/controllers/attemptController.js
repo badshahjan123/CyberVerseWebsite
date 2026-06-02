@@ -3,6 +3,7 @@ const Lab = require('../models/Lab');
 const User = require('../models/User');
 const Room = require('../models/Room');
 const WeeklyStats = require('../models/WeeklyStats');
+const { getLabXP, getRoomXP, getTaskXP } = require('../utils/xpConfig');
 
 // @desc    Start/Initialize a new attempt
 // @route   POST /api/attempts/start
@@ -34,7 +35,43 @@ exports.completeAttempt = async (req, res) => {
     if (attempt.completed) return res.status(400).json({ success: false, message: 'Attempt already finalized' });
 
     // 1. Finalize current attempt
-    attempt.score = score;
+    let calculatedScore = score;
+    const itemType = attempt.itemType;
+    const itemId = attempt.itemId;
+
+    if (itemType === 'lab') {
+      const lab = await Lab.findById(itemId);
+      if (lab) {
+        const totalXP = getLabXP(lab.difficulty) || lab.points || 200;
+        const totalTasks = lab.tasks?.length || 1;
+        const taskXPs = getTaskXP(totalXP, totalTasks);
+        const completedTaskIndices = taskStates
+          ? taskStates.filter(ts => ts.completed).map(ts => {
+              const id = Number(ts.taskId);
+              return lab.tasks.findIndex(t => Number(t.id) === id);
+            }).filter(idx => idx >= 0)
+          : [];
+        const uniqueIndices = Array.from(new Set(completedTaskIndices));
+        calculatedScore = uniqueIndices.reduce((sum, idx) => sum + (taskXPs[idx] || 0), 0);
+      }
+    } else if (itemType === 'room') {
+      const room = await Room.findById(itemId);
+      if (room) {
+        const totalXP = getRoomXP(room.difficulty) || room.points || 100;
+        const totalTasks = room.exercises?.length || 1;
+        const taskXPs = getTaskXP(totalXP, totalTasks);
+        const completedTaskIndices = taskStates
+          ? taskStates.filter(ts => ts.completed).map(ts => {
+              const id = Number(ts.taskId);
+              return room.exercises.findIndex(e => Number(e.id) === id);
+            }).filter(idx => idx >= 0)
+          : [];
+        const uniqueIndices = Array.from(new Set(completedTaskIndices));
+        calculatedScore = uniqueIndices.reduce((sum, idx) => sum + (taskXPs[idx] || 0), 0);
+      }
+    }
+
+    attempt.score = calculatedScore;
     attempt.completionTime = completionTime;
     attempt.taskStates = taskStates;
     attempt.completed = true;
@@ -42,8 +79,6 @@ exports.completeAttempt = async (req, res) => {
     await attempt.save();
 
     const user = await User.findById(req.user.id);
-    const itemType = attempt.itemType;
-    const itemId = attempt.itemId;
 
     // 2. Determine if this is a NEW BEST score
     const allAttempts = await Attempt.find({ user: user._id, itemId, completed: true });
@@ -158,12 +193,46 @@ exports.getItemStats = async (req, res) => {
 
 // Internal Global Scoring Utility (Shared between Labs and Rooms)
 exports.processFinishedSession = async (user, itemType, itemId, finalScore, completionTime, taskStates = []) => {
+    let calculatedScore = finalScore;
+
+    if (itemType === 'lab') {
+      const lab = await Lab.findById(itemId);
+      if (lab) {
+        const totalXP = getLabXP(lab.difficulty) || lab.points || 200;
+        const totalTasks = lab.tasks?.length || 1;
+        const taskXPs = getTaskXP(totalXP, totalTasks);
+        const completedTaskIndices = taskStates
+          ? taskStates.filter(ts => ts.completed).map(ts => {
+              const id = Number(ts.taskId);
+              return lab.tasks.findIndex(t => Number(t.id) === id);
+            }).filter(idx => idx >= 0)
+          : [];
+        const uniqueIndices = Array.from(new Set(completedTaskIndices));
+        calculatedScore = uniqueIndices.reduce((sum, idx) => sum + (taskXPs[idx] || 0), 0);
+      }
+    } else if (itemType === 'room') {
+      const room = await Room.findById(itemId);
+      if (room) {
+        const totalXP = getRoomXP(room.difficulty) || room.points || 100;
+        const totalTasks = room.exercises?.length || 1;
+        const taskXPs = getTaskXP(totalXP, totalTasks);
+        const completedTaskIndices = taskStates
+          ? taskStates.filter(ts => ts.completed).map(ts => {
+              const id = Number(ts.taskId);
+              return room.exercises.findIndex(e => Number(e.id) === id);
+            }).filter(idx => idx >= 0)
+          : [];
+        const uniqueIndices = Array.from(new Set(completedTaskIndices));
+        calculatedScore = uniqueIndices.reduce((sum, idx) => sum + (taskXPs[idx] || 0), 0);
+      }
+    }
+
     const attempt = await Attempt.create({
       user: user._id,
       itemType,
       itemId,
-      score: finalScore,
-      maxScore: finalScore, 
+      score: calculatedScore,
+      maxScore: calculatedScore, 
       completed: true,
       completionTime,
       taskStates,

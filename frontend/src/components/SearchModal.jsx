@@ -268,7 +268,8 @@ const SearchModal = ({ isOpen, onClose }) => {
                             <span className={`px-2 py-0.5 rounded border uppercase tracking-widest ${
                               item.difficulty === 'Beginner' ? 'border-green-500/20 text-green-400 bg-green-500/10' :
                               item.difficulty === 'Intermediate' ? 'border-yellow-500/20 text-yellow-400 bg-yellow-500/10' :
-                              'border-red-500/20 text-red-400 bg-red-500/10'
+                              item.difficulty === 'Advanced' ? 'border-red-500/20 text-red-400 bg-red-500/10' :
+                              'border-red-700/20 text-red-600 bg-red-700/10'
                             }`}>
                               {item.difficulty}
                             </span>

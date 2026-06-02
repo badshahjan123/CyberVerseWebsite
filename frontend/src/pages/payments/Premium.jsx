@@ -22,7 +22,9 @@ import {
   Download,
   Trophy,
   Users,
+  Loader2,
 } from "lucide-react";
+import { apiCall } from "../../config/api";
 import "./Premium.css";
 
 const T = {
@@ -72,18 +74,27 @@ const PremiumPage = () => {
     { question: "Data persistence on cancellation?", answer: "All your achievements, XP, and rank certificates remain permanently etched in the CyberVerse grid." },
   ];
 
-  const handleSubscribe = (planId) => {
-    navigate("/checkout", {
-      state: {
-        plan: {
-          name: "Premium",
-          price: billingCycle === "monthly" ? "$10" : "$90",
-          period: billingCycle === "monthly" ? "month" : "year",
-        },
-        planId,
-        billingCycle,
-      },
-    });
+  const handleSubscribe = async (planId) => {
+    setIsLoading(true);
+    try {
+      const response = await apiCall('/payments/create-checkout-session', {
+        method: 'POST',
+        body: JSON.stringify({
+          planId: "premium",
+          billingCycle
+        })
+      });
+
+      if (response.url) {
+        window.location.href = response.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Failed to initialize secure payment gateway. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -139,7 +150,7 @@ const PremiumPage = () => {
                  <li className="pp-feat-item"><X size={14} className="text-danger/40"/> No Certifications</li>
               </ul>
               <button disabled className="rcp-secondary-btn !w-full !cursor-default opacity-50">
-                 Current Tier
+                 {isPremium ? "Free Plan" : "Current Tier"}
               </button>
            </div>
 
@@ -164,10 +175,11 @@ const PremiumPage = () => {
                </ul>
                <button 
                  onClick={() => handleSubscribe("premium")}
+                 disabled={isLoading || isPremium}
                  className="rcp-primary-btn !w-full"
-                 style={isPremium ? { background: 'rgba(0, 242, 255, 0.1)', color: '#00F2FF', border: '1px solid rgba(0, 242, 255, 0.3)', boxShadow: 'none' } : {}}
+                 style={isPremium ? { background: 'rgba(0, 242, 255, 0.1)', color: '#00F2FF', border: '1px solid rgba(0, 242, 255, 0.3)', boxShadow: 'none', cursor: 'default' } : {}}
                >
-                  {isPremium ? 'View Plan Details' : 'Get Premium'}
+                  {isLoading ? <Loader2 className="animate-spin mx-auto" size={20} /> : (isPremium ? 'Current Tier' : 'Get Premium')}
                </button>
            </div>
 
@@ -273,9 +285,10 @@ const PremiumPage = () => {
             </p>
             <button 
               onClick={() => handleSubscribe("premium")}
+              disabled={isLoading}
               className="rcp-primary-btn !py-5 !px-12 mx-auto"
             >
-               Upgrade to Premium <ArrowRight size={20} className="ml-2"/>
+               {isLoading ? <Loader2 className="animate-spin mx-auto" size={24} /> : <><span className="mr-2">Upgrade to Premium</span> <ArrowRight size={20} /></>}
             </button>
          </div>
       </div>

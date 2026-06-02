@@ -37,6 +37,13 @@ const Navbar = () => {
   // Close mobile menu on route change
   useEffect(() => { setIsOpen(false) }, [location.pathname]);
 
+  const ud = {
+    xp: userStats?.totalXP || user?.points || 0,
+    level: userStats?.level || user?.level || 1,
+    streak: userStats?.streak || user?.currentStreak || 0,
+    isPremium: userStats?.isPremium ?? user?.isPremium ?? false,
+  };
+
   const navLinks = [
     { to: "/dashboard", text: "Dashboard" },
     { to: "/labs", text: "Labs" },
@@ -45,12 +52,9 @@ const Navbar = () => {
     { to: "/certificates", text: "Certificates" },
   ];
 
-  const ud = {
-    xp: userStats?.totalXP || user?.points || 0,
-    level: userStats?.level || user?.level || 1,
-    streak: userStats?.streak || user?.currentStreak || 0,
-    isPremium: userStats?.isPremium ?? user?.isPremium ?? false,
-  };
+  if (!ud.isPremium) {
+    navLinks.push({ to: "/premium", text: "Premium" });
+  }
 
   return (
     <>

@@ -12,3 +12,6 @@ nodes:
       - containerPort: 32235
         hostPort: 32235
         protocol: TCP
+      - containerPort: 32240
+        hostPort: 32240
+        protocol: TCP

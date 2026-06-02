@@ -1,31 +1,77 @@
-import { memo, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { memo, useEffect, useState } from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { ModernButton } from "../../components/ui-components";
+import { apiCall } from "../../config/api";
+import { useApp } from "../../contexts/app-context";
 import {
   CheckCircle,
-  Download,
   Mail,
   ArrowRight,
   Award,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
 const PaymentSuccessPage = memo(() => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const paymentData = location.state || {};
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+  const { updateUserProfile, user } = useApp();
+  
+  const [verifying, setVerifying] = useState(true);
+  const [paymentData, setPaymentData] = useState(null);
 
   useEffect(() => {
-    // If no payment data, redirect to premium page
-    if (!paymentData.plan) {
+    if (!sessionId) {
       navigate("/premium");
+      return;
     }
-  }, [paymentData, navigate]);
 
-  const handleDownloadReceipt = () => {
-    // In a real app, this would generate and download a PDF receipt
-    alert("Receipt download started!");
-  };
+    const verifyPayment = async () => {
+      try {
+        const res = await apiCall('/payments/verify-session', {
+          method: 'POST',
+          body: JSON.stringify({ sessionId })
+        });
+        
+        if (res.success) {
+           const userRes = await apiCall('/auth/me');
+           if (userRes.user) {
+             updateUserProfile(userRes.user);
+           }
+           setPaymentData({
+              planName: res.plan === 'annual' ? 'Premium Annual' : 'Premium Monthly',
+              amount: res.amount ? `$${res.amount}` : '$10.00',
+              period: res.plan === 'annual' ? 'year' : 'month',
+              transactionId: sessionId.substring(0, 15) + '...',
+              paymentMethod: 'Stripe Secure Checkout',
+              date: new Date().toLocaleDateString()
+           });
+        } else {
+           navigate("/premium");
+        }
+      } catch (error) {
+        console.error("Verification failed", error);
+        navigate("/premium");
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyPayment();
+  }, [sessionId, navigate]);
+
+  if (verifying) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center flex-col">
+        <Loader2 className="animate-spin text-primary-500 h-12 w-12 mb-4" />
+        <h2 className="text-white text-xl font-bold">Verifying your secure payment...</h2>
+        <p className="text-slate-400 text-sm mt-2">Please do not close this window.</p>
+      </div>
+    );
+  }
+
+  if (!paymentData) return null;
 
   return (
     <div className="bg-slate-950 min-h-screen py-12">
@@ -48,15 +94,15 @@ const PaymentSuccessPage = memo(() => {
           <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-700">
             <div>
               <h2 className="text-2xl font-bold text-slate-100">
-                {paymentData.plan?.name} Plan
+                {paymentData.planName}
               </h2>
               <p className="text-slate-400">Subscription activated</p>
             </div>
             <div className="text-right">
               <div className="text-3xl font-bold text-primary-400">
-                {paymentData.plan?.price}
+                {paymentData.amount}
               </div>
-              <p className="text-slate-400">per {paymentData.plan?.period}</p>
+              <p className="text-slate-400">per {paymentData.period}</p>
             </div>
           </div>
 
@@ -74,7 +120,7 @@ const PaymentSuccessPage = memo(() => {
                 Payment Method
               </h3>
               <p className="text-slate-100">
-                {paymentData.paymentMethod?.name}
+                {paymentData.paymentMethod}
               </p>
             </div>
             <div>
@@ -165,16 +211,7 @@ const PaymentSuccessPage = memo(() => {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
-          <ModernButton
-            variant="outline"
-            size="lg"
-            className="w-full"
-            onClick={handleDownloadReceipt}
-          >
-            <Download className="mr-2 h-5 w-5" />
-            Download Receipt
-          </ModernButton>
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
 
           <Link to="/certificates" className="w-full">
             <ModernButton variant="glass" size="lg" className="w-full">

@@ -33,6 +33,7 @@ import { getRooms } from "../../services/rooms";
 import { useBookmarks } from "../../contexts/bookmark-context";
 import { useApp } from "../../contexts/app-context";
 import { ProtectedRoute } from "../../components/protected-route";
+import { getRoomXP } from "../../utils/xpConfig";
 import "./Rooms.css";
 
 /* ══════ Difficulty config ══════ */
@@ -46,16 +47,9 @@ const DIFF = {
   Insane: { color: "#B91C1C", bars: 4 },
 };
 const getDiff = (d) => DIFF[d] || { color: "#94A3B8", bars: 2 };
-const DIFFICULTY_POINTS = {
-  Beginner: 100,
-  Easy: 100,
-  Intermediate: 175,
-  Medium: 175,
-  Advanced: 250,
-  Hard: 250,
-  Insane: 250,
-};
-const getPoints = (d) => DIFFICULTY_POINTS[d] || 100;
+
+// XP from centralized config (preserves legacy aliases for backward compat)
+const getPoints = (d) => getRoomXP(d);
 
 /* ── Difficulty signal bars ── */
 const DiffBars = memo(({ level }) => {
@@ -1019,32 +1013,36 @@ const Rooms = memo(() => {
           {/* ═══ CATEGORY TABS ═══ */}
           <div className="rooms-toolbar">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between gap-4 overflow-x-auto font-mono">
-                <div className="flex items-center gap-0">
-                  {categories.map((cat) => {
-                    const isActive = filters.category === cat;
-                    const meta = cat !== "all" ? getCat(cat) : null;
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => setFilter("category", cat)}
-                        className={`rooms-tab text-xs uppercase tracking-wider ${isActive ? "rooms-tab--active" : ""}`}
-                      >
-                        {meta && (
-                          <span
-                            style={{ color: isActive ? meta.color : undefined }}
-                          >
-                            {meta.icon}
-                          </span>
-                        )}
-                        {cat === "all" ? "All Operations" : cat}
-                        {isActive && <div className="rooms-tab__indicator" />}
-                      </button>
-                    );
-                  })}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 font-mono">
+                {/* Scrollable Categories Wrapper */}
+                <div className="flex-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div className="flex items-center gap-0 min-w-max">
+                    {categories.map((cat) => {
+                      const isActive = filters.category === cat;
+                      const meta = cat !== "all" ? getCat(cat) : null;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setFilter("category", cat)}
+                          className={`rooms-tab text-xs uppercase tracking-wider ${isActive ? "rooms-tab--active" : ""}`}
+                        >
+                          {meta && (
+                            <span
+                              style={{ color: isActive ? meta.color : undefined }}
+                            >
+                              {meta.icon}
+                            </span>
+                          )}
+                          {cat === "all" ? "All Operations" : cat}
+                          {isActive && <div className="rooms-tab__indicator" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3 py-2 font-mono">
+                {/* Search & Filter fixed on right */}
+                <div className="flex items-center gap-3 py-2 font-mono flex-shrink-0">
                   {/* Search */}
                   <div className="relative">
                     <Search

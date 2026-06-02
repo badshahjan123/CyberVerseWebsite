@@ -193,15 +193,15 @@ const Home = memo(() => {
                 className="block text-[42px] lg:text-[62px] font-black uppercase tracking-tight font-mono text-white"
                 style={{ letterSpacing: "-0.01em" }}
               >
-                UNLEASH YOUR POWER.
+                GAMIFIED TECH LEARNING.
               </span>
               <span 
                 className="block text-[38px] lg:text-[56px] font-black uppercase tracking-tight mt-1"
                 style={{ fontFamily: "'Orbitron', sans-serif" }}
               >
-                <span>MASTER </span>
+                <span>THE ULTIMATE </span>
                 <span className="text-[#00D1FF] breathing-glow-text" style={{ textShadow: "0 0 15px rgba(0,209,255,0.4)" }}>
-                  CYBER SECURITY
+                  PLATFORM
                 </span>
               </span>
             </h1>

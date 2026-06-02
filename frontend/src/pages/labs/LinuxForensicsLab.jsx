@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiCall } from '../../config/api';
+import { getLabXP } from '../../utils/xpConfig';
 
 /* ─── Task Component (THM Style) ─── */
 const LabTask = memo(({ task, isCompleted, onSubmit }) => {
@@ -167,7 +168,7 @@ const LinuxForensicsLab = () => {
     const labConfig = {
         title: 'Linux File Forensics: Hidden Secrets',
         difficulty: 'Beginner',
-        points: 100,
+        points: getLabXP('Beginner'),
         estimatedTime: '30-45 minutes'
     };
 
@@ -599,8 +600,8 @@ const LinuxForensicsLab = () => {
 
 /* ─── Difficulty Component ─── */
 const DifficultyBadge = memo(({ level }) => {
-  const bars = { Easy: 1, Beginner: 1, Medium: 2, Hard: 3, Insane: 4 }[level] || 2;
-  const color = { Easy: "#88E636", Beginner: "#88E636", Medium: "#F5A623", Hard: "#E74C3C", Insane: "#E74C3C" }[level] || "#94A3B8";
+  const bars = { Beginner: 1, Intermediate: 2, Advanced: 3, Expert: 4 }[level] || 2;
+  const color = { Beginner: "#88E636", Intermediate: "#F5A623", Advanced: "#E74C3C", Expert: "#E74C3C" }[level] || "#94A3B8";
 
   return (
     <div className="flex items-center gap-2">

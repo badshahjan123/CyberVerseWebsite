@@ -5,6 +5,7 @@ const Lab = require('../models/Lab');
 const NotificationService = require('../utils/notificationHelper');
 const BadgeHelper = require('../utils/badgeHelper');
 const RealtimeHelper = require('../utils/realtimeHelper');
+const { getRoomXP, getLabXP } = require('../utils/xpConfig');
 const { auth } = require('../middleware/auth');
 const router = express.Router();
 
@@ -17,6 +18,16 @@ router.post('/update', auth, async (req, res) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Compute server-authoritative XP from centralized config
+    let serverXP = points; // fallback to client-sent points
+    if (type === 'room') {
+      const room = await Room.findOne({ slug: itemId }).select('difficulty');
+      if (room) serverXP = getRoomXP(room.difficulty);
+    } else if (type === 'lab') {
+      const lab = await Lab.findById(itemId).select('difficulty');
+      if (lab) serverXP = getLabXP(lab.difficulty);
     }
 
     let isFirstCompletion = false;
@@ -38,7 +49,7 @@ router.post('/update', auth, async (req, res) => {
       } else {
         // First completion
         isFirstCompletion = true;
-        pointsToAdd = points;
+        pointsToAdd = serverXP;
         user.completedRooms += 1;
         user.roomProgress.push({
           roomId: itemId,
@@ -62,7 +73,7 @@ router.post('/update', auth, async (req, res) => {
       } else {
         // First completion
         isFirstCompletion = true;
-        pointsToAdd = points;
+        pointsToAdd = serverXP;
         user.completedLabs += 1;
         user.labProgress.push({
           labId: itemId,

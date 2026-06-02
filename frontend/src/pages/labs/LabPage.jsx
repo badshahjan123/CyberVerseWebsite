@@ -42,6 +42,7 @@ import {
 import { labsService } from "../../services/labs";
 import { attemptsService } from "../../services/attempts";
 import { useApp } from "../../contexts/app-context";
+import { getLabXP } from "../../utils/xpConfig";
 import "./LabPage.css";
 
 /* ─── Glossary Terms ─── */
@@ -586,7 +587,7 @@ const LabPage = () => {
         setLabCompleted(true);
         try {
           const completionTime = Math.floor((Date.now() - startTime) / 1000);
-          const finalScore = lab.points; // Simple scoring: 100% completion = full points
+          const finalScore = getLabXP(lab.difficulty) || lab.points || 200; // Synced with centralized XP config
 
           const result = await attemptsService.completeAttempt(
             attemptId, 
@@ -698,7 +699,7 @@ const LabPage = () => {
                   <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Reward</p>
                   <p className="text-sm font-bold text-amber-500 flex items-center gap-1 mt-0.5">
                     <Trophy size={14} />
-                    {lab.points} XP
+                    {getLabXP(lab.difficulty)} XP
                   </p>
                 </div>
                 <div>

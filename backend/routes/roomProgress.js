@@ -4,6 +4,7 @@ const Room = require('../models/Room');
 const RealtimeHelper = require('../utils/realtimeHelper');
 const WeeklyStats = require('../models/WeeklyStats');
 const { awardRoomBadges, checkMilestoneBadges } = require('../utils/badgeHelper');
+const { getRoomXP, getTaskXP } = require('../utils/xpConfig');
 const { auth } = require('../middleware/auth');
 const router = express.Router();
 
@@ -228,6 +229,12 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
     const taskId = lectureIndex + 1;
     const exercise = room ? room.exercises.find(ex => ex.id === taskId) : null;
 
+    // Centralized per-task XP from config (falls back gracefully)
+    const roomDifficulty = room?.difficulty || 'Beginner';
+    const totalRoomTasks = room?.topics?.length || room?.exercises?.length || 5;
+    const configTaskXP = getTaskXP(getRoomXP(roomDifficulty), totalRoomTasks);
+    const taskXPFromConfig = configTaskXP[lectureIndex] ?? configTaskXP[0] ?? 0;
+
     // Determine if correct
     let isCorrect = false;
     let pointsEarned = 0;
@@ -239,11 +246,13 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
       isCorrect = exercise.caseSensitive === false
         ? userAnswer.toLowerCase() === correctAnswer.toLowerCase()
         : userAnswer === correctAnswer;
-      pointsEarned = exercise.points || 100;
+      // Use config XP as primary, fall back to exercise.points for custom exercises
+      pointsEarned = taskXPFromConfig || exercise.points || 100;
     } else if (answer === 'COMPLETED') {
       // Interactive/local room: frontend validated, trust it
       isCorrect = true;
-      pointsEarned = clientPoints || 100;
+      // Use config XP as primary, fall back to clientPoints for legacy
+      pointsEarned = taskXPFromConfig || clientPoints || 100;
       console.log(`📡 Interactive task completion (no DB exercise): task ${taskId}, points ${pointsEarned}`);
     } else {
       // Unknown exercise but not a COMPLETED signal — still allow with 0 points

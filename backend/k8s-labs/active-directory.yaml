@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyber-lab-active-directory
+  labels:
+    app: cyber-lab
+    lab-id: active-directory
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: cyber-lab
+      lab-id: active-directory
+
+  template:
+    metadata:
+      labels:
+        app: cyber-lab
+        lab-id: active-directory
+
+    spec:
+      containers:
+        - name: lab-container
+          image: badshahjan/lab1:latest
+          imagePullPolicy: Always
+
+          command:
+            - /bin/sh
+            - -c
+
+          args:
+            - |
+              mkdir -p /home/labuser/ad-data
+
+              echo "cyberverse.local" > /home/labuser/ad-data/domain.txt
+
+              printf "Administrator\nJohn\nSarah\nMike\nHelpDesk\n" > /home/labuser/ad-data/users.txt
+
+              printf "Domain Admins\nIT Support\nHelp Desk\n" > /home/labuser/ad-data/groups.txt
+
+              echo "DC01" > /home/labuser/ad-data/domain-controller.txt
+
+              echo "Use cat domain.txt" > /home/labuser/ad-data/readme.txt
+              echo "Use cat users.txt" >> /home/labuser/ad-data/readme.txt
+              echo "Use cat groups.txt" >> /home/labuser/ad-data/readme.txt
+              echo "Use cat domain-controller.txt" >> /home/labuser/ad-data/readme.txt
+
+              chown -R 1000:1000 /home/labuser
+
+              ttyd -W -p 80 -i 0.0.0.0 bash
+
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cyber-lab-active-directory-service
+  labels:
+    lab-id: active-directory
+
+spec:
+  selector:
+    app: cyber-lab
+    lab-id: active-directory
+
+  ports:
+    - protocol: TCP
+      port: 8088
+      targetPort: 80
+      nodePort: 32240
+
+  type: NodePort

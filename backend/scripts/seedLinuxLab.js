@@ -26,7 +26,7 @@ const seedLab = async () => {
             content: 'In this mission you are investigating a suspicious folder left behind by an unknown developer. The folder contains hidden files, altered timestamps, and encrypted messages. Your job is to uncover the truth by exploring the Linux filesystem and using simple forensic techniques.',
             difficulty: 'Beginner',
             category: 'Forensics',
-            points: 100,
+            points: 200, // LAB_XP.Beginner — synced with utils/xpConfig.js
             isPremium: false,
             isActive: true,
             coverImage: '/images/labs/linux-forensics-cover.png',

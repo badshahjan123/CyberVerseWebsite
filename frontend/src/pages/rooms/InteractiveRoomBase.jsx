@@ -238,7 +238,7 @@ const InteractiveRoomBase = ({
     const correctCount = results.filter(r => r.correct).length;
     const percentage = Math.round((correctCount / quiz.length) * 100);
     const passed = percentage >= 70;
-    const bonusXP = passed ? 500 : 0;
+    const bonusXP = passed ? quizBonusXP : 0;
 
     setQuizResults({ results, percentage, passed, earnedPoints: bonusXP });
     setQuizSubmitted(true);
@@ -368,7 +368,9 @@ const InteractiveRoomBase = ({
             <div className="irb-card-body">
               <div className="irb-quiz-meta">
                 <span className="irb-pill" style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.2)' }}>{quiz.length} Questions</span>
-                <span className="irb-pill" style={{ background: 'rgba(0,245,255,0.08)', color: '#00F5FF', border: '1px solid rgba(0,245,255,0.2)' }}><Zap size={12}/> +500 XP Bonus</span>
+                {quizBonusXP > 0 && (
+                  <span className="irb-pill" style={{ background: 'rgba(0,245,255,0.08)', color: '#00F5FF', border: '1px solid rgba(0,245,255,0.2)' }}><Zap size={12}/> +{quizBonusXP} XP Bonus</span>
+                )}
                 <span className="irb-pill" style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>70% to Pass</span>
               </div>
               {quiz.map((q, qi) => (

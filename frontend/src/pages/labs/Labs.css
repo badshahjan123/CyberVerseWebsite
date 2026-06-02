@@ -170,32 +170,32 @@
   box-shadow: 0 0 12px rgba(136, 230, 54, 0.15);
 }
 
-/* Easy */
-.labs-chip--easy.labs-chip--active {
+/* Beginner */
+.labs-chip--beginner.labs-chip--active {
   background: rgba(57, 255, 20, 0.1) !important;
   color: #39FF14 !important;
   border-color: rgba(57, 255, 20, 0.3) !important;
   box-shadow: 0 0 12px rgba(57, 255, 20, 0.12);
 }
 
-/* Medium */
-.labs-chip--medium.labs-chip--active {
+/* Intermediate */
+.labs-chip--intermediate.labs-chip--active {
   background: rgba(245, 158, 11, 0.1) !important;
   color: #F59E0B !important;
   border-color: rgba(245, 158, 11, 0.3) !important;
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.12);
 }
 
-/* Hard */
-.labs-chip--hard.labs-chip--active {
+/* Advanced */
+.labs-chip--advanced.labs-chip--active {
   background: rgba(239, 68, 68, 0.1) !important;
   color: #EF4444 !important;
   border-color: rgba(239, 68, 68, 0.3) !important;
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.12);
 }
 
-/* Insane */
-.labs-chip--insane.labs-chip--active {
+/* Expert */
+.labs-chip--expert.labs-chip--active {
   background: rgba(185, 28, 28, 0.12) !important;
   color: #B91C1C !important;
   border-color: rgba(185, 28, 28, 0.35) !important;

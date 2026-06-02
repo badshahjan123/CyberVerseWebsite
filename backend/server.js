@@ -5,7 +5,7 @@ const rateLimit = require("express-rate-limit");
 const cookieParser = require("cookie-parser");
 const http = require("http");
 const path = require("path");
-require("dotenv").config();
+require("dotenv").config(); // Load environment variables
 
 // Configs
 const connectDB = require("./config/db");

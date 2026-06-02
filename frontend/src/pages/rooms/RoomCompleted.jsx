@@ -20,6 +20,7 @@ import { getRoomProgress, resetRoomProgress } from "../../services/roomProgress"
 import { useApp } from "../../contexts/app-context";
 import { useActivity } from "../../contexts/activity-context";
 import { useToast } from "../../contexts/toast-context";
+import { getRoomXP } from "../../utils/xpConfig";
 import "./RoomModule.css";
 
 const RoomCompleted = () => {
@@ -85,12 +86,15 @@ const RoomCompleted = () => {
     return null;
   }
 
+  const roomDifficulty = room?.difficulty || 'Beginner';
+  const totalRoomXP = getRoomXP(roomDifficulty);
+
   const stats = {
     score:
       progress.finalScore && progress.finalScore > 1000000000000
         ? progress.quizScore?.percentage || 100
         : progress.finalScore || progress.quizScore?.percentage || 100,
-    xp: progress.totalXP || progress.totalPointsEarned || room.points || 500,
+    xp: totalRoomXP,
     timeSpent: "15m 42s",
     tasksCompleted: progress.completedLectures?.length || 0,
   };
@@ -238,7 +242,7 @@ const RoomCompleted = () => {
                        </div>
                        <ChevronRight size={14} className="text-slate-700"/>
                     </button>
-                    <button onClick={() => navigate(`/rooms?difficulty=Medium`)} className="rcp-suggest-card">
+                    <button onClick={() => navigate(`/rooms?difficulty=Intermediate`)} className="rcp-suggest-card">
                        <Zap size={16} className="text-warning"/>
                        <div className="flex-1 text-left">
                           <span className="block text-[11px] font-bold text-white">Increase Difficulty</span>

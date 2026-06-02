@@ -4,6 +4,7 @@ const Lab = require('../models/Lab');
 const User = require('../models/User');
 const WeeklyStats = require('../models/WeeklyStats');
 const mongoose = require('mongoose');
+const { getLabXP } = require('../utils/xpConfig');
 
 // Helper: resolve lab by id or slug
 async function resolveLab(idOrSlug) {
@@ -227,15 +228,18 @@ exports.completeLab = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Already completed' });
         }
 
+        // Centralized XP: use config as source of truth, fall back to lab.points for legacy data
+        const xpToAward = getLabXP(lab.difficulty) || lab.points;
+
         user.completedLabs = (user.completedLabs || 0) + 1;
-        user.points += lab.points;
+        user.points += xpToAward;
         user.lastStreakDate = new Date();
         await user.save();
 
-        lab.completedBy.push({ userId: user._id, completedAt: new Date(), score: finalScore || lab.points });
+        lab.completedBy.push({ userId: user._id, completedAt: new Date(), score: finalScore || xpToAward });
         await lab.save();
 
-        await WeeklyStats.recordActivity(user._id, 'lab', lab.points, true);
+        await WeeklyStats.recordActivity(user._id, 'lab', xpToAward, true);
 
         const io = req.app.get('io');
         if (io) {
@@ -263,7 +267,7 @@ exports.completeLab = async (req, res) => {
             message: 'Lab completed',
             data: {
                 labId: lab._id,
-                pointsEarned: lab.points,
+                pointsEarned: xpToAward,
                 totalPoints: user.points,
                 ...(badgesAwarded.length > 0 && { badgesAwarded }),
             },

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { User, Settings, Moon, Sun, Award, Bookmark, LogOut, ChevronDown, Crown } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { User, Settings, Moon, Sun, Award, Bookmark, LogOut, ChevronDown, Crown, Zap, Shield, Target } from 'lucide-react'
 import { useTheme } from '../contexts/theme-context'
-import { API_BASE_URL } from '../config/api'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const ProfileDropdown = ({ user, onLogout }) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -10,31 +10,29 @@ const ProfileDropdown = ({ user, onLogout }) => {
     const { isDarkMode, toggleTheme } = useTheme()
     const navigate = useNavigate()
 
-    // Close dropdown when clicking outside
+    // Derived gamified stats
+    const xp = user?.xp || user?.points || user?.totalXP || 0
+    const level = user?.level || 1
+    const nextLevelXP = level * 1000
+    const currentLevelXP = xp % 1000
+    const xpPercentage = Math.min(100, Math.round((currentLevelXP / nextLevelXP) * 100))
+    const rankTitle = level < 5 ? 'Novice' : level < 15 ? 'Hacker' : level < 30 ? 'Elite' : 'Master'
+    const rankColor = level < 5 ? 'text-green-400' : level < 15 ? 'text-blue-400' : level < 30 ? 'text-purple-400' : 'text-red-400'
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsOpen(false)
             }
         }
-
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
+        if (isOpen) document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [isOpen])
 
-    const handleLogout = () => {
+    const handleAction = (action) => {
         setIsOpen(false)
-        onLogout()
-    }
-
-    const handleNavigation = (path) => {
-        setIsOpen(false)
-        navigate(path)
+        if (typeof action === 'string') navigate(action)
+        else action()
     }
 
     return (
@@ -42,120 +40,150 @@ const ProfileDropdown = ({ user, onLogout }) => {
             {/* Avatar Trigger */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 transition-all group"
+                className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/5 transition-all group"
             >
                 <div className="relative">
                     <img
                         src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
                         alt={user?.name}
-                        className={`w-9 h-9 rounded-full group-hover:border-primary transition-all object-cover ${user?.isPremium ? 'border-2 border-yellow-400' : 'border-2 border-primary/50'
-                            }`}
-                        key={`${user?.avatar}-${user?.avatarTimestamp}`}
+                        className={`w-9 h-9 rounded-xl group-hover:scale-105 transition-transform object-cover ${user?.isPremium ? 'border border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border border-cyan-500/30'}`}
                     />
                     {user?.isPremium && (
-                        <div className="absolute -top-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5">
-                            <Crown size={8} className="text-slate-900" />
+                        <div className="absolute -top-1.5 -right-1.5 bg-yellow-400 rounded-md p-0.5 shadow-[0_0_8px_rgba(234,179,8,0.5)]">
+                            <Crown size={8} className="text-black" />
                         </div>
                     )}
                 </div>
-                <ChevronDown
-                    size={16}
-                    className={`text-muted transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                />
             </button>
 
-            {/* Dropdown Menu */}
-            {isOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
-                    {/* User Info Header */}
-                    <div className={`px-4 py-3 border-b border-slate-200 dark:border-slate-700 ${user?.isPremium ? 'bg-gradient-to-r from-yellow-600/10 to-orange-600/10' : ''
-                        }`}>
-                        <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                                {user?.name}
-                            </p>
-                            {user?.isPremium && (
-                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-yellow-400/20 border border-yellow-400/30 rounded-full">
-                                    <Crown size={10} className="text-yellow-400" />
-                                    <span className="text-[9px] font-bold text-yellow-400">PRO</span>
-                                </span>
-                            )}
+            {/* Dropdown Menu - Gamified Player Card */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 15, scale: 0.95, filter: 'blur(10px)' }}
+                        animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95, filter: 'blur(5px)' }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        className="absolute right-0 mt-3 w-[320px] bg-[#0b1120]/95 backdrop-blur-xl rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] border border-cyan-500/20 overflow-hidden z-50 origin-top-right"
+                    >
+                        
+                        {/* Header: Player Identity */}
+                        <div className={`relative p-5 border-b border-white/5 ${user?.isPremium ? 'bg-gradient-to-br from-yellow-500/10 to-orange-600/5' : 'bg-gradient-to-br from-cyan-500/10 to-blue-600/5'}`}>
+                            {/* Decorative background grid */}
+                            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50" />
+                            
+                            <div className="relative flex items-center gap-4">
+                                <div className="relative">
+                                    <img
+                                        src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
+                                        alt={user?.name}
+                                        className="w-16 h-16 rounded-xl border-2 border-white/10 object-cover"
+                                    />
+                                    <div className="absolute -bottom-2 -right-2 bg-[#0b1120] px-1.5 py-0.5 rounded-md border border-cyan-500/30 flex items-center gap-1">
+                                        <Shield size={8} className="text-cyan-400" />
+                                        <span className="text-[9px] font-black font-mono text-cyan-400">Lv.{level}</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-base font-black text-white truncate font-mono uppercase tracking-wide">
+                                            {user?.name || 'Operator'}
+                                        </h3>
+                                        {user?.isPremium && (
+                                            <span className="flex items-center gap-1 px-1.5 py-0.5 bg-yellow-400/10 border border-yellow-400/30 rounded text-[8px] font-black text-yellow-400 tracking-wider">
+                                                <Crown size={8} /> PRO
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className={`text-[10px] font-bold uppercase tracking-widest ${rankColor} mb-2 flex items-center gap-1.5`}>
+                                        <Target size={10} /> {rankTitle} Rank
+                                    </div>
+                                    
+                                    {/* XP Progress Bar */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between text-[8px] font-mono font-bold text-slate-400">
+                                            <span>{currentLevelXP} XP</span>
+                                            <span>{nextLevelXP} XP</span>
+                                        </div>
+                                        <div className="h-1.5 bg-black/50 rounded-full overflow-hidden border border-white/5">
+                                            <motion.div 
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${xpPercentage}%` }}
+                                                transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                                                className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 shadow-[0_0_10px_rgba(0,209,255,0.5)]"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                            {user?.email}
-                        </p>
-                    </div>
 
-                    {/* Group 1: User */}
-                    <div className="py-2">
-                        <button
-                            onClick={() => handleNavigation('/profile')}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                        >
-                            <User size={18} />
-                            <span>View Profile</span>
-                        </button>
-                        <button
-                            onClick={() => handleNavigation('/settings')}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                        >
-                            <Settings size={18} />
-                            <span>Manage Account</span>
-                        </button>
-                    </div>
+                        <div className="p-2 space-y-1 bg-[#060913]/50">
+                            {/* Gamified Menu Items */}
+                            <button onClick={() => handleAction('/profile')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">
+                                        <User size={14} />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Operator Profile</span>
+                                </div>
+                            </button>
 
-                    {/* Divider */}
-                    <div className="border-t border-slate-200 dark:border-slate-700"></div>
+                            <button onClick={() => handleAction('/badges')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 group-hover:scale-110 transition-transform">
+                                        <Award size={14} />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Achievements</span>
+                                </div>
+                                <span className="text-[9px] font-black bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20">NEW</span>
+                            </button>
 
-                    {/* Group 2: Learning */}
-                    <div className="py-2">
-                        <button
-                            onClick={() => handleNavigation('/badges')}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                        >
-                            <Award size={18} />
-                            <span>My Badges</span>
-                        </button>
-                        <button
-                            onClick={() => handleNavigation('/saved')}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                        >
-                            <Bookmark size={18} />
-                            <span>Saved Items</span>
-                        </button>
-                    </div>
+                            <button onClick={() => handleAction('/saved')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+                                        <Bookmark size={14} />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Saved Intel</span>
+                                </div>
+                            </button>
 
-                    {/* Group 3: Theme Toggle */}
-                    <div className="py-1">
-                        <button
-                            onClick={toggleTheme}
-                            className="w-full flex items-center justify-between px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                        >
-                            <div className="flex items-center gap-3">
-                                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-                                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                            </div>
-                            <div className={`w-8 h-4 rounded-full relative transition-colors ${isDarkMode ? 'bg-cyan-500' : 'bg-slate-500'}`}>
-                                <div className={`absolute top-1 left-1 w-2 h-2 bg-white rounded-full transition-transform ${isDarkMode ? 'translate-x-4' : ''}`} />
-                            </div>
-                        </button>
-                    </div>
+                            <button onClick={() => handleAction('/settings')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 rounded-lg bg-slate-500/10 text-slate-400 group-hover:scale-110 transition-transform">
+                                        <Settings size={14} />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wider">System Config</span>
+                                </div>
+                            </button>
 
-                    {/* Divider */}
-                    <div className="border-t border-slate-200 dark:border-slate-700"></div>
+                            <div className="h-px bg-white/5 my-2" />
 
-                    {/* Group 4: Logout */}
-                    <div className="py-2">
-                        <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium"
-                        >
-                            <LogOut size={18} />
-                            <span>Log Out</span>
-                        </button>
-                    </div>
-                </div>
-            )}
+                            <button onClick={toggleTheme} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-400 group-hover:scale-110 transition-transform">
+                                        {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Theme Overlay</span>
+                                </div>
+                                <div className={`w-7 h-3.5 rounded-full relative transition-colors ${isDarkMode ? 'bg-cyan-500/30 border border-cyan-500/50' : 'bg-slate-500/30 border border-slate-500/50'}`}>
+                                    <div className={`absolute top-[1px] left-[1px] w-2.5 h-2.5 bg-white rounded-full transition-transform ${isDarkMode ? 'translate-x-3.5 shadow-[0_0_5px_#00d1ff]' : ''}`} />
+                                </div>
+                            </button>
+
+                            <button onClick={() => handleAction(onLogout)} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-all group border border-transparent hover:border-red-500/20 mt-1">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400 group-hover:scale-110 transition-transform">
+                                        <LogOut size={14} />
+                                    </div>
+                                    <span className="text-xs font-black uppercase tracking-wider">Disconnect Session</span>
+                                </div>
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

@@ -28,22 +28,24 @@ import {
   BarChart3,
   AlertCircle,
   RotateCcw,
+  Bookmark,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProtectedRoute } from "../../components/protected-route";
 import { useApp } from "../../contexts/app-context";
+import { useBookmarks } from "../../contexts/bookmark-context";
+import { getLabXP } from "../../utils/xpConfig";
 import axios from "../../api/axios";
 import "./Labs.css";
 
 /* ─── Difficulty signal bars (THM-style) ─── */
 const DifficultyBars = memo(({ level }) => {
-  const levels = { Easy: 1, Beginner: 1, Medium: 2, Hard: 3, Insane: 4 };
+  const levels = { Beginner: 1, Intermediate: 2, Advanced: 3, Expert: 4 };
   const colors = {
-    Easy: "#39FF14",
     Beginner: "#39FF14",
-    Medium: "#F59E0B",
-    Hard: "#EF4444",
-    Insane: "#B91C1C",
+    Intermediate: "#F59E0B",
+    Advanced: "#EF4444",
+    Expert: "#B91C1C",
   };
   const bars = levels[level] || 2;
   const color = colors[level] || "#94A3B8";
@@ -103,7 +105,28 @@ StarRating.displayName = "StarRating";
 
 /* ─── Lab Card (Grid mode — premium redesign) ─── */
 const LabCard = memo(({ lab, progress, isPremiumUser }) => {
+  const { isBookmarked, addBookmark, removeBookmark } = useBookmarks();
   const slug = lab.slug || lab.id;
+  const isSaved = isBookmarked(lab.id, "lab");
+
+  const handleBookmarkClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isSaved) {
+      removeBookmark(lab.id, "lab");
+    } else {
+      addBookmark({
+        id: lab.id,
+        type: "lab",
+        title: lab.title,
+        description: lab.description,
+        difficulty: lab.difficulty,
+        isPremium: lab.isPremium,
+        slug: slug
+      });
+    }
+  };
+
   const isCompleted = progress?.completed || false;
   const progressPct = progress?.progress || (isCompleted ? 100 : 0);
   const isInProgress = progressPct > 0 && !isCompleted;
@@ -112,13 +135,13 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
   /* Accent color for the top glow line */
   const accentColor = isCompleted
     ? "#10B981"
-    : lab.difficulty === "Easy" || lab.difficulty === "Beginner"
+    : lab.difficulty === "Beginner"
     ? "#39FF14"
-    : lab.difficulty === "Medium"
+    : lab.difficulty === "Intermediate"
     ? "#F59E0B"
-    : lab.difficulty === "Hard"
+    : lab.difficulty === "Advanced"
     ? "#EF4444"
-    : lab.difficulty === "Insane"
+    : lab.difficulty === "Expert"
     ? "#B91C1C"
     : "#00D1FF";
 
@@ -178,7 +201,10 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
         </div>
 
         {/* ── Status chip (top-right) ── */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          <button onClick={handleBookmarkClick} className={`w-7 h-7 rounded flex items-center justify-center backdrop-blur-md transition-all z-10 ${isSaved ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-black/40 text-slate-400 hover:text-white border border-white/10 hover:border-white/20"}`}>
+            <Bookmark size={12} className={isSaved ? "fill-current" : ""} />
+          </button>
           {isCompleted && (
             <span className="labs-badge labs-badge--completed">
               <CheckCircle2 size={8} /> Done
@@ -243,7 +269,7 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
             <Clock size={10} /> {lab.duration || "30m"}
           </span>
           <span className="labs-stat-pill labs-stat-pill--xp">
-            <Zap size={10} /> {lab.points || 100} XP
+            <Zap size={10} /> {getLabXP(lab.difficulty)} XP
           </span>
         </div>
 
@@ -276,7 +302,28 @@ LabCard.displayName = "LabCard";
 
 /* ─── Lab List Row ─── */
 const LabRow = memo(({ lab, progress, isPremiumUser }) => {
+  const { isBookmarked, addBookmark, removeBookmark } = useBookmarks();
   const slug = lab.slug || lab.id;
+  const isSaved = isBookmarked(lab.id, "lab");
+
+  const handleBookmarkClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isSaved) {
+      removeBookmark(lab.id, "lab");
+    } else {
+      addBookmark({
+        id: lab.id,
+        type: "lab",
+        title: lab.title,
+        description: lab.description,
+        difficulty: lab.difficulty,
+        isPremium: lab.isPremium,
+        slug: slug
+      });
+    }
+  };
+
   const isCompleted = progress?.completed || false;
   const progressPct = progress?.progress || (isCompleted ? 100 : 0);
   const isInProgress = progressPct > 0 && !isCompleted;
@@ -321,11 +368,14 @@ const LabRow = memo(({ lab, progress, isPremiumUser }) => {
         </div>
         <div className="flex items-center gap-4 text-[10px] text-slate-500 font-bold">
           <span className="flex items-center gap-1"><Users size={11} /> {lab.participants || 0}</span>
-          <span className="labs-xp-badge"><Zap size={11} /> {lab.points || 100} XP</span>
+          <span className="labs-xp-badge"><Zap size={11} /> {getLabXP(lab.difficulty)} XP</span>
         </div>
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
+        <button onClick={handleBookmarkClick} className={`w-8 h-8 rounded flex items-center justify-center transition-all ${isSaved ? "bg-blue-500/10 text-blue-400 border border-blue-500/30" : "bg-white/5 text-slate-400 hover:text-white border border-white/10 hover:border-white/20"}`}>
+          <Bookmark size={14} className={isSaved ? "fill-current" : ""} />
+        </button>
         {isLocked ? (
           <Link to="/premium" className="labs-cta-btn labs-cta-btn--locked labs-cta-btn--sm">
             Unlock
@@ -512,10 +562,10 @@ const Labs = memo(() => {
 
   /* ── Difficulty quick-filter chips ── */
   const diffChips = [
-    { label: "Easy", cls: "labs-chip--easy" },
-    { label: "Medium", cls: "labs-chip--medium" },
-    { label: "Hard", cls: "labs-chip--hard" },
-    { label: "Insane", cls: "labs-chip--insane" },
+    { label: "Beginner", cls: "labs-chip--beginner" },
+    { label: "Intermediate", cls: "labs-chip--intermediate" },
+    { label: "Advanced", cls: "labs-chip--advanced" },
+    { label: "Expert", cls: "labs-chip--expert" },
   ];
 
   return (

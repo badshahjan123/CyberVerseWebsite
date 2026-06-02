@@ -33,6 +33,7 @@ import {
   Key
 } from "lucide-react";
 import { useApp } from "../../contexts/app-context";
+import { getLabXP } from "../../utils/xpConfig";
 import axios from "../../api/axios";
 import "./LabDetail.css";
 /* ─── Contextual Onboarding Intelligence Map ─── */
@@ -620,7 +621,7 @@ const LabDetail = memo(() => {
                 </div>
                 <span className="text-slate-600">•</span>
                 <div className="flex items-center gap-1 text-[10px] font-black text-amber-500 uppercase tracking-widest">
-                  <Trophy size={12} /> {lab.points || 150} XP
+                  <Trophy size={12} /> {getLabXP(lab.difficulty)} XP
                 </div>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase">
@@ -1094,8 +1095,8 @@ const LabDetail = memo(() => {
 
 /* ─── Difficulty Badge Logic ─── */
 const DifficultyBadge = memo(({ level }) => {
-  const bars = { Easy: 1, Beginner: 1, Medium: 2, Hard: 3, Insane: 4 }[level] || 2;
-  const color = { Easy: "#88E636", Beginner: "#88E636", Medium: "#F5A623", Hard: "#FF6B00", Insane: "#FF3D71" }[level] || "#94A3B8";
+  const bars = { Beginner: 1, Intermediate: 2, Advanced: 3, Expert: 4 }[level] || 2;
+  const color = { Beginner: "#88E636", Intermediate: "#F5A623", Advanced: "#FF6B00", Expert: "#FF3D71" }[level] || "#94A3B8";
 
   return (
     <div className="flex items-center gap-2">

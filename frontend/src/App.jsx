@@ -55,10 +55,9 @@ const Settings = lazy(() => import("./pages/user/Settings"));
 const Badges = lazy(() => import("./pages/user/Badges"));
 const Certificates = lazy(() => import("./pages/user/Certificates"));
 const SavedItems = lazy(() => import("./pages/user/SavedItems"));
+const About = lazy(() => import("./pages/About"));
 
-// Payment pages
 const Premium = lazy(() => import("./pages/payments/Premium"));
-const Checkout = lazy(() => import("./pages/payments/Checkout"));
 const PaymentSuccess = lazy(() => import("./pages/payments/PaymentSuccess"));
 
 // Minimal loading component - matches app background to prevent flash
@@ -104,12 +103,12 @@ function AppContent() {
               <Route path="/labs/:labId" element={<LabPage />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/premium" element={<Premium />} />
-              <Route path="/checkout" element={<Checkout />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/certificates" element={<Certificates />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/about" element={<About />} />
 
               <Route path="/rooms" element={<Rooms />} />
               <Route path="/rooms/:id/completed" element={<RoomCompleted />} />

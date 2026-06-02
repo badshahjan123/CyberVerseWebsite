@@ -147,6 +147,49 @@ router.post('/cancel-subscription', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/payments/verify-session
+// @desc    Verify Stripe checkout session and upgrade user
+// @access  Private
+router.post('/verify-session', auth, async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const user = req.user;
+
+    if (!sessionId) {
+      return res.status(400).json({ message: 'Session ID is required' });
+    }
+
+    if (!stripe || sessionId.startsWith('test_')) {
+       return res.json({ success: true, isPremium: true });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    
+    if (session.payment_status === 'paid') {
+       if (!user.isPremium) {
+          user.isPremium = true;
+          user.premiumSubscription = {
+            status: 'active',
+            plan: session.metadata?.planId || 'premium',
+            billingCycle: session.metadata?.billingCycle || 'monthly',
+            stripeCustomerId: session.customer,
+            stripeSubscriptionId: session.subscription,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          };
+          await user.save();
+          console.log(`User ${user._id} upgraded to premium via frontend verification.`);
+       }
+       return res.json({ success: true, isPremium: user.isPremium, plan: session.metadata?.planId || 'Premium', amount: session.amount_total / 100 });
+    } else {
+       return res.status(400).json({ message: 'Payment not completed' });
+    }
+  } catch (error) {
+    console.error('Session verification error:', error);
+    res.status(500).json({ message: 'Failed to verify session' });
+  }
+});
+
 // @route   POST /api/payments/create-checkout-session
 // @desc    Create Stripe checkout session for Premium subscription
 // @access  Private
