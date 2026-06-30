@@ -181,7 +181,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="fixed inset-0 top-[64px] bg-[#060912]/95 backdrop-blur-xl z-50 p-6 flex flex-col gap-4">
+          <div className="cv-mobile-menu-overlay">
             {navLinks.map((link) => (
               <NavLink
                 key={link.to}
