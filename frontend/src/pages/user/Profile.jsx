@@ -11,6 +11,7 @@ import {
 import { useApp } from "../../contexts/app-context";
 import { useRealtime } from "../../contexts/realtime-context";
 import { apiCall } from "../../config/api";
+import { getLevelProgressInfo } from "../../utils/xpConfig";
 import "./Profile.css";
 
 const generateHeatmapData = (roomProgress = []) => {
@@ -124,13 +125,18 @@ const Profile = memo(() => {
 
   /* ── Operator Rank Mapping ── */
   const rankInfo = useMemo(() => {
-    const level = ud.level || 1;
-    if (level <= 2) return { title: "Script Kiddie", nextTitle: "Sandbox Operator", tier: "Tier I", rarity: "Common" };
-    if (level <= 4) return { title: "Sandbox Operator", nextTitle: "Exploit Specialist", tier: "Tier II", rarity: "Rare" };
-    if (level <= 6) return { title: "Exploit Specialist", nextTitle: "Threat Hunter", tier: "Tier III", rarity: "Elite" };
-    if (level <= 8) return { title: "Threat Hunter", nextTitle: "Red Team Elite", tier: "Tier IV", rarity: "Legendary" };
-    return { title: "Red Team Elite", nextTitle: "Cyber Infiltrator", tier: "Tier V", rarity: "Mythic" };
-  }, [ud.level]);
+    const info = getLevelProgressInfo(ud.points);
+    return {
+      title: info.title,
+      nextTitle: info.nextTitle,
+      color: info.color,
+      tier: `Level ${info.currentLevel}`,
+      rarity: info.currentLevel > 75 ? "Mythic" : info.currentLevel > 50 ? "Legendary" : info.currentLevel > 20 ? "Elite" : "Rare",
+      level: info.currentLevel,
+      xpProgress: info.xpProgress,
+      xpNeeded: info.xpNeeded
+    };
+  }, [ud.points]);
 
   if (loading || !user) return (
     <div className="prof-page min-h-screen flex items-center justify-center">
@@ -218,17 +224,17 @@ const Profile = memo(() => {
                 <div className="flex items-center justify-between mb-5">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Combat Level</p>
-                    <p className="text-5xl font-black text-white">{ud.level || 1}</p>
+                    <p className="text-5xl font-black text-white">{rankInfo.level}</p>
                   </div>
-                  <div className="prof-card__icon-box prof-card__icon-box--cyan">
-                    <Zap size={24} />
+                  <div className="prof-card__icon-box prof-card__icon-box--cyan" style={{ color: rankInfo.color }}>
+                    <Zap size={24} style={{ color: rankInfo.color }} />
                   </div>
                 </div>
 
                 <div className="mb-4 p-3.5 bg-white/[0.02] border border-white/[0.04] rounded-xl flex items-center justify-between font-mono text-[9px]">
                   <div>
                     <span className="text-slate-500 uppercase tracking-wider font-bold block mb-0.5">Operator Rank</span>
-                    <span className="text-white font-extrabold uppercase tracking-wide">{rankInfo.title}</span>
+                    <span className="font-extrabold uppercase tracking-wide" style={{ color: rankInfo.color }}>{rankInfo.title}</span>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-widest ${
                     rankInfo.rarity === 'Mythic' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/25' :
@@ -247,11 +253,11 @@ const Profile = memo(() => {
                 <div className="prof-progress-track">
                   <div 
                     className="prof-progress-fill" 
-                    style={{ width: `${Math.min(((ud.points % 1000) / 1000) * 100, 100)}%` }} 
+                    style={{ width: `${rankInfo.xpProgress}%`, backgroundColor: rankInfo.color }} 
                   />
                 </div>
                 <div className="mt-3 flex items-center justify-between text-[10px] font-mono">
-                  <p className="font-bold text-slate-500">{1000 - (ud.points % 1000)} XP to {rankInfo.nextTitle}</p>
+                  <p className="font-bold text-slate-500">{rankInfo.xpNeeded.toLocaleString()} XP to {rankInfo.nextTitle}</p>
                   <TrendingUp size={12} className="prof-text-cyan opacity-40 animate-pulse" />
                 </div>
 
@@ -262,7 +268,7 @@ const Profile = memo(() => {
                   </div>
                   <div className="flex justify-between text-slate-600">
                     <span>UNLOCKED PRESTIGE REWARD</span>
-                    <span className="text-yellow-500/80">🏆 Red Team Elite Designation</span>
+                    <span className="text-yellow-500/80">🏆 Profile Title Update</span>
                   </div>
                 </div>
               </div>

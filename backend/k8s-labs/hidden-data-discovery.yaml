@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyber-lab-hidden-data-discovery
+  labels:
+    app: cyber-lab
+    lab-id: hidden-data-discovery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cyber-lab
+      lab-id: hidden-data-discovery
+  template:
+    metadata:
+      labels:
+        app: cyber-lab
+        lab-id: hidden-data-discovery
+    spec:
+      containers:
+        - name: lab-container
+          image: badshahjan/lab1:latest
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Task 1: Hidden file
+              echo "FLAG{DOTFILES_ARE_SNEAKY}" > /home/labuser/.secret_config.txt
+              
+              # Task 2: Base64
+              echo "RkxBR3tCQUxBTkNFRE82NF9ERUNPREVEfQ==" > /tmp/encoded_message.txt
+              
+              # Task 3: Strings extraction
+              mkdir -p /opt/mystery
+              echo "junkdata" > /opt/mystery/app_binary
+              echo "FLAG{STRINGS_EXTRACTOR_PRO}" >> /opt/mystery/app_binary
+              echo "morejunk" >> /opt/mystery/app_binary
+              chmod +x /opt/mystery/app_binary
+              
+              # Task 4: File type identification
+              echo '{"secret_key": "FLAG{JSON_FILE_RECOGNIZED}"}' > /home/labuser/unknown_blob
+              
+              chown -R 1000:1000 /home/labuser
+              ttyd -W -p 80 -i 0.0.0.0 bash
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cyber-lab-hidden-data-discovery-service
+spec:
+  selector:
+    app: cyber-lab
+    lab-id: hidden-data-discovery
+  ports:
+    - protocol: TCP
+      port: 8090
+      targetPort: 80
+      nodePort: 32250
+  type: NodePort

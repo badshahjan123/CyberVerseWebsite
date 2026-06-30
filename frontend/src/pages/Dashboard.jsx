@@ -34,13 +34,7 @@ const T = {
   neonGreen:   "#39FF14",
 }
 
-const LEVEL_NAMES = [
-  "Script Kiddie", "Cyber Apprentice", "Code Breaker", "Net Stalker",
-  "Exploit Dev", "Zero-Day Hunter", "Red Teamer", "Cyber Phantom",
-  "Ghost Operator", "Elite Hacker", "Legend"
-]
-
-const getLevelName = (level) => LEVEL_NAMES[Math.min(level - 1, LEVEL_NAMES.length - 1)] || "Legend"
+import { getLevelProgressInfo } from "../utils/xpConfig"
 
 /* Animated number counter */
 const AnimatedCounter = memo(({ target, duration = 1200, suffix = "" }) => {
@@ -137,45 +131,29 @@ const StreakRing = memo(({ streak, best }) => {
 })
 StreakRing.displayName = "StreakRing"
 
-const LEVEL_THRESHOLDS = [0, 300, 700, 1200, 2000, 3000, 4500, 6500, 9000, 12000, 16000]
-
-// Calculate level from points
-const calcLevel = (points) => {
-  let level = 1
-  for (let i = 1; i < LEVEL_THRESHOLDS.length; i++) {
-    if (points >= LEVEL_THRESHOLDS[i]) level = i + 1
-    else break
-  }
-  return level
-}
-
 const XPBar = memo(({ points }) => {
-  const level            = calcLevel(points)
-  const currentThreshold = LEVEL_THRESHOLDS[level - 1] ?? 0
-  const nextThreshold    = LEVEL_THRESHOLDS[level]     ?? null
-  const isMaxLevel       = nextThreshold === null || nextThreshold === undefined
-  const rangeSize        = isMaxLevel ? 1 : nextThreshold - currentThreshold
-  const progress         = isMaxLevel ? 100 : Math.min(100, Math.max(0, ((points - currentThreshold) / rangeSize) * 100))
-  const pointsToNext     = isMaxLevel ? 0 : Math.max(0, nextThreshold - points)
+  const levelInfo = getLevelProgressInfo(points || 0);
+  const isMaxLevel = levelInfo.currentLevel >= 100;
+
   return (
     <div className="w-full font-mono">
       <div className="flex items-center justify-between mb-2">
-        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider" style={{ color: T.cyan }}>
-          <Zap size={12} className="text-cyan-400" /> Level {level} — {getLevelName(level)}
+        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider" style={{ color: levelInfo.color || T.cyan }}>
+          <Zap size={12} style={{ color: levelInfo.color || T.cyan }} /> Level {levelInfo.currentLevel} — {levelInfo.title}
         </span>
         <span className="text-xs font-black" style={{ color: '#ffffff' }}>{(points || 0).toLocaleString()} XP</span>
       </div>
       <div className="w-full h-2.5 rounded-full overflow-hidden bg-white/[0.04]">
         <div 
           className="h-full rounded-full transition-all duration-1000 segmented-progress-bar"
-          style={{ width: `${progress}%` }} 
+          style={{ width: `${levelInfo.xpProgress}%`, backgroundColor: levelInfo.color || T.cyan }} 
         />
       </div>
       <div className="flex justify-between mt-1.5 text-[9px] uppercase tracking-wider text-slate-500">
         <span>
-          {isMaxLevel ? 'MAX LEVEL reached' : `${pointsToNext.toLocaleString()} XP to Level ${level + 1}`}
+          {isMaxLevel ? 'MAX LEVEL reached' : `${levelInfo.xpNeeded.toLocaleString()} XP to Level ${levelInfo.currentLevel + 1}`}
         </span>
-        <span className="font-semibold text-slate-400">{getLevelName(level)}</span>
+        <span className="font-semibold text-slate-400">{isMaxLevel ? 'Max Rank' : levelInfo.nextTitle}</span>
       </div>
     </div>
   )
@@ -259,6 +237,8 @@ const Dashboard = memo(() => {
       pointsToNextLevel: pointsToNext,
       isPremium:         userStats?.isPremium ?? user?.isPremium ?? false,
       avatar:            user?.avatar || null,
+      title:             userStats?.title || user?.title || getLevelProgressInfo(points).title,
+      titleColor:        userStats?.titleColor || user?.titleColor || getLevelProgressInfo(points).color,
     }
   }, [userStats, user])
 
@@ -385,8 +365,9 @@ const Dashboard = memo(() => {
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse mr-1" />
                       CLASSIFIED OPERATOR ACTIVE
                     </span>
-                    <span className="text-[#88E636] bg-[#88E636]/10 px-2 py-0.5 rounded border border-[#88E636]/20 font-black tracking-widest">
-                      {getLevelName(ud.level).toUpperCase()}
+                    <span className="font-black tracking-widest px-2 py-0.5 rounded border"
+                          style={{ color: ud.titleColor, borderColor: `${ud.titleColor}40`, backgroundColor: `${ud.titleColor}15` }}>
+                      {ud.title.toUpperCase()}
                     </span>
                   </div>
                 </div>

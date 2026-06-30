@@ -88,6 +88,24 @@ async function awardBadgesOnLabCompletion(userId, labId, metrics = {}) {
 }
 
 /**
+ * Award badges for track completion (Certificates)
+ */
+async function awardBadgesOnTrackCompletion(userId, trackId) {
+  try {
+    logger.info(`🏆 Processing badges for track completion: ${trackId}`);
+    const context = {
+      type: "track_completion",
+      trackId,
+      timestampMs: Date.now(),
+    };
+    return await checkAndAwardBadges(userId, context);
+  } catch (error) {
+    logger.error(`Error awarding track badges: ${error.message}`);
+    return [];
+  }
+}
+
+/**
  * Check and award badges on user login
  * Useful for streak badges and other periodic badges
  */
@@ -271,6 +289,7 @@ async function getBadgeLeaderboard(limit = 10) {
 module.exports = {
   awardBadgesOnRoomCompletion,
   awardBadgesOnLabCompletion,
+  awardBadgesOnTrackCompletion,
   awardBadgesOnLogin,
   awardBadgesOnStreakUpdate,
   awardBadgesOnSkillUpdate,

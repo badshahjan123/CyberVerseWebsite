@@ -11,6 +11,7 @@ import { getRoomProgress, joinRoom, submitExercise, completeRoom } from "../../s
 import "../../components/rooms/AnimationBox.css";
 import { useApp } from "../../contexts/app-context";
 import { useRealtime } from "../../contexts/realtime-context";
+import axios from "../../api/axios";
 import "./RoomModule.css";
 
 /* ── Inline badge icon renderer — maps icon string to Lucide component ── */
@@ -61,6 +62,7 @@ const InteractiveRoomBase = ({
   const [quizResults, setQuizResults] = useState(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [roomBadgeReward, setRoomBadgeReward] = useState(null);
   // ── Replay state ──
   const [showReplayModal, setShowReplayModal]   = useState(false);
   const [showReplayBanner, setShowReplayBanner] = useState(false);
@@ -73,6 +75,7 @@ const InteractiveRoomBase = ({
 
   const roomId       = data.id || data.slug;
   const roomCategory = data.category || 'Misc';
+  const quizBonusXP  = data.quizBonusXP || 50;
 
   // Keep earnedXPRef in sync with earnedXP state
   useEffect(() => { earnedXPRef.current = earnedXP; }, [earnedXP]);
@@ -158,6 +161,15 @@ const InteractiveRoomBase = ({
       } catch (err) {
         console.error("Failed to sync room progress:", err);
       } finally {
+        // Also fetch badge reward info for this room
+        try {
+          const res = await axios.get(`/rooms/${roomId}`);
+          if (res.data?.success && res.data?.data?.badgeReward) {
+            setRoomBadgeReward(res.data.data.badgeReward);
+          }
+        } catch (e) {
+          console.error("Failed to fetch room badge reward:", e);
+        }
         setLoading(false);
       }
     };
@@ -352,6 +364,35 @@ const InteractiveRoomBase = ({
               <div className="rpl-banner-sub">Your XP, badges, and leaderboard rank are fully preserved.</div>
             </div>
             <button className="rpl-banner-dismiss" onClick={() => setShowReplayBanner(false)} aria-label="Dismiss"><X size={14} /></button>
+          </div>
+        )}
+
+        {/* ── TARGET/EARNED BADGE ── */}
+        {roomBadgeReward && (
+          <div className={`p-4 mb-6 rounded-xl border flex items-center justify-between rdp-fade-in ${allTasksCompleted && quizSubmitted && quizResults?.passed ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-amber-500/20 bg-amber-500/5'}`}>
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-lg border flex items-center justify-center shadow-inner relative overflow-hidden ${allTasksCompleted && quizSubmitted && quizResults?.passed ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500' : 'bg-[#0b121e] border-slate-700 text-amber-500'}`}>
+                <div className={`absolute inset-0 ${allTasksCompleted && quizSubmitted && quizResults?.passed ? 'bg-emerald-500/10' : 'bg-amber-500/10 animate-pulse'}`} />
+                <Award size={24} className="relative z-10" />
+              </div>
+              <div>
+                <h4 className={`text-xs font-black uppercase tracking-wider mb-1 ${allTasksCompleted && quizSubmitted && quizResults?.passed ? 'text-emerald-400' : 'text-white'}`}>
+                  {allTasksCompleted && quizSubmitted && quizResults?.passed ? "Earned Achievement: " : "Target Achievement: "} 
+                  <span className={allTasksCompleted && quizSubmitted && quizResults?.passed ? 'text-emerald-400' : 'text-amber-500'}>{roomBadgeReward.name}</span>
+                </h4>
+                <p className="text-[10px] text-slate-400">
+                  {roomBadgeReward.description}
+                </p>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="px-2 py-1 rounded bg-slate-900/50 text-[10px] font-black text-amber-500 uppercase tracking-widest border border-white/5 inline-block">
+                +{roomBadgeReward.xpReward} XP Reward
+              </div>
+              <div className="text-[9px] text-slate-500 uppercase font-bold mt-2 tracking-widest">
+                Rarity: {roomBadgeReward.difficulty}
+              </div>
+            </div>
           </div>
         )}
 

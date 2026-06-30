@@ -621,6 +621,113 @@ const badgeRegistry = [
       context.roomId === "governance-and-regulations" &&
       context.perfectScore === true,
   },
+
+  // ════════════════════════════════════════════════════════════════
+  // LAB SPECIFIC MILESTONES
+  // ════════════════════════════════════════════════════════════════
+
+  {
+    name: "AD Enumerator",
+    description: "Successfully navigated and extracted critical domain intel from an Active Directory environment.",
+    unlockReason: "Complete the Active Directory Enumeration lab",
+    category: "milestone",
+    badgeType: "progress",
+    difficulty: "rare",
+    xpReward: 500,
+    icon: "network",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "lab_completion" &&
+      context.labId === "active-directory",
+  },
+  {
+    name: "Container Breaker",
+    description: "Escaped the boundaries of a containerized environment to compromise the host.",
+    unlockReason: "Complete the Container Breakout lab",
+    category: "milestone",
+    badgeType: "progress",
+    difficulty: "legendary",
+    xpReward: 800,
+    icon: "box",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "lab_completion" &&
+      context.labId === "container-breakout",
+  },
+  {
+    name: "Data Sleuth",
+    description: "Discovered artifacts hiding in plain sight.",
+    unlockReason: "Complete the Hidden Data Discovery lab",
+    category: "milestone",
+    badgeType: "progress",
+    difficulty: "uncommon",
+    xpReward: 300,
+    icon: "search",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "lab_completion" &&
+      context.labId === "hidden-data-discovery",
+  },
+  {
+    name: "Forensics Investigator",
+    description: "Extracted evidence from a compromised Linux system.",
+    unlockReason: "Complete the Linux Forensics lab",
+    category: "milestone",
+    badgeType: "progress",
+    difficulty: "rare",
+    xpReward: 400,
+    icon: "file-search",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "lab_completion" &&
+      context.labId === "linux-forensics",
+  },
+  {
+    name: "Malware Analyst",
+    description: "Reverse-engineered and neutralized malicious payloads.",
+    unlockReason: "Complete the Malware lab",
+    category: "milestone",
+    badgeType: "progress",
+    difficulty: "legendary",
+    xpReward: 600,
+    icon: "bug",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "lab_completion" &&
+      context.labId === "malware",
+  },
+  {
+    name: "Web Exploiter",
+    description: "Bypassed modern web application defenses.",
+    unlockReason: "Complete the Web Security lab",
+    category: "milestone",
+    badgeType: "progress",
+    difficulty: "rare",
+    xpReward: 500,
+    icon: "globe",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "lab_completion" &&
+      context.labId === "web-security",
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // CERTIFICATION MILESTONES
+  // ════════════════════════════════════════════════════════════════
+
+  {
+    name: "Certified Specialist",
+    description: "Successfully completed an entire CyberVerse learning track and earned a certification.",
+    unlockReason: "Earn your first Track Certificate",
+    category: "special",
+    badgeType: "special",
+    difficulty: "legendary",
+    xpReward: 1500,
+    icon: "award",
+    isHidden: false,
+    evaluator: (user, context) =>
+      context.type === "track_completion",
+  },
 ];
 
 module.exports = badgeRegistry;

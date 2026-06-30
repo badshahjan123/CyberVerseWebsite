@@ -14,18 +14,26 @@ exports.getLeaderboard = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const users = await User.find()
-      .select('name points level completedLabs completedRooms isPremium')
+      .select('_id name points level completedLabs completedRooms isPremium')
       .sort({ points: -1, completedRooms: -1, completedLabs: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const leaderboard = users.map((user, index) => ({
-      rank: skip + index + 1,
-      username: user.name,
-      points: user.points,
-      level: user.level,
-      isPremium: user.isPremium
-    }));
+    const xpConfig = require('../utils/xpConfig');
+
+    const leaderboard = users.map((user, index) => {
+      const levelInfo = xpConfig.getLevelProgressInfo(user.points || 0);
+      return {
+        _id: user._id,
+        rank: skip + index + 1,
+        username: user.name,
+        points: user.points,
+        level: levelInfo.currentLevel,
+        title: levelInfo.title,
+        color: levelInfo.color,
+        isPremium: user.isPremium
+      };
+    });
 
     res.json({ leaderboard });
   } catch (error) {
@@ -50,8 +58,23 @@ exports.getStats = async (req, res) => {
       await weekly.save();
     }
 
+    const xpConfig = require('../utils/xpConfig');
+    const levelInfo = xpConfig.getLevelProgressInfo(user.points || 0);
+
     res.json({
-      user: { ...user.toObject(), rank, pointsToNextLevel: user.getPointsToNextLevel() },
+      user: { 
+        ...user.toObject(), 
+        rank, 
+        level: levelInfo.currentLevel,
+        pointsToNextLevel: user.getPointsToNextLevel(),
+        title: levelInfo.title,
+        titleColor: levelInfo.color,
+        nextTitle: levelInfo.nextTitle,
+        nextTitleLevel: levelInfo.nextTitleLevel,
+        xpProgress: levelInfo.xpProgress,
+        baseXP: levelInfo.baseXP,
+        nextLevelXP: levelInfo.nextLevelXP
+      },
       weeklyStats: {
         labsCompleted:  weekly.labsCompleted  || 0,
         roomsCompleted: weekly.roomsCompleted || 0,

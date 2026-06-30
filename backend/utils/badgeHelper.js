@@ -24,6 +24,8 @@ const syncBadgesDB = async () => {
             xpReward: b.xpReward,
             icon: b.icon,
             isHidden: b.isHidden,
+            roomId: b.roomId || null,
+            labId: b.labId || null,
           },
         },
         { upsert: true },

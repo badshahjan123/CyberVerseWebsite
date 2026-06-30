@@ -4,6 +4,7 @@ const Certificate = require('../models/Certificate');
 const Room = require('../models/Room');
 const User = require('../models/User');
 const crypto = require('crypto');
+const badgeService = require('./badge.service');
 
 /**
  * Mock utility function to output certificate PDF to object storage or disk.
@@ -111,6 +112,9 @@ async function checkAndIssueTrackCertificate(userId, roomId) {
           verificationUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify/${credentialId}`,
           verificationHash
         });
+
+        // Award Certification Badge
+        await badgeService.awardBadgesOnTrackCompletion(userId, track._id.toString());
       }
     }
 

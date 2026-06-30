@@ -86,10 +86,16 @@ const Leaderboard = memo(() => {
   const rest = filteredLeaderboard.slice(3);
 
   const userRank = useMemo(() => {
-    if (!ud.name || !leaderboardData?.length) return ud.rank || 999;
-    const pos = leaderboardData.findIndex((p) => p.name === ud.name);
+    console.log("ud._id:", ud._id, "ud.id:", ud.id);
+    console.log("leaderboard sample:", leaderboardData.slice(0, 5).map(p => ({ id: p._id, name: p.name })));
+    
+    // Support both _id and id just in case
+    const currentId = ud._id || ud.id;
+    if (!currentId || !leaderboardData?.length) return ud.rank || 999;
+    
+    const pos = leaderboardData.findIndex((p) => (p._id || p.id) === currentId);
     return pos !== -1 ? pos + 1 : ud.rank || 999;
-  }, [ud.name, ud.rank, leaderboardData]);
+  }, [ud._id, ud.id, ud.rank, leaderboardData]);
 
   const pointsToNextRank = useMemo(() => {
     if (!ud.xp || !userRank || userRank === 1) return null;
@@ -301,9 +307,9 @@ const Leaderboard = memo(() => {
                                 </div>
                                 <span 
                                   className="inline-block text-[9px] font-bold px-2 py-0.5 rounded border mt-1.5 font-mono"
-                                  style={{ color: spec.color, background: spec.bg, borderColor: spec.border }}
+                                  style={{ color: player.color || spec.color, background: `${player.color || spec.color}15`, borderColor: `${player.color || spec.color}40` }}
                                 >
-                                  {spec.label}
+                                  {player.title ? player.title.toUpperCase() : spec.label}
                                 </span>
                               </div>
                             </div>
@@ -329,7 +335,7 @@ const Leaderboard = memo(() => {
                     <span className="lb-table__th">#</span>
                     <span className="lb-table__th">Operator</span>
                     <span className="lb-table__th hidden sm:block">Level</span>
-                    <span className="lb-table__th hidden sm:block">Specialty</span>
+                    <span className="lb-table__th hidden sm:block">Rank Title</span>
                     <span className="lb-table__th text-right">XP Points</span>
                   </div>
 
@@ -345,8 +351,10 @@ const Leaderboard = memo(() => {
                     </div>
                   ) : (
                     <div className="lb-table__body font-mono">
-                      {filteredLeaderboard.map((player) => {
-                        const isUser = player.username === ud.name || player.name === ud.name;
+                      {rest.map((player) => {
+                        const currentId = ud._id || ud.id;
+                        const playerId = player._id || player.id;
+                        const isUser = playerId && currentId ? playerId === currentId : (player.username === ud.name || player.name === ud.name);
                         const spec = getSpecializationBadge(player.username);
                         
                         /* Dynamic Win-streak or Rank indicator */
@@ -393,13 +401,13 @@ const Leaderboard = memo(() => {
                             {/* Level */}
                             <span className="text-sm text-slate-500 hidden sm:block">Lv. {player.level || 1}</span>
 
-                            {/* Specialty Badge */}
+                            {/* Title Badge */}
                             <div className="hidden sm:flex items-center">
                               <span 
                                 className="text-[8px] font-black px-2 py-0.5 rounded border tracking-wider"
-                                style={{ color: spec.color, background: spec.bg, borderColor: spec.border }}
+                                style={{ color: player.color || spec.color, background: `${player.color || spec.color}15`, borderColor: `${player.color || spec.color}40` }}
                               >
-                                {spec.label}
+                                {player.title ? player.title.toUpperCase() : spec.label}
                               </span>
                             </div>
 
@@ -490,8 +498,10 @@ const Leaderboard = memo(() => {
                       </div>
                       <div className="lb-your-rank__divider" />
                       <div>
-                        <p className="text-[10px] text-slate-500 uppercase">Level</p>
-                        <p className="text-base font-bold text-white">{ud.level || 1}</p>
+                        <p className="text-[10px] text-slate-500 uppercase">Level & Title</p>
+                        <p className="text-base font-bold" style={{ color: ud.titleColor || ud.color || '#fff' }}>
+                          Lv. {ud.level || 1} <span className="text-xs uppercase ml-1 opacity-80">{ud.title}</span>
+                        </p>
                       </div>
                     </div>
                   </div>

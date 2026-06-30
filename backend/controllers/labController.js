@@ -84,6 +84,16 @@ exports.getLabById = async (req, res) => {
             });
         }
 
+        // Find associated badge using the registry evaluator logic
+        const badgeRegistry = require("../utils/badgeRegistry");
+        const badgeReward = badgeRegistry.find(b => {
+          try {
+            return b.evaluator({}, { type: "lab_completion", labId: lab.slug });
+          } catch (e) {
+            return false;
+          }
+        });
+
         res.json({
             success: true,
             data: {
@@ -105,6 +115,7 @@ exports.getLabById = async (req, res) => {
                 tasks:               lab.tasks || [],
                 resources:           lab.resources || [],
                 coverImage:          lab.coverImage || 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&q=80&w=1000',
+                badgeReward:         badgeReward || null,
             },
         });
     } catch {
@@ -138,6 +149,9 @@ exports.startLab = async (req, res) => {
                 if (lab.slug === "linux-forensics") labUrl = "http://localhost:32083";
                 else if (lab.slug === "malware")    labUrl = "http://localhost:32230";
                 else if (lab.slug === "web-security") labUrl = "http://localhost:32235";
+                else if (lab.slug === "active-directory") labUrl = "http://localhost:32240";
+                else if (lab.slug === "container-breakout") labUrl = "http://localhost:32245";
+                else if (lab.slug === "hidden-data-discovery") labUrl = "http://localhost:32250";
                 else labUrl = "http://localhost:32083";
             }
 
@@ -231,10 +245,17 @@ exports.completeLab = async (req, res) => {
         // Centralized XP: use config as source of truth, fall back to lab.points for legacy data
         const xpToAward = getLabXP(lab.difficulty) || lab.points;
 
+        const oldLevel = user.level;
+        
         user.completedLabs = (user.completedLabs || 0) + 1;
         user.points += xpToAward;
         user.lastStreakDate = new Date();
         await user.save();
+
+        if (user.level > oldLevel) {
+            const NotificationService = require('../utils/notificationHelper');
+            await NotificationService.notifyLevelUp(user._id, user.level);
+        }
 
         lab.completedBy.push({ userId: user._id, completedAt: new Date(), score: finalScore || xpToAward });
         await lab.save();

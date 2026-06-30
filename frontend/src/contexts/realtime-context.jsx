@@ -4,6 +4,7 @@ import { getUserStats } from '../services/userStats'
 import { getLeaderboard } from '../services/progress'
 import { useToast } from './toast-context'
 import { useApp } from './app-context'
+import { getLevelProgressInfo } from '../utils/xpConfig'
 
 const RealtimeContext = createContext()
 
@@ -13,23 +14,7 @@ export const useRealtime = () => {
   return context
 }
 
-// Level thresholds — same as backend & Dashboard
-const LEVEL_THRESHOLDS = [0, 300, 700, 1200, 2000, 3000, 4500, 6500, 9000, 12000, 16000]
 
-const calcLevel = (points) => {
-  let level = 1
-  for (let i = 1; i < LEVEL_THRESHOLDS.length; i++) {
-    if (points >= LEVEL_THRESHOLDS[i]) level = i + 1
-    else break
-  }
-  return level
-}
-
-const calcPointsToNext = (points) => {
-  const level = calcLevel(points)
-  if (level >= LEVEL_THRESHOLDS.length) return 0
-  return Math.max(0, LEVEL_THRESHOLDS[level] - points)
-}
 
 export const RealtimeProvider = ({ children }) => {
   const { levelUp, achievement, success, info, premium } = useToast()
@@ -43,7 +28,8 @@ export const RealtimeProvider = ({ children }) => {
   const [userStats, setUserStats] = useState({
     totalXP: user?.points || 0,
     points: user?.points || 0,
-    level: calcLevel(user?.points || 0),
+    level: getLevelProgressInfo(user?.points || 0).currentLevel,
+    title: getLevelProgressInfo(user?.points || 0).title,
     rank: user?.rank || 999,
     streak: user?.currentStreak || 0,
     currentStreak: user?.currentStreak || 0,
@@ -52,7 +38,7 @@ export const RealtimeProvider = ({ children }) => {
     skillMatrix: [],
     completedRooms: user?.completedRooms || 0,
     completedLabs: user?.completedLabs || 0,
-    pointsToNextLevel: calcPointsToNext(user?.points || 0),
+    pointsToNextLevel: getLevelProgressInfo(user?.points || 0).xpNeeded,
     isPremium: user?.isPremium || false
   })
   const [recentActivity, setRecentActivity] = useState([])
@@ -96,7 +82,8 @@ export const RealtimeProvider = ({ children }) => {
       const response = await getUserStats()
       const stats = response.user || response
       const points = stats.points ?? stats.totalXP ?? 0
-      const level = calcLevel(points)
+      const levelInfo = getLevelProgressInfo(points)
+      const level = levelInfo.currentLevel
 
       // Level up toast
       const oldLevel = userStatsRef.current.level || 1
@@ -106,6 +93,7 @@ export const RealtimeProvider = ({ children }) => {
         totalXP:           points,
         points:            points,
         level,
+        title:             levelInfo.title,
         rank:              stats.rank           ?? 999,
         streak:            stats.currentStreak  ?? 0,
         currentStreak:     stats.currentStreak  ?? 0,
@@ -114,7 +102,7 @@ export const RealtimeProvider = ({ children }) => {
         skillMatrix:       transformSkills(stats.skills),
         completedRooms:    stats.completedRooms ?? 0,
         completedLabs:     stats.completedLabs  ?? 0,
-        pointsToNextLevel: calcPointsToNext(points),
+        pointsToNextLevel: levelInfo.xpNeeded,
         isPremium:         stats.isPremium      ?? false,
         name:              stats.name           || stats.username
       })
@@ -143,7 +131,8 @@ export const RealtimeProvider = ({ children }) => {
     if (!data) return
     const stats = data.user || data
     const points = stats.points ?? stats.totalXP ?? userStatsRef.current.points ?? 0
-    const level = calcLevel(points)
+    const levelInfo = getLevelProgressInfo(points)
+    const level = levelInfo.currentLevel
 
     const oldLevel = userStatsRef.current.level || 1
     if (level > oldLevel) toastRef.current.levelUp(level)
@@ -155,13 +144,14 @@ export const RealtimeProvider = ({ children }) => {
       totalXP:           points,
       points:            points,
       level,
+      title:             levelInfo.title,
       rank:              stats.rank           ?? prev.rank,
       streak:            stats.currentStreak  ?? stats.streak     ?? prev.streak,
       currentStreak:     stats.currentStreak  ?? stats.streak     ?? prev.currentStreak,
       longestStreak:     stats.longestStreak  ?? prev.longestStreak,
       completedRooms:    stats.completedRooms ?? prev.completedRooms,
       completedLabs:     stats.completedLabs  ?? prev.completedLabs,
-      pointsToNextLevel: calcPointsToNext(points),
+      pointsToNextLevel: levelInfo.xpNeeded,
       skillMatrix:       stats.skills ? transformSkills(stats.skills) : prev.skillMatrix,
       isPremium:         stats.isPremium      ?? prev.isPremium,
     }))

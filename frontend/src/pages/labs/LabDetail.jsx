@@ -74,6 +74,17 @@ const getTaskOnboarding = (taskTitle, index, labSlug = "") => {
     };
   }
 
+  // Active Directory
+  if (slugLower.includes("active-directory") || titleLower.includes("active directory") || titleLower.includes("ad ") || titleLower.includes("ad-")) {
+    return {
+      beginnerExplanation: "Active Directory (AD) is the central directory service used in Windows networks. It handles authentication and authorization for all users and computers.",
+      whyItMatters: "Because AD controls access to almost everything in a corporate network, finding a single misconfiguration can allow an attacker to take over the entire domain.",
+      conceptExplain: "We enumerate the domain to find users, groups, and the domain controllers. This maps out potential attack paths to escalate our privileges to 'Domain Admin'.",
+      videoUrl: "https://www.youtube.com/embed/-vjF3kgvWVg",
+      videoTitle: "Active Directory Exploitation Walkthrough"
+    };
+  }
+
   // General default fallback
   return {
     beginnerExplanation: `Objective ${index + 1} requires investigating active VM ports, running recommended commands on your range, and verifying administrative access logs.`,
@@ -472,6 +483,11 @@ const LabDetail = memo(() => {
     // Lab 3: Web Security
     if (slugLower.includes("web") || titleLower.includes("web") || titleLower.includes("sql") || titleLower.includes("exploit") || titleLower.includes("injection")) {
       return { url: "https://www.youtube.com/embed/nkkcQcl4vPU", title: "Web Security: Infrastructure Forensics Walkthrough" };
+    }
+    
+    // Active Directory
+    if (slugLower.includes("active-directory") || titleLower.includes("active directory") || titleLower.includes("ad ") || titleLower.includes("ad-")) {
+      return { url: "https://www.youtube.com/embed/-vjF3kgvWVg", title: "Active Directory Exploitation Walkthrough" };
     }
     
     return { url: "https://www.youtube.com/embed/fNzpcB7ODxQ", title: "Ethical Hacking in 12 Hours - Full Course" };

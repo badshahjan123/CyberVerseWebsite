@@ -50,7 +50,7 @@ const RealtimeHelper = {
 
       // 2. Broadcast leaderboard update globally if rank might have changed
       const leaderboard = await User.find({ isActive: true })
-        .select('name points level completedLabs completedRooms avatar badges xp skills')
+        .select('_id name points level completedLabs completedRooms avatar badges xp skills')
         .sort({ points: -1, completedLabs: -1, completedRooms: -1 })
         .limit(50);
 

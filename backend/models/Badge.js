@@ -39,6 +39,11 @@ const badgeSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // Only set for lab badges
+  labId: {
+    type: String,
+    default: null
+  },
   // Only set for bonus badges: 'perfect_score' | 'no_hints' | 'speed'
   bonusCondition: {
     type: String,

@@ -15,6 +15,7 @@ import {
 import { useApp } from "../../contexts/app-context";
 import { useRealtime } from "../../contexts/realtime-context";
 import { apiCall } from "../../config/api";
+import { getLevelProgressInfo } from "../../utils/xpConfig";
 import BadgeIcon from "../../components/achievements/BadgeIcon";
 import "./Badges.css";
 
@@ -157,6 +158,7 @@ const Badges = () => {
   const bonusCount = badges.filter(b => b.earned && b.badgeType === "bonus").length;
   const pct = totalCount > 0 ? Math.round((earnedCount / totalCount) * 100) : 0;
   const xpCount = userStats?.totalXP || user?.points || 0;
+  const levelInfo = getLevelProgressInfo(xpCount);
 
   if (loading) return (
     <div className="bdg-page bdg-page--loading min-h-screen flex items-center justify-center">
@@ -208,17 +210,16 @@ const Badges = () => {
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Bonus</p>
                   </div>
                   <div className="w-px h-10 bg-white/10" />
-                  <div className="text-center">
-                    <p className="text-3xl font-black text-white">{xpCount.toLocaleString()}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Total XP</p>
+                  <div className="text-center font-mono">
+                    <p className="text-3xl font-black text-white">{levelInfo.currentLevel}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Combat Level</p>
                   </div>
-                  {/* Progress Ring */}
-                  <div className="relative flex items-center justify-center ml-2">
-                    <svg width="44" height="44" viewBox="0 0 44 44">
-                      <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
-                      <circle cx="22" cy="22" r="18" fill="none" stroke="#00D1FF" strokeWidth="4" strokeLinecap="round" strokeDasharray="113.1" strokeDashoffset={113.1 * (1 - pct / 100)} transform="rotate(-90 22 22)" />
-                    </svg>
-                    <span className="absolute text-[10px] font-black">{pct}%</span>
+                  <div className="text-left font-mono ml-4 max-w-[140px]">
+                    <p className="text-sm font-black" style={{ color: levelInfo.color }}>{levelInfo.title.toUpperCase()}</p>
+                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mt-1 mb-1">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${levelInfo.xpProgress}%`, backgroundColor: levelInfo.color }} />
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-400">{levelInfo.xpNeeded.toLocaleString()} XP to {levelInfo.nextTitle}</p>
                   </div>
                 </div>
               </div>

@@ -149,52 +149,52 @@ const TwoFactorSettings = ({ user, onUpdate }) => {
 
   if (setupData) {
     return (
-      <div className="space-y-6">
-        <div className="glass-effect rounded-xl p-6 border border-white/10">
-          <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+      <div className="space-y-6 font-mono text-xs">
+        <div className="p-6 rounded-2xl bg-[#0a1220]/60 border border-white/[0.04]">
+          <h3 className="text-sm font-black uppercase tracking-[0.25em] text-white mb-6 flex items-center gap-3">
+            <Shield className="h-5 w-5 text-[#00D1FF]" />
             Setup {setupData.method === 'email' ? 'Email' : 'Authenticator'} 2FA
           </h3>
 
           {setupData.method === 'email' ? (
             <div className="space-y-4">
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <div className="bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Mail className="h-5 w-5 text-blue-400" />
-                  <span className="text-blue-400 font-medium">Email OTP</span>
+                  <Mail className="h-4 w-4 text-[#00D1FF]" />
+                  <span className="text-[#00D1FF] font-bold uppercase tracking-widest text-[10px]">Email OTP</span>
                 </div>
-                <p className="text-muted text-sm">
+                <p className="text-slate-400 text-[11px] leading-relaxed">
                   A 6-digit code has been sent to your email address. Enter it below to complete setup.
                 </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Smartphone className="h-5 w-5 text-green-400" />
-                  <span className="text-green-400 font-medium">Authenticator App</span>
+              <div className="bg-[#88E636]/10 border border-[#88E636]/20 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Smartphone className="h-4 w-4 text-[#88E636]" />
+                  <span className="text-[#88E636] font-bold uppercase tracking-widest text-[10px]">Authenticator App</span>
                 </div>
-                <p className="text-muted text-sm mb-4">
+                <p className="text-slate-400 text-[11px] mb-5 leading-relaxed">
                   Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
                 </p>
 
                 {setupData.qrCode && (
-                  <div className="bg-white p-4 rounded-lg inline-block">
-                    <img src={setupData.qrCode} alt="QR Code" className="w-48 h-48" />
+                  <div className="bg-white p-3 rounded-xl inline-block shadow-[0_0_20px_rgba(136,230,54,0.15)]">
+                    <img src={setupData.qrCode} alt="QR Code" className="w-40 h-40" />
                   </div>
                 )}
 
-                <div className="mt-4 p-3 bg-slate-800/80 rounded-lg border border-slate-700">
-                  <p className="text-xs text-muted mb-1">Manual entry key:</p>
-                  <code className="text-sm text-primary font-mono break-all">{setupData.secret}</code>
+                <div className="mt-5 p-4 bg-black/40 rounded-xl border border-white/[0.04]">
+                  <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black mb-2">Manual Entry Key:</p>
+                  <code className="text-sm text-[#00D1FF] font-mono break-all bg-[#00D1FF]/5 px-2 py-1 rounded border border-[#00D1FF]/10">{setupData.secret}</code>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-text mb-2">
+          <div className="mt-8">
+            <label className="set-label">
               Enter verification code
             </label>
             <input
@@ -203,31 +203,31 @@ const TwoFactorSettings = ({ user, onUpdate }) => {
               value={verificationCode}
               onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               maxLength={6}
-              className="w-full h-11 px-4 bg-slate-800/80 border border-slate-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary text-center text-xl font-mono tracking-widest"
+              className="set-input text-center text-xl font-black tracking-[0.5em]"
             />
           </div>
 
           {error && (
-            <p className="mt-4 text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-              {error}
+            <p className="mt-4 text-[10px] font-bold uppercase tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-2">
+              <AlertTriangle size={14} /> {error}
             </p>
           )}
 
-          <div className="flex gap-3 mt-6">
+          <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-white/5">
             <button
               onClick={() => {
                 setSetupData(null)
                 setVerificationCode("")
                 setError("")
               }}
-              className="flex-1 btn-ghost"
+              className="set-btn-secondary"
             >
-              Cancel
+              Cancel Setup
             </button>
             <button
               onClick={handleVerifySetup}
               disabled={loading || verificationCode.length !== 6}
-              className="flex-1 btn-primary flex items-center justify-center gap-2"
+              className="set-btn-primary flex items-center gap-2"
             >
               {loading ? (
                 <>
@@ -237,7 +237,7 @@ const TwoFactorSettings = ({ user, onUpdate }) => {
               ) : (
                 <>
                   <Check className="h-4 w-4" />
-                  Enable 2FA
+                  Enable Protocol
                 </>
               )}
             </button>
@@ -248,47 +248,51 @@ const TwoFactorSettings = ({ user, onUpdate }) => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="glass-effect rounded-xl p-6 border border-white/10">
-        <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-          <Shield className="h-5 w-5" />
+    <div className="space-y-6 font-mono text-xs">
+      <div className="p-6 rounded-2xl bg-[#0a1220]/60 border border-white/[0.04]">
+        <h3 className="text-sm font-black uppercase tracking-[0.25em] text-white mb-6 flex items-center gap-3">
+          <Shield className="h-5 w-5 text-[#FF6B00]" />
           Two-Factor Authentication
         </h3>
 
         {error && (
-          <p className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-            {error}
+          <p className="mb-6 text-[10px] font-bold uppercase tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-2">
+            <AlertTriangle size={14} /> {error}
           </p>
         )}
 
         {success && (
-          <p className="mb-4 text-sm text-green-400 bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-            {success}
+          <p className="mb-6 text-[10px] font-bold uppercase tracking-widest text-[#88E636] bg-[#88E636]/10 border border-[#88E636]/20 rounded-xl p-4 flex items-center gap-2">
+            <Check size={14} /> {success}
           </p>
         )}
 
         {twoFactorStatus?.enabled ? (
-          <div className="space-y-4">
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-400" />
-                  <span className="text-green-400 font-medium">2FA Enabled</span>
-                  <span className="text-sm text-muted">
-                    ({twoFactorStatus.method === 'email' ? 'Email OTP' : 'Authenticator App'})
-                  </span>
+          <div className="space-y-6">
+            <div className="bg-[#88E636]/10 border border-[#88E636]/20 rounded-xl p-5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#88E636]/20 flex items-center justify-center">
+                    <Check className="h-5 w-5 text-[#88E636]" />
+                  </div>
+                  <div>
+                    <span className="block text-[#88E636] font-black uppercase tracking-widest text-xs mb-1">2FA Enabled</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Protocol: {twoFactorStatus.method === 'email' ? 'Email OTP' : 'Authenticator App'}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={handleDisable2FA}
                   disabled={loading}
-                  className="bg-danger hover:bg-danger/80 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm"
+                  className="set-btn-danger"
                 >
                   {loading ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : (
                     <>
                       <Trash2 className="h-4 w-4" />
-                      Disable
+                      Disable Protocol
                     </>
                   )}
                 </button>
@@ -296,28 +300,28 @@ const TwoFactorSettings = ({ user, onUpdate }) => {
             </div>
 
             {trustedDevices.length > 0 && (
-              <div className="glass-effect rounded-lg p-4 border border-white/10">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-text">Trusted Devices ({trustedDevices.length})</h4>
+              <div className="bg-black/40 rounded-xl p-5 border border-white/[0.04]">
+                <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/5">
+                  <h4 className="font-black uppercase tracking-widest text-white text-[11px]">Trusted Devices ({trustedDevices.length})</h4>
                   <button
                     onClick={handleRemoveAllDevices}
-                    className="btn-ghost text-sm"
+                    className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase tracking-widest transition-colors"
                   >
-                    Remove All
+                    Purge All Devices
                   </button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {trustedDevices.map((device) => (
-                    <div key={device.deviceId} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                    <div key={device.deviceId} className="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:bg-white/[0.04] transition-colors">
                       <div>
-                        <p className="text-sm font-medium text-text">{device.deviceName}</p>
-                        <p className="text-xs text-muted">
-                          Last used: {new Date(device.lastUsed).toLocaleDateString()}
+                        <p className="text-[11px] font-black uppercase tracking-wider text-white mb-1">{device.deviceName}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+                          Last seen: {new Date(device.lastUsed).toLocaleDateString()}
                         </p>
                       </div>
                       <button
                         onClick={() => handleRemoveDevice(device.deviceId)}
-                        className="text-danger hover:text-danger/80 p-1"
+                        className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -328,36 +332,40 @@ const TwoFactorSettings = ({ user, onUpdate }) => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-400" />
-                <span className="text-yellow-400 font-medium">2FA Not Enabled</span>
+          <div className="space-y-6">
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <AlertTriangle className="h-5 w-5 text-orange-400" />
+                <span className="text-orange-400 font-black uppercase tracking-widest text-[11px]">2FA Not Enabled</span>
               </div>
-              <p className="text-muted text-sm">
-                Enable two-factor authentication to add an extra layer of security to your account.
+              <p className="text-slate-400 text-[11px] leading-relaxed font-bold">
+                Enable two-factor authentication to add an extra layer of security to your account. This is highly recommended for all operatives.
               </p>
             </div>
 
-            <div className="glass-effect rounded-lg p-4 border border-white/10">
-              <div className="flex items-center gap-2 mb-2">
-                <Smartphone className="h-5 w-5 text-green-400" />
-                <span className="font-medium text-text">Authenticator App</span>
+            <div className="bg-black/40 rounded-xl p-6 border border-white/[0.04] flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <Smartphone className="h-5 w-5 text-[#88E636]" />
+                  <span className="font-black text-white uppercase tracking-widest text-[11px]">Authenticator App</span>
+                </div>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+                  Use Google Authenticator, Authy, or similar apps for secure 2FA
+                </p>
               </div>
-              <p className="text-sm text-muted mb-4">
-                Use Google Authenticator, Authy, or similar apps for secure 2FA
-              </p>
-              <button
-                onClick={handleSetup2FA}
-                disabled={setupLoading}
-                className="btn-primary w-full flex items-center justify-center gap-2"
-              >
-                {setupLoading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Setup Authenticator 2FA'
-                )}
-              </button>
+              <div className="w-full md:w-auto">
+                <button
+                  onClick={handleSetup2FA}
+                  disabled={setupLoading}
+                  className="set-btn-primary w-full md:w-auto flex items-center justify-center gap-2 whitespace-nowrap"
+                >
+                  {setupLoading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Initialize Setup'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}

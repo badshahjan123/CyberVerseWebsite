@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyber-lab-container-breakout
+  labels:
+    app: cyber-lab
+    lab-id: container-breakout
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cyber-lab
+      lab-id: container-breakout
+  template:
+    metadata:
+      labels:
+        app: cyber-lab
+        lab-id: container-breakout
+    spec:
+      containers:
+        - name: lab-container
+          image: badshahjan/lab1:latest
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mkdir -p /home/labuser/docker-recon
+              touch /home/labuser/.dockerenv
+              echo "FLAG{DOCKER_ENV_DETECTED}" > /home/labuser/docker-recon/recon_flag.txt
+              
+              mkdir -p /mnt/host_fs
+              echo "FLAG{CAP_SYS_ADMIN_EXPLOITED}" > /mnt/host_fs/host_flag.txt
+              
+              mkdir -p /host_etc
+              echo "FLAG{SHADOW_FILE_READ}" > /host_etc/shadow_flag.txt
+              
+              echo "FLAG{FULL_CONTAINER_ESCAPE}" > /root/master_escape_flag.txt
+
+              mkdir -p /var/run
+              echo "FLAG{DOCKER_SOCK_ABUSED}" > /var/run/docker.sock
+
+              chown -R 1000:1000 /home/labuser
+
+              ttyd -W -p 80 -i 0.0.0.0 bash
+          env:
+            - name: AWS_SECRET_ACCESS_KEY
+              value: "FLAG{ENV_VAR_SECRET_LEAKED}"
+          ports:
+            - containerPort: 80
+          securityContext:
+            privileged: true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cyber-lab-container-breakout-service
+spec:
+  selector:
+    app: cyber-lab
+    lab-id: container-breakout
+  ports:
+    - protocol: TCP
+      port: 8089
+      targetPort: 80
+      nodePort: 32245
+  type: NodePort

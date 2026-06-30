@@ -85,13 +85,17 @@ router.post('/update', auth, async (req, res) => {
     }
 
     // Update user points and level
-    const oldLevel = user.level;
+    const oldLevelInfo = require('../utils/xpConfig').getLevelProgressInfo(user.points || 0);
+    const oldLevel = oldLevelInfo.currentLevel;
+    
     user.points += pointsToAdd;
-
     user.xp = user.points;
-    const newLevel = Math.floor(user.points / 1000) + 1;
+    
+    const newLevelInfo = require('../utils/xpConfig').getLevelProgressInfo(user.points);
+    const newLevel = newLevelInfo.currentLevel;
+    
     leveledUp = newLevel > oldLevel;
-    user.level = newLevel;
+    // user.level is now automatically set by pre('save') hook
 
     // Update skill based on item's category
     if (isFirstCompletion) {
@@ -207,11 +211,21 @@ router.get('/leaderboard', async (req, res) => {
       .sort({ points: -1, completedLabs: -1, completedRooms: -1 })
       .limit(parseInt(limit));
 
-    // Add rank to each user
-    const leaderboardWithRank = leaderboard.map((user, index) => ({
-      ...user.toObject(),
-      rank: index + 1
-    }));
+    // Add rank and level info to each user
+    const xpConfig = require('../utils/xpConfig');
+    
+    const leaderboardWithRank = leaderboard.map((user, index) => {
+      const userObj = user.toObject();
+      const levelInfo = xpConfig.getLevelProgressInfo(userObj.points || 0);
+      
+      return {
+        ...userObj,
+        rank: index + 1,
+        level: levelInfo.currentLevel,
+        title: levelInfo.title,
+        color: levelInfo.color
+      };
+    });
 
     res.json({
       success: true,

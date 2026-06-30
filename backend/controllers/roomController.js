@@ -61,6 +61,16 @@ exports.getRoomBySlug = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Room not found" });
 
+    // Find associated badge using the registry evaluator logic
+    const badgeRegistry = require("../utils/badgeRegistry");
+    const badgeReward = badgeRegistry.find(b => {
+      try {
+        return b.evaluator({}, { type: "room_completion", roomId: slug });
+      } catch (e) {
+        return false;
+      }
+    });
+
     const roomData = {
       ...room.toObject(),
       topics: room.topics || [],
@@ -69,6 +79,7 @@ exports.getRoomBySlug = async (req, res) => {
       prerequisites: room.prerequisites || [],
       learning_objectives: room.learning_objectives || [],
       tags: room.tags || [],
+      badgeReward: badgeReward || null,
     };
 
     res.json({ success: true, data: roomData });

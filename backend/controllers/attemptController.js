@@ -102,6 +102,7 @@ exports.completeAttempt = async (req, res) => {
         pointsToAdd = attempt.score - secondBestScore;
     }
 
+    const oldLevel = user.level;
     if (pointsToAdd > 0) {
         user.points += pointsToAdd;
         await WeeklyStats.recordActivity(user._id, itemType, pointsToAdd, isFirstCompletion);
@@ -135,6 +136,12 @@ exports.completeAttempt = async (req, res) => {
 
     user.lastStreakDate = new Date();
     await user.save();
+
+    // Check for level up after save (since pre-save hook updates user.level)
+    if (user.level > oldLevel) {
+        const NotificationService = require('../utils/notificationHelper');
+        await NotificationService.notifyLevelUp(user._id, user.level);
+    }
 
     // 3. Emit updates for UI
     const io = req.app.get('io');
@@ -257,6 +264,7 @@ exports.processFinishedSession = async (user, itemType, itemId, finalScore, comp
         pointsToAdd = attempt.score - secondBestScore;
     }
 
+    const oldLevel = user.level;
     if (pointsToAdd > 0) {
         user.points += pointsToAdd;
         await WeeklyStats.recordActivity(user._id, itemType, pointsToAdd, isFirstCompletion);
@@ -264,6 +272,11 @@ exports.processFinishedSession = async (user, itemType, itemId, finalScore, comp
 
     user.lastStreakDate = new Date();
     await user.save();
+
+    if (user.level > oldLevel) {
+        const NotificationService = require('../utils/notificationHelper');
+        await NotificationService.notifyLevelUp(user._id, user.level);
+    }
 
     return {
         attempt,

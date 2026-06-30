@@ -37,7 +37,9 @@ import {
   Sparkles,
   Youtube,
   MessageSquare,
-  Crosshair
+  Crosshair,
+  Award,
+  Crown
 } from "lucide-react";
 import { labsService } from "../../services/labs";
 import { attemptsService } from "../../services/attempts";
@@ -117,6 +119,18 @@ const CommandBox = memo(({ command }) => {
 });
 
 /* ─── Markdown / Formatting Clean Up Utilities ─── */
+const getEmbedUrl = (url) => {
+  if (!url) return null;
+  let videoId = "";
+  if (url.includes("youtu.be/")) {
+    videoId = url.split("youtu.be/")[1]?.split("?")[0];
+  } else if (url.includes("youtube.com/watch?v=")) {
+    videoId = url.split("v=")[1]?.split("&")[0];
+  } else if (url.includes("youtube.com/embed/")) {
+    return url; // Already an embed URL
+  }
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+};
 const parseBoldText = (text) => {
   if (!text) return "";
   const parts = text.split('**');
@@ -696,23 +710,55 @@ const LabPage = () => {
               <div className="h-px bg-white/5" />
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Reward</p>
-                  <p className="text-sm font-bold text-amber-500 flex items-center gap-1 mt-0.5">
-                    <Trophy size={14} />
-                    {getLabXP(lab.difficulty)} XP
+                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider mb-1">Total XP Reward</p>
+                  <p className="text-sm font-black text-amber-500 flex items-center gap-1.5 mt-0.5">
+                    <Zap size={14} className="text-amber-400" />
+                    +{getLabXP(lab.difficulty)} XP
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Estimated Time</p>
-                  <p className="text-sm font-bold text-blue-400 flex items-center gap-1 mt-0.5">
+                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider mb-1">Estimated Time</p>
+                  <p className="text-sm font-bold text-blue-400 flex items-center gap-1.5 mt-0.5">
                     <Clock size={14} />
                     {lab.estimatedTime || lab.duration || "45m"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider mb-1">Required Level</p>
+                  <p className="text-xs font-bold text-[#88E636] uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+                    <BookOpen size={12} className="text-[#88E636]" />
+                    Level {lab.difficulty === 'Beginner' ? 1 : lab.difficulty === 'Intermediate' ? 5 : lab.difficulty === 'Advanced' ? 10 : 20}+
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider mb-1">Certificate</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+                    <Crown size={12} className="text-purple-400" />
+                    In Progress
                   </p>
                 </div>
               </div>
               <div className="pt-2">
                 <DifficultyBadge level={lab.difficulty} />
               </div>
+              
+              {/* TARGET/EARNED BADGE */}
+              {lab.badgeReward && (
+                <div className="mt-4 pt-4 border-t border-white/5 animate-fade-in">
+                  <span className={`text-[9px] font-bold uppercase tracking-widest block mb-3 ${labCompleted ? 'text-emerald-500' : 'text-slate-500'}`}>
+                    {labCompleted ? 'Earned Achievement' : 'Target Achievement'}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg border flex items-center justify-center shadow-inner ${labCompleted ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-orange-500/10 border-orange-500/20 text-orange-500'}`}>
+                      <Award size={18} />
+                    </div>
+                    <div>
+                      <h4 className={`text-xs font-bold uppercase tracking-wider ${labCompleted ? 'text-emerald-400' : 'text-white'}`}>{lab.badgeReward.name}</h4>
+                      <p className="text-[9px] text-slate-400 mt-0.5 line-clamp-2">{lab.badgeReward.description}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Middle card: Deployment Button */}
@@ -958,8 +1004,14 @@ const LabPage = () => {
                     ) : (
                       <div className="space-y-3 animate-fade-in">
                         <div className="aspect-video rounded-xl overflow-hidden border border-white/10 bg-black">
-                          <iframe
-                            src={TUTORIAL_MAP[lab.category] || TUTORIAL_MAP['Web Security']}
+                            <iframe
+                              src={
+                                (lab?.resources && lab.resources.length > 0 && lab.resources.find(r => r.type === "video")?.url)
+                                  ? getEmbedUrl(lab.resources.find(r => r.type === "video").url)
+                                  : (lab?.slug === "active-directory" || lab?.title?.toLowerCase().includes("active directory"))
+                                    ? "https://www.youtube.com/embed/-vjF3kgvWVg"
+                                    : TUTORIAL_MAP[lab?.category] || TUTORIAL_MAP['Web Security']
+                              }
                             title="Walkthrough Video"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen

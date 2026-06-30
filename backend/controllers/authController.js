@@ -247,7 +247,23 @@ exports.googleAuth = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    res.json({ user });
+    const xpConfig = require('../utils/xpConfig');
+    const levelInfo = xpConfig.getLevelProgressInfo(user.points || 0);
+
+    res.json({ 
+      user: {
+        ...user.toObject(),
+        level: levelInfo.currentLevel,
+        title: levelInfo.title,
+        titleColor: levelInfo.color,
+        nextTitle: levelInfo.nextTitle,
+        nextTitleLevel: levelInfo.nextTitleLevel,
+        xpProgress: levelInfo.xpProgress,
+        baseXP: levelInfo.baseXP,
+        nextLevelXP: levelInfo.nextLevelXP,
+        pointsToNextLevel: levelInfo.xpNeeded
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

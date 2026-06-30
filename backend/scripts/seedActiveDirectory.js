@@ -60,6 +60,14 @@ const seedLab = async () => {
                 'ad',
                 'cybersecurity'
             ],
+            
+            resources: [
+                {
+                    title: 'Active Directory Exploitation Video Walkthrough',
+                    url: 'https://youtu.be/-vjF3kgvWVg?si=DMSqAWnbyaKAsM7F',
+                    type: 'video'
+                }
+            ],
 
             estimatedTime: 45,
 

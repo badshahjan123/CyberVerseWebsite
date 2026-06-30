@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const xpConfig = require('../utils/xpConfig');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -248,6 +249,20 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Automatically calculate level from points before saving
+userSchema.pre('save', function (next) {
+  if (this.isModified('points') || this.isModified('xp')) {
+    if (this.points !== undefined && this.xp !== this.points) {
+      this.xp = this.points;
+    } else if (this.xp !== undefined && this.points !== this.xp) {
+      this.points = this.xp;
+    }
+    const levelInfo = xpConfig.getLevelProgressInfo(this.points || 0);
+    this.level = levelInfo.currentLevel;
+  }
+  next();
+});
+
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -269,37 +284,20 @@ userSchema.methods.calculateRank = async function () {
   return rank;
 };
 
-// Level thresholds — progressive system
-// Jaise jaise level badhta hai, zyada XP chahiye
-const LEVEL_THRESHOLDS = [
-  0,      // Lv 1  — Script Kiddie
-  300,    // Lv 2  — Cyber Apprentice
-  700,    // Lv 3  — Code Breaker
-  1200,   // Lv 4  — Net Stalker
-  2000,   // Lv 5  — Exploit Dev
-  3000,   // Lv 6  — Zero-Day Hunter
-  4500,   // Lv 7  — Red Teamer
-  6500,   // Lv 8  — Cyber Phantom
-  9000,   // Lv 9  — Ghost Operator
-  12000,  // Lv 10 — Elite Hacker
-  16000,  // Lv 11 — Legend
-];
+// Remove the old hardcoded LEVEL_THRESHOLDS array
+// Instead, we use xpConfig.js for MMO-style scaling to level 100
 
-// Calculate user level based on points
+// Calculate user level based on points using central config
 userSchema.methods.calculateLevel = function () {
-  let level = 1;
-  for (let i = 1; i < LEVEL_THRESHOLDS.length; i++) {
-    if (this.points >= LEVEL_THRESHOLDS[i]) level = i + 1;
-    else break;
-  }
-  return level;
+  return xpConfig.getLevelFromXP(this.points || 0);
 };
 
-// Get points needed for next level
+// Get points needed for next level using central config
 userSchema.methods.getPointsToNextLevel = function () {
   const currentLevel = this.calculateLevel();
-  if (currentLevel >= LEVEL_THRESHOLDS.length) return 0; // Max level
-  return LEVEL_THRESHOLDS[currentLevel] - this.points;
+  if (currentLevel >= 100) return 0; // Max level
+  const nextLevelXP = xpConfig.getXPRequiredForLevel(currentLevel + 1);
+  return nextLevelXP - (this.points || 0);
 };
 
 // Update streak based on activity

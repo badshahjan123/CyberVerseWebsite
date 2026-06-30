@@ -44,6 +44,7 @@ import {
   Check,
   Copy,
 } from "lucide-react";
+import { getRoomXP } from "../../utils/xpConfig";
 import { clearQuizCache } from "../../utils/clearQuizCache";
 import { shuffleCompleteQuiz } from "../../utils/shuffleQuestions";
 import { attemptsService } from "../../services/attempts";
@@ -1079,6 +1080,71 @@ const RoomDetail = () => {
             {room.description}
           </p>
         </header>
+
+        {/* ── PROGRESSION METADATA BLOCK ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 mb-6 rdp-fade-in font-mono">
+          <div className="p-3 rounded-lg bg-black/40 border border-white/[0.04]">
+            <span className="flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest text-slate-500 mb-1">
+              <Zap size={12} className="text-amber-400" /> Total XP Reward
+            </span>
+            <span className="text-lg font-black text-amber-400">
+              +{getRoomXP(room.difficulty)} XP
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-black/40 border border-white/[0.04]">
+            <span className="flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest text-slate-500 mb-1">
+              <Shield size={12} className="text-cyan-400" /> Skills Learned
+            </span>
+            <span className="text-sm font-bold text-white uppercase tracking-wider truncate block">
+              {room.category}
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-black/40 border border-white/[0.04]">
+            <span className="flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest text-slate-500 mb-1">
+              <BookOpen size={12} className="text-[#88E636]" /> Required Level
+            </span>
+            <span className="text-sm font-bold text-[#88E636] uppercase tracking-wider">
+              Level {room.difficulty === 'Beginner' ? 1 : room.difficulty === 'Intermediate' ? 5 : room.difficulty === 'Advanced' ? 10 : 20}+
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-black/40 border border-white/[0.04]">
+            <span className="flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest text-slate-500 mb-1">
+              <Crown size={12} className="text-purple-400" /> Certificate
+            </span>
+            <span className="text-sm font-bold text-white uppercase tracking-wider truncate block text-slate-400">
+              In Progress
+            </span>
+          </div>
+        </div>
+
+        {/* ── UPCOMING/EARNED BADGE ── */}
+        {room.badgeReward && (
+          <div className={`p-4 mt-4 mb-4 rounded-xl border flex items-center justify-between rdp-fade-in ${userProgress.roomCompleted ? 'border-success/20 bg-success/5' : 'border-primary/20 bg-primary/5'}`}>
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-lg bg-slate-900 border flex items-center justify-center shadow-inner relative overflow-hidden ${userProgress.roomCompleted ? 'border-success/50' : 'border-slate-700'}`}>
+                <div className={`absolute inset-0 ${userProgress.roomCompleted ? 'bg-success/20' : 'bg-primary/20 animate-pulse'}`} />
+                <Award size={24} className={`relative z-10 ${userProgress.roomCompleted ? 'text-success' : 'text-primary'}`} />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">
+                  {userProgress.roomCompleted ? "Earned Achievement: " : "Target Achievement: "} 
+                  <span className={userProgress.roomCompleted ? 'text-success' : 'text-primary'}>{room.badgeReward.name}</span>
+                </h4>
+                <p className="text-[10px] text-slate-400">
+                  {room.badgeReward.description}
+                </p>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="px-2 py-1 rounded bg-slate-800 text-[10px] font-black text-primary uppercase tracking-widest border border-slate-700 inline-block">
+                +{room.badgeReward.xpReward} XP Reward
+              </div>
+              <div className="text-[9px] text-slate-500 uppercase font-bold mt-2 tracking-widest">
+                Rarity: {room.badgeReward.difficulty}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── COMPLETION BANNER ── */}
         {userProgress.roomCompleted && (
