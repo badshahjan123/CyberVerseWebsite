@@ -269,9 +269,12 @@
     border-right: none;
     height: 64px;
     padding: 0 1.25rem;
+    background: rgba(6, 9, 15, 0.98) !important;
+    backdrop-filter: blur(20px);
   }
   .cv-navbar-matte.scrolled {
     top: 0;
+    background: rgba(3, 5, 12, 0.99) !important;
   }
   .cv-mobile-toggle {
     display: flex;
