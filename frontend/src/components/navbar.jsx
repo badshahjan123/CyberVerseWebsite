@@ -182,23 +182,28 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {isOpen && (
           <div className="cv-mobile-menu-overlay">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  `text-lg font-bold transition-colors ${isActive ? "text-cyan-400" : "text-slate-400"}`
-                }
-              >
-                {link.text}
-              </NavLink>
-            ))}
-            {!isAuthenticated && (
-              <div className="flex flex-col gap-3 mt-4">
-                <Link to="/login" className="text-white font-bold">Login</Link>
-                <Link to="/signup" className="p-3 bg-cyan-500 text-center font-bold text-slate-950 rounded">Sign Up</Link>
-              </div>
-            )}
+            <div className="cv-mobile-menu-content">
+              <nav className="cv-mobile-nav-links">
+                {navLinks.map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    className={({ isActive }) =>
+                      `cv-mobile-nav-link ${isActive ? "active" : ""}`
+                    }
+                  >
+                    {link.text}
+                  </NavLink>
+                ))}
+              </nav>
+              
+              {!isAuthenticated && (
+                <div className="cv-mobile-auth-section">
+                  <Link to="/login" className="cv-mobile-login-btn">Log In</Link>
+                  <Link to="/signup" className="cv-mobile-signup-btn">SIGN UP</Link>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </nav>
