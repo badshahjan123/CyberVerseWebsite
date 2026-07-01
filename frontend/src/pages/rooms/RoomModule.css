@@ -433,6 +433,10 @@
   .wpr-task-hero-img { height: 160px; }
   .wpr-content { padding: 1rem; }
   .wpr-questions-section { padding: 1.25rem; }
+  .wpr-question { padding: 1rem !important; }
+  .wpr-q-input-row { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+  .wpr-q-input { min-width: 0 !important; width: 100% !important; }
+  .wpr-q-submit { width: 100% !important; justify-content: center !important; }
   .wpr-vuln-grid { grid-template-columns: 1fr; }
   .wpr-flow-anim { gap: 2px; }
   .wpr-flow-node { padding: 8px 10px; min-width: 55px; }
