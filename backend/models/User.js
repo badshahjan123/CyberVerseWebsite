@@ -244,7 +244,11 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  tourCompleted: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });

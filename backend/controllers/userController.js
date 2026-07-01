@@ -93,8 +93,14 @@ exports.getStats = async (req, res) => {
 // @route   PUT /api/users/profile
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, email, avatar } = req.body;
-    const user = await User.findByIdAndUpdate(req.user.id, { name, email, avatar }, { new: true });
+    const { name, email, avatar, tourCompleted } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (tourCompleted !== undefined) updateData.tourCompleted = tourCompleted;
+
+    const user = await User.findByIdAndUpdate(req.user.id, updateData, { new: true });
     res.json({ message: 'Profile updated', user });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

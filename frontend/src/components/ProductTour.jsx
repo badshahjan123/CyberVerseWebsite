@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../contexts/app-context";
+import { apiCall } from "../config/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, X, Play } from "lucide-react";
 
@@ -71,12 +72,13 @@ const TOUR_STEPS = [
 ];
 
 export default function ProductTour() {
-  const { isAuthenticated, loading } = useApp();
+  const { isAuthenticated, loading, user, updateUserProfile } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const hasAttemptedAutoStart = useRef(false);
 
   const [tourState, setTourState] = useState({
     placement: "bottom",
@@ -89,19 +91,36 @@ export default function ProductTour() {
     elementFound: false,
   });
 
-  // Auto-start logic on first login
+  // Auto-start logic check: Runs exactly once per app load session
   useEffect(() => {
-    if (loading || !isAuthenticated) return;
+    if (loading) return;
 
-    const isCompletedBefore = localStorage.getItem("cyberverse_tour_completed") === "true";
-    if (!isCompletedBefore && location.pathname === "/dashboard") {
+    // Check if the user is authenticated
+    if (!isAuthenticated) return;
+
+    // If we already attempted auto-start in this session, do not run again
+    if (hasAttemptedAutoStart.current) return;
+
+    // Check both remote database flag and local storage flag
+    const isCompletedBefore = 
+      user?.tourCompleted === true || 
+      localStorage.getItem("cyberverse_tour_completed") === "true";
+
+    if (isCompletedBefore) {
+      hasAttemptedAutoStart.current = true;
+      return;
+    }
+
+    // Auto-start only when the user is on the main dashboard
+    if (location.pathname === "/dashboard") {
+      hasAttemptedAutoStart.current = true;
       const timer = setTimeout(() => {
         setIsActive(true);
         setCurrentStepIndex(0);
-      }, 1200);
+      }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, loading, location.pathname]);
+  }, [isAuthenticated, loading, location.pathname, user]);
 
   // Listen to manual start request
   useEffect(() => {
@@ -152,17 +171,14 @@ export default function ProductTour() {
     const viewportHeight = window.innerHeight;
 
     const popWidth = Math.min(320, viewportWidth - 32);
-    // Dynamic height estimate based on character count to assist initial placement bounds
     const estimatedHeight = 160 + Math.ceil(step.content.length * 0.4);
     const popHeight = estimatedHeight;
 
     let placement = "bottom";
 
-    // Strategic positioning based on screen size and space availability
     if (viewportWidth >= 1024) {
-      // Desktop / Large screen: choose top, bottom, left, or right
+      // Desktop / Large screen placement decisions
       if (docHeight > viewportHeight - 200) {
-        // Very tall elements: prioritize side placements to prevent overlapping
         const spaceRight = viewportWidth - rect.right;
         const spaceLeft = rect.left;
         if (spaceRight >= popWidth + 32) {
@@ -173,7 +189,6 @@ export default function ProductTour() {
           placement = "bottom";
         }
       } else {
-        // Prefer top/bottom spacing
         const spaceBelow = viewportHeight - rect.bottom;
         const spaceAbove = rect.top;
         if (spaceBelow >= popHeight + 32 || docTop < popHeight + 100) {
@@ -183,7 +198,7 @@ export default function ProductTour() {
         }
       }
     } else {
-      // Mobile / Tablet: always top or bottom to respect width constraints
+      // Mobile / Tablet placement decisions
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
       if (spaceBelow >= popHeight + 16) {
@@ -195,7 +210,6 @@ export default function ProductTour() {
       }
     }
 
-    // Coordinate math (viewport-relative)
     let popTop = 0;
     let popLeft = 0;
 
@@ -213,14 +227,12 @@ export default function ProductTour() {
       popLeft = rect.left - popWidth - 16;
     }
 
-    // Keep popover inside safe horizontal margins
     if (popLeft < 16) {
       popLeft = 16;
     } else if (popLeft + popWidth > viewportWidth - 16) {
       popLeft = viewportWidth - popWidth - 16;
     }
 
-    // Prevent clipping against top navbar (height 80px) or bottom screen boundary
     if (popTop < 80 && (placement === "top" || placement === "left" || placement === "right")) {
       popTop = Math.max(16, rect.bottom + 16);
       placement = "bottom";
@@ -229,7 +241,6 @@ export default function ProductTour() {
       placement = "top";
     }
 
-    // Precise pointer arrow targeting offset calculation
     let arrowLeft = popWidth / 2;
     let arrowTop = popHeight / 2;
 
@@ -261,7 +272,6 @@ export default function ProductTour() {
       elementFound: true,
     });
 
-    // Auto-scroll centers the combined span (target + popover) perfectly in the viewport
     if (forceScroll) {
       const docPopTop = popTop + window.scrollY;
       const docPopLeft = popLeft + window.scrollX;
@@ -277,14 +287,12 @@ export default function ProductTour() {
       let targetScrollY = minY - (viewportHeight - spanHeight) / 2;
       let targetScrollX = minX - (viewportWidth - spanWidth) / 2;
 
-      // Ensure we don't scroll past document bounds
       const maxScrollY = document.documentElement.scrollHeight - viewportHeight;
       const maxScrollX = document.documentElement.scrollWidth - viewportWidth;
 
       targetScrollY = Math.max(0, Math.min(targetScrollY, maxScrollY));
       targetScrollX = Math.max(0, Math.min(targetScrollX, maxScrollX));
 
-      // Leave a top-padding clearance for sticky headers
       if (targetScrollY > 10) {
         targetScrollY = Math.max(0, targetScrollY - 20);
       }
@@ -297,11 +305,10 @@ export default function ProductTour() {
     }
   }, [isActive, currentStepIndex]);
 
-  // Handle page transitions & lazy-loading retry loop
+  // Handle page transitions & retry loops
   useEffect(() => {
     if (!isActive) return;
 
-    // Trigger scroll immediately for fast renders
     alignTour(true);
 
     let retries = 0;
@@ -317,7 +324,7 @@ export default function ProductTour() {
         clearInterval(retryInterval);
       } else {
         retries++;
-        if (retries > 30) { // Keep polling up to 4.5 seconds
+        if (retries > 30) {
           clearInterval(retryInterval);
         }
       }
@@ -326,7 +333,7 @@ export default function ProductTour() {
     return () => clearInterval(retryInterval);
   }, [isActive, currentStepIndex]);
 
-  // Window resize/scroll dynamic position recalculation
+  // Event listener configuration for updates on scroll/resize
   useEffect(() => {
     if (!isActive) return;
 
@@ -371,9 +378,27 @@ export default function ProductTour() {
     handleComplete();
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setIsActive(false);
+    
+    // Save completion state locally
     localStorage.setItem("cyberverse_tour_completed", "true");
+
+    // Save completion state in the database for registered users
+    if (isAuthenticated && user) {
+      try {
+        const response = await apiCall("/users/profile", {
+          method: "PUT",
+          body: JSON.stringify({ tourCompleted: true }),
+        });
+        if (response?.user) {
+          updateUserProfile(response.user);
+        }
+      } catch (err) {
+        console.error("Failed to save product tour completion state:", err);
+      }
+    }
+
     if (location.pathname !== "/dashboard") {
       navigate("/dashboard");
     }
