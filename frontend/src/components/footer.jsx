@@ -135,14 +135,19 @@ const Footer = () => {
 
       {/* ── Bottom Bar ── */}
       <div className="cv-footer-bottom">
-        <div className="cv-footer-bottom-inner flex justify-between items-center py-4">
-          <div className="cv-footer-bottom-left flex items-center gap-6">
+        <div className="cv-footer-bottom-inner">
+          <div className="cv-footer-bottom-left">
             <span className="cv-footer-version">v2.0</span>
-            <span className="cv-footer-copy text-slate-500 text-xs text-nowrap">© {currentYear} CyberVerse. All rights reserved.</span>
+            <span className="cv-footer-copy">© {currentYear} CyberVerse. All rights reserved.</span>
           </div>
 
-          <div className="cv-footer-bottom-right flex items-center gap-6">
-            <a href="mailto:contact@cyberverse.com" className="cv-footer-contact text-slate-400 hover:text-primary transition-colors text-xs flex items-center gap-2">
+          <div className="cv-footer-builders">
+            <Terminal size={12} />
+            <span>Built by <strong>Badshah Jan</strong> & <strong>Yasir Hussain</strong></span>
+          </div>
+
+          <div className="cv-footer-bottom-right">
+            <a href="mailto:contact@cyberverse.com" className="cv-footer-contact">
               <Mail size={13} /> Contact Us
             </a>
           </div>
