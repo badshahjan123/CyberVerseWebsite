@@ -324,7 +324,7 @@ const Dashboard = memo(() => {
             {/* ══════════════════════════════════════════════
                 OPERATOR COMMAND IDENTITY HUD
             ══════════════════════════════════════════════ */}
-            <div className="hud-container p-4 sm:p-6 mb-4 flex flex-col md:flex-row items-center justify-between gap-6 border-l-[3px] relative overflow-hidden"
+            <div id="tour-dashboard-hud" className="hud-container p-4 sm:p-6 mb-4 flex flex-col md:flex-row items-center justify-between gap-6 border-l-[3px] relative overflow-hidden"
               style={{ 
                 borderColor: '#00D1FF', 
                 background: 'linear-gradient(135deg, rgba(12,20,38,0.92) 0%, rgba(6,10,20,0.95) 100%)', 

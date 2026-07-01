@@ -518,7 +518,7 @@ const MissionBriefModal = memo(({ room, onClose }) => {
 MissionBriefModal.displayName = "MissionBriefModal";
 
 /* ══════ Room Card — premium redesign matching Labs card ══════ */
-const RoomCard = memo(({ room, userProgress, isBookmarked, onBookmark, onClick }) => {
+const RoomCard = memo(({ room, userProgress, isBookmarked, onBookmark, onClick, id }) => {
   const dm = getDiff(room.difficulty);
   const cat = getCat(room.category);
   const prog = userProgress || null;
@@ -543,6 +543,7 @@ const RoomCard = memo(({ room, userProgress, isBookmarked, onBookmark, onClick }
 
   return (
     <div
+      id={id}
       onClick={onClick}
       className={`room-card group relative rounded-2xl overflow-hidden flex flex-col cursor-pointer ${isCompleted ? "room-card--completed" : ""}`}
     >
@@ -665,7 +666,7 @@ const RoomCard = memo(({ room, userProgress, isBookmarked, onBookmark, onClick }
 RoomCard.displayName = "RoomCard";
 
 /* ══════ Room Row (list mode) ══════ */
-const RoomRow = memo(({ room, userProgress, isBookmarked, onBookmark, onClick }) => {
+const RoomRow = memo(({ room, userProgress, isBookmarked, onBookmark, onClick, id }) => {
   const dm = getDiff(room.difficulty);
   const cat = getCat(room.category);
   const prog = userProgress || null;
@@ -681,6 +682,7 @@ const RoomRow = memo(({ room, userProgress, isBookmarked, onBookmark, onClick })
 
   return (
     <div
+      id={id}
       onClick={onClick}
       className={`room-row group flex items-center gap-4 p-3 rounded-xl cursor-pointer ${isCompleted ? "room-row--completed" : ""}`}
     >
@@ -1239,15 +1241,17 @@ const Rooms = memo(() => {
               <div
                 className={`grid gap-5 ${viewMode === "list" ? "grid-cols-1" : "md:grid-cols-2 lg:grid-cols-3"}`}
               >
-                {gridRooms.map((room) => {
+                {gridRooms.map((room, index) => {
                   const prog =
                     userProgress[room.slug] || userProgress[room._id] || null;
                   const bmd = isBookmarked(
                     room.slug || room._id || room.id,
                     "room",
                   );
+                  const firstCardId = index === 0 ? "tour-rooms-first-card" : undefined;
                   return viewMode === "grid" ? (
                     <RoomCard
+                      id={firstCardId}
                       key={room._id || room.id}
                       room={room}
                       userProgress={prog}
@@ -1257,6 +1261,7 @@ const Rooms = memo(() => {
                     />
                   ) : (
                     <RoomRow
+                      id={firstCardId}
                       key={room._id || room.id}
                       room={room}
                       userProgress={prog}

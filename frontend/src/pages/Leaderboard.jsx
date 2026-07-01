@@ -329,7 +329,7 @@ const Leaderboard = memo(() => {
                 )}
 
                 {/* ═══ LEADERBOARD TABLE ═══ */}
-                <div className="lb-table rounded-2xl overflow-hidden bg-[#0a1424]/40 border border-white/[0.04]">
+                <div id="tour-leaderboard-table" className="lb-table rounded-2xl overflow-hidden bg-[#0a1424]/40 border border-white/[0.04]">
                   {/* Header */}
                   <div className="lb-table__header grid grid-cols-[48px_1fr_80px_100px] sm:grid-cols-[48px_1fr_80px_100px_110px] items-center px-6 py-3 font-mono text-xs text-slate-500 uppercase tracking-wider">
                     <span className="lb-table__th">#</span>

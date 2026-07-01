@@ -104,7 +104,7 @@ const StarRating = memo(({ rating }) => {
 StarRating.displayName = "StarRating";
 
 /* ─── Lab Card (Grid mode — premium redesign) ─── */
-const LabCard = memo(({ lab, progress, isPremiumUser }) => {
+const LabCard = memo(({ lab, progress, isPremiumUser, id }) => {
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarks();
   const slug = lab.slug || lab.id;
   const isSaved = isBookmarked(lab.id, "lab");
@@ -161,6 +161,7 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
 
   return (
     <div
+      id={id}
       className={`labs-card group relative rounded-2xl overflow-hidden flex flex-col ${
         isCompleted ? "labs-card--completed" : ""
       } ${isLocked ? "labs-card--locked" : ""}`}
@@ -301,7 +302,7 @@ const LabCard = memo(({ lab, progress, isPremiumUser }) => {
 LabCard.displayName = "LabCard";
 
 /* ─── Lab List Row ─── */
-const LabRow = memo(({ lab, progress, isPremiumUser }) => {
+const LabRow = memo(({ lab, progress, isPremiumUser, id }) => {
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarks();
   const slug = lab.slug || lab.id;
   const isSaved = isBookmarked(lab.id, "lab");
@@ -331,6 +332,7 @@ const LabRow = memo(({ lab, progress, isPremiumUser }) => {
 
   return (
     <div
+      id={id}
       className={`labs-row group flex items-center gap-4 p-3 rounded-xl ${isCompleted ? "labs-row--completed" : ""}`}
     >
       <div className="relative w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 labs-card__image bg-black">
@@ -832,11 +834,11 @@ const Labs = memo(() => {
           {/* Grid / List */}
           {!loading && !error && sorted.length > 0 && (
             <div className={`grid gap-5 ${viewMode === "grid" ? "md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
-              {paginated.map((lab) =>
+              {paginated.map((lab, index) =>
                 viewMode === "grid" ? (
-                  <LabCard key={lab.id} lab={lab} progress={userProgress[lab.id]} isPremiumUser={isPremiumUser} />
+                  <LabCard id={index === 0 ? "tour-labs-first-card" : undefined} key={lab.id} lab={lab} progress={userProgress[lab.id]} isPremiumUser={isPremiumUser} />
                 ) : (
-                  <LabRow key={lab.id} lab={lab} progress={userProgress[lab.id]} isPremiumUser={isPremiumUser} />
+                  <LabRow id={index === 0 ? "tour-labs-first-card" : undefined} key={lab.id} lab={lab} progress={userProgress[lab.id]} isPremiumUser={isPremiumUser} />
                 ),
               )}
             </div>

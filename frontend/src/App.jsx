@@ -15,6 +15,7 @@ import Navbar from "./components/navbar";
 import Footer from "./components/footer";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import SessionTimeoutWarning from "./components/SessionTimeoutWarning";
+import ProductTour from "./components/ProductTour";
 import { Suspense, lazy } from "react";
 import "./cyberverse-global.css";
 import "./App.css";
@@ -126,6 +127,7 @@ function AppContent() {
       {!isAdminRoute && <Footer />}
       {!isAdminRoute && <ConnectionStatus />}
       {!isAdminRoute && <SessionTimeoutWarning />}
+      {!isAdminRoute && <ProductTour />}
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Settings, Moon, Sun, Award, Bookmark, LogOut, ChevronDown, Crown, Zap, Shield, Target } from 'lucide-react'
+import { User, Settings, Moon, Sun, Award, Bookmark, LogOut, ChevronDown, Crown, Zap, Shield, Target, HelpCircle, ArrowLeft, Play } from 'lucide-react'
 import { useTheme } from '../contexts/theme-context'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const ProfileDropdown = ({ user, onLogout }) => {
     const [isOpen, setIsOpen] = useState(false)
+    const [showHelpSubmenu, setShowHelpSubmenu] = useState(false)
     const dropdownRef = useRef(null)
     const { isDarkMode, toggleTheme } = useTheme()
     const navigate = useNavigate()
@@ -18,6 +19,12 @@ const ProfileDropdown = ({ user, onLogout }) => {
     const xpPercentage = Math.min(100, Math.round((currentLevelXP / nextLevelXP) * 100))
     const rankTitle = level < 5 ? 'Novice' : level < 15 ? 'Hacker' : level < 30 ? 'Elite' : 'Master'
     const rankColor = level < 5 ? 'text-green-400' : level < 15 ? 'text-blue-400' : level < 30 ? 'text-purple-400' : 'text-red-400'
+
+    useEffect(() => {
+        if (!isOpen) {
+            setShowHelpSubmenu(false)
+        }
+    }, [isOpen])
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -39,6 +46,7 @@ const ProfileDropdown = ({ user, onLogout }) => {
         <div className="sm:relative shrink-0" ref={dropdownRef}>
             {/* Avatar Trigger */}
             <button
+                id="tour-profile-avatar"
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/5 transition-all group"
             >
@@ -120,66 +128,111 @@ const ProfileDropdown = ({ user, onLogout }) => {
                         </div>
 
                         <div className="p-2 space-y-1 bg-[#060913]/50">
-                            {/* Gamified Menu Items */}
-                            <button onClick={() => handleAction('/profile')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">
-                                        <User size={14} />
-                                    </div>
-                                    <span className="text-xs font-bold uppercase tracking-wider">Operator Profile</span>
-                                </div>
-                            </button>
+                            {showHelpSubmenu ? (
+                                <>
+                                    {/* Help Submenu Items */}
+                                    <button 
+                                        onClick={() => setShowHelpSubmenu(false)} 
+                                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5 font-mono"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-slate-500/10 text-slate-400 group-hover:-translate-x-0.5 transition-transform">
+                                                <ArrowLeft size={14} />
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Back to Menu</span>
+                                        </div>
+                                    </button>
 
-                            <button onClick={() => handleAction('/badges')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 group-hover:scale-110 transition-transform">
-                                        <Award size={14} />
-                                    </div>
-                                    <span className="text-xs font-bold uppercase tracking-wider">Achievements</span>
-                                </div>
-                                <span className="text-[9px] font-black bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20">NEW</span>
-                            </button>
+                                    <button 
+                                        onClick={() => { 
+                                            window.dispatchEvent(new CustomEvent("startProductTour")); 
+                                            setIsOpen(false); 
+                                        }} 
+                                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-cyan-500/10 text-cyan-400 hover:text-cyan-300 transition-all group border border-transparent hover:border-cyan-500/20 font-mono"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">
+                                                <Play size={14} />
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Take Product Tour</span>
+                                        </div>
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Gamified Menu Items */}
+                                    <button onClick={() => handleAction('/profile')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">
+                                                <User size={14} />
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Operator Profile</span>
+                                        </div>
+                                    </button>
 
-                            <button onClick={() => handleAction('/saved')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
-                                        <Bookmark size={14} />
-                                    </div>
-                                    <span className="text-xs font-bold uppercase tracking-wider">Saved Intel</span>
-                                </div>
-                            </button>
+                                    <button onClick={() => handleAction('/badges')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 group-hover:scale-110 transition-transform">
+                                                <Award size={14} />
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Achievements</span>
+                                        </div>
+                                        <span className="text-[9px] font-black bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20">NEW</span>
+                                    </button>
 
-                            <button onClick={() => handleAction('/settings')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-1.5 rounded-lg bg-slate-500/10 text-slate-400 group-hover:scale-110 transition-transform">
-                                        <Settings size={14} />
-                                    </div>
-                                    <span className="text-xs font-bold uppercase tracking-wider">System Config</span>
-                                </div>
-                            </button>
+                                    <button onClick={() => handleAction('/saved')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+                                                <Bookmark size={14} />
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Saved Intel</span>
+                                        </div>
+                                    </button>
 
-                            <div className="h-px bg-white/5 my-2" />
+                                    <button onClick={() => handleAction('/settings')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-slate-500/10 text-slate-400 group-hover:scale-110 transition-transform">
+                                                <Settings size={14} />
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">System Config</span>
+                                        </div>
+                                    </button>
 
-                            <button onClick={toggleTheme} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-400 group-hover:scale-110 transition-transform">
-                                        {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
-                                    </div>
-                                    <span className="text-xs font-bold uppercase tracking-wider">Theme Overlay</span>
-                                </div>
-                                <div className={`w-7 h-3.5 rounded-full relative transition-colors ${isDarkMode ? 'bg-cyan-500/30 border border-cyan-500/50' : 'bg-slate-500/30 border border-slate-500/50'}`}>
-                                    <div className={`absolute top-[1px] left-[1px] w-2.5 h-2.5 bg-white rounded-full transition-transform ${isDarkMode ? 'translate-x-3.5 shadow-[0_0_5px_#00d1ff]' : ''}`} />
-                                </div>
-                            </button>
+                                    {/* Help & Support Button */}
+                                    <button onClick={() => setShowHelpSubmenu(true)} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+                                                <HelpCircle size={14} />
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Help</span>
+                                        </div>
+                                        <ChevronDown size={12} className="text-slate-500 group-hover:text-slate-400 transition-colors" />
+                                    </button>
 
-                            <button onClick={() => handleAction(onLogout)} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-all group border border-transparent hover:border-red-500/20 mt-1">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400 group-hover:scale-110 transition-transform">
-                                        <LogOut size={14} />
-                                    </div>
-                                    <span className="text-xs font-black uppercase tracking-wider">Disconnect Session</span>
-                                </div>
-                            </button>
+                                    <div className="h-px bg-white/5 my-2" />
+
+                                    <button onClick={toggleTheme} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-400 group-hover:scale-110 transition-transform">
+                                                {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Theme Overlay</span>
+                                        </div>
+                                        <div className={`w-7 h-3.5 rounded-full relative transition-colors ${isDarkMode ? 'bg-cyan-500/30 border border-cyan-500/50' : 'bg-slate-500/30 border border-slate-500/50'}`}>
+                                            <div className={`absolute top-[1px] left-[1px] w-2.5 h-2.5 bg-white rounded-full transition-transform ${isDarkMode ? 'translate-x-3.5 shadow-[0_0_5px_#00d1ff]' : ''}`} />
+                                        </div>
+                                    </button>
+
+                                    <button onClick={() => handleAction(onLogout)} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-all group border border-transparent hover:border-red-500/20 mt-1">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400 group-hover:scale-110 transition-transform">
+                                                <LogOut size={14} />
+                                            </div>
+                                            <span className="text-xs font-black uppercase tracking-wider">Disconnect Session</span>
+                                        </div>
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </motion.div>
                 )}

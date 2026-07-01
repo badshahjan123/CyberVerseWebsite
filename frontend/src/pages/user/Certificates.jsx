@@ -394,7 +394,7 @@ const CertificatesPage = memo(() => {
               </div>
 
               {/* Stats Strip */}
-              <div className="cert-stats-card flex items-center p-6 rounded-2xl border border-cyan-500/10 bg-[#0a1424]/40 backdrop-blur-xl font-mono text-xs">
+              <div id="tour-certificates-stats" className="cert-stats-card flex items-center p-6 rounded-2xl border border-cyan-500/10 bg-[#0a1424]/40 backdrop-blur-xl font-mono text-xs">
                 <div className="flex items-center gap-8 px-2">
                   <div className="text-center">
                     <p className="text-3xl font-black text-cyan-400">{earnedCount}</p>
