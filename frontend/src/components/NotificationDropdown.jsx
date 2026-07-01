@@ -282,7 +282,7 @@ const NotificationDropdown = () => {
   }
 
   return (
-    <div className="relative font-mono" ref={dropdownRef}>
+    <div className="sm:relative font-mono" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/5 rounded-xl border border-white/[0.04] bg-[#0a1220]/60 transition-all shadow-lg"
@@ -295,7 +295,7 @@ const NotificationDropdown = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-3.5 w-96 bg-[#081224]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-cyan-500/15 overflow-hidden z-50">
+        <div className="absolute left-4 right-4 top-[74px] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-3.5 sm:w-96 bg-[#081224]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-cyan-500/15 overflow-hidden z-50">
           <div className="px-4.5 py-3.5 border-b border-white/[0.06] flex items-center justify-between bg-black/40">
             <div className="flex items-center gap-2">
               <Cpu size={14} className="text-cyan-400 animate-pulse" />

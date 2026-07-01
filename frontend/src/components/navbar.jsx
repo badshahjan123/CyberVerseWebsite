@@ -179,34 +179,35 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isOpen && (
-          <div className="cv-mobile-menu-overlay">
-            <div className="cv-mobile-menu-content">
-              <nav className="cv-mobile-nav-links">
-                {navLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    className={({ isActive }) =>
-                      `cv-mobile-nav-link ${isActive ? "active" : ""}`
-                    }
-                  >
-                    {link.text}
-                  </NavLink>
-                ))}
-              </nav>
-              
-              {!isAuthenticated && (
-                <div className="cv-mobile-auth-section">
-                  <Link to="/login" className="cv-mobile-login-btn">Log In</Link>
-                  <Link to="/signup" className="cv-mobile-signup-btn">SIGN UP</Link>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </nav>
+
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="cv-mobile-menu-overlay">
+          <div className="cv-mobile-menu-content">
+            <nav className="cv-mobile-nav-links">
+              {navLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) =>
+                    `cv-mobile-nav-link ${isActive ? "active" : ""}`
+                  }
+                >
+                  {link.text}
+                </NavLink>
+              ))}
+            </nav>
+            
+            {!isAuthenticated && (
+              <div className="cv-mobile-auth-section">
+                <Link to="/login" className="cv-mobile-login-btn">Log In</Link>
+                <Link to="/signup" className="cv-mobile-signup-btn">SIGN UP</Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>

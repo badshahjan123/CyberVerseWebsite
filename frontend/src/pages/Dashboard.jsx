@@ -74,7 +74,7 @@ AnimatedCounter.displayName = "AnimatedCounter"
 /* ── Card Shell ── */
 const Card = ({ children, className = "", style = {} }) => (
   <div
-    className={`rounded-xl p-5 transition-all duration-300 relative overflow-hidden corner-brackets ${className}`}
+    className={`rounded-xl p-4 sm:p-5 transition-all duration-300 relative overflow-hidden corner-brackets ${className}`}
     style={{
       background: 'rgba(8,14,25,0.85)',
       border: '1px solid rgba(0,209,255,0.12)',
@@ -324,7 +324,7 @@ const Dashboard = memo(() => {
             {/* ══════════════════════════════════════════════
                 OPERATOR COMMAND IDENTITY HUD
             ══════════════════════════════════════════════ */}
-            <div className="hud-container p-6 mb-4 flex flex-col md:flex-row items-center justify-between gap-6 border-l-[3px] relative overflow-hidden"
+            <div className="hud-container p-4 sm:p-6 mb-4 flex flex-col md:flex-row items-center justify-between gap-6 border-l-[3px] relative overflow-hidden"
               style={{ 
                 borderColor: '#00D1FF', 
                 background: 'linear-gradient(135deg, rgba(12,20,38,0.92) 0%, rgba(6,10,20,0.95) 100%)', 
@@ -336,7 +336,7 @@ const Dashboard = memo(() => {
             >
               <div className="absolute inset-0 bg-linear-scanlines pointer-events-none opacity-[0.03]" />
               
-              <div className="flex items-center gap-5 relative z-10">
+              <div className="flex items-center gap-5 relative z-10 w-full md:w-auto">
                 
                 {/* Glowing Avatar */}
                 <div className="relative w-16 h-16 rounded-xl border border-cyan-400/30 overflow-hidden shrink-0 flex items-center justify-center bg-[#070b16] shadow-[0_0_15px_rgba(0,209,255,0.15)]">
@@ -354,11 +354,11 @@ const Dashboard = memo(() => {
                     onError={e => { e.target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ud.name)}` }}
                   />
                 </div>
-
-                <div>
+ 
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-black text-white uppercase db-orbitron tracking-tight font-mono">{ud.name}</h1>
-                    {ud.isPremium && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
+                    <h1 className="text-xl sm:text-2xl font-black text-white uppercase db-orbitron tracking-tight font-mono truncate">{ud.name}</h1>
+                    {ud.isPremium && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />}
                   </div>
                   <div className="flex flex-wrap gap-2 mt-1.5 font-mono text-[9px]">
                     <span className="flex items-center gap-1 text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-400/20 font-black tracking-widest">
@@ -371,23 +371,26 @@ const Dashboard = memo(() => {
                     </span>
                   </div>
                 </div>
-
+ 
               </div>
-
+ 
               {/* HUD Right Actions */}
-              <div className="flex items-center gap-4 relative z-10 font-mono">
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto relative z-10 font-mono">
                 <Link 
                   to="/labs" 
-                  className="px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all hover:brightness-110 shadow-lg shadow-orange-500/10" 
+                  className="w-full sm:w-auto text-center px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all hover:brightness-110 shadow-lg shadow-orange-500/10" 
                   style={{ background: `linear-gradient(135deg, ${T.orange}, #cc4400)`, border: '1px solid rgba(255,107,0,0.3)' }}
                 >
                   Launch Sandbox
                 </Link>
-                <Link to="/rooms" className="px-6 py-3 rounded-lg bg-white/[0.02] border border-white/[0.08] text-[10px] font-black uppercase tracking-widest hover:bg-white/[0.05] transition-all">
+                <Link 
+                  to="/rooms" 
+                  className="w-full sm:w-auto text-center px-6 py-3 rounded-lg bg-white/[0.02] border border-white/[0.08] text-[10px] font-black uppercase tracking-widest hover:bg-white/[0.05] transition-all"
+                >
                   Missions Control
                 </Link>
               </div>
-
+ 
             </div>
 
             {/* ── Sleek Telemetry Ticker ── */}
@@ -422,7 +425,7 @@ const Dashboard = memo(() => {
                 { label: "Active Sandboxes", val: ud.completedLabs,  color: T.purple, Icon: Terminal, chart: [5, 12, 10, 15, 18, 22] },
                 { label: "Streak Log",      val: ud.currentStreak,  color: T.orange, Icon: Flame, chart: [1, 2, 3, 4, 6, 7] },
               ].map(({ label, val, color, Icon, chart }) => (
-                <div key={label} className="flex items-center justify-between rounded-xl px-5 py-4 transition-all duration-300 hover:scale-[1.02] relative overflow-hidden"
+                <div key={label} className="flex items-center justify-between rounded-xl p-3 sm:px-5 sm:py-4 transition-all duration-300 hover:scale-[1.02] relative overflow-hidden"
                   style={{ 
                     background: 'rgba(8,14,25,0.85)', 
                     border: '1px solid rgba(0,209,255,0.12)', 
@@ -430,7 +433,7 @@ const Dashboard = memo(() => {
                     boxShadow: '0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)' 
                   }}
                 >
-                  <div className="flex items-center gap-3.5 relative z-10">
+                  <div className="flex items-center gap-2 sm:gap-3.5 relative z-10">
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
                       <Icon size={14} style={{ color }} />

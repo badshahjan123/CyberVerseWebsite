@@ -257,9 +257,6 @@
   .cv-nav-search-wrapper {
     display: none;
   }
-}
-
-@media (max-width: 768px) {
   .cv-navbar-matte {
     top: 0;
     left: 0;

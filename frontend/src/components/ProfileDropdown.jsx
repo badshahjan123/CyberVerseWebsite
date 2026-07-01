@@ -36,7 +36,7 @@ const ProfileDropdown = ({ user, onLogout }) => {
     }
 
     return (
-        <div className="relative" ref={dropdownRef}>
+        <div className="sm:relative" ref={dropdownRef}>
             {/* Avatar Trigger */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
@@ -64,7 +64,7 @@ const ProfileDropdown = ({ user, onLogout }) => {
                         animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
                         exit={{ opacity: 0, y: 10, scale: 0.95, filter: 'blur(5px)' }}
                         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                        className="absolute right-0 mt-3 w-[320px] bg-[#0b1120]/95 backdrop-blur-xl rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] border border-cyan-500/20 overflow-hidden z-50 origin-top-right"
+                        className="absolute left-4 right-4 top-[74px] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-3 sm:w-[320px] bg-[#0b1120]/95 backdrop-blur-xl rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] border border-cyan-500/20 overflow-hidden z-50 origin-top-right"
                     >
                         
                         {/* Header: Player Identity */}

@@ -329,9 +329,11 @@ html.light .btn-ghost:hover {
    ======================================== */
 
 /* Navbar */
-html.dark .cv-navbar-matte {
-  background: transparent !important;
-  border-bottom: none !important;
+@media (min-width: 1025px) {
+  html.dark .cv-navbar-matte {
+    background: transparent !important;
+    border-bottom: none !important;
+  }
 }
 
 html.dark .cv-navbar-matte.scrolled {
@@ -341,9 +343,11 @@ html.dark .cv-navbar-matte.scrolled {
   -webkit-backdrop-filter: blur(16px) !important;
 }
 
-html.light .cv-navbar-matte {
-  background: transparent !important;
-  border-bottom: none !important;
+@media (min-width: 1025px) {
+  html.light .cv-navbar-matte {
+    background: transparent !important;
+    border-bottom: none !important;
+  }
 }
 
 html.light .cv-navbar-matte.scrolled {
