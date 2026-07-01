@@ -941,7 +941,7 @@ const LabDetail = memo(() => {
                       index={idx} 
                       onComplete={handleCompleteTask}
                       isActive={idx === currentTaskIdx}
-                      isLocked={idx > currentTaskIdx}
+                      isLocked={false}
                       guidedMode={guidedMode}
                       labSlug={lab.slug}
                     />

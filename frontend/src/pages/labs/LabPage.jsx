@@ -913,7 +913,7 @@ const LabPage = () => {
                     task={task}
                     isCompleted={completedTasks.includes(task.id)}
                     isActive={idx === currentTaskIdx}
-                    isLocked={idx > currentTaskIdx}
+                    isLocked={false}
                     onSubmit={handleSubmitAnswer}
                   />
                 ))}

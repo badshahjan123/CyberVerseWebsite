@@ -278,7 +278,7 @@ const LinuxForensicsLab = () => {
             const updatedCompletedTasks = [...completedTasks, taskId];
             setCompletedTasks(updatedCompletedTasks);
             
-            if (taskId === tasks.length) {
+            if (updatedCompletedTasks.length === tasks.length) {
                 setLabCompleted(true);
                 try {
                     const response = await apiCall('/labs/linux-forensics/complete', {
