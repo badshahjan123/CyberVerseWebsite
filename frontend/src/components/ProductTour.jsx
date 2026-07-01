@@ -516,21 +516,85 @@ export default function ProductTour() {
   const step = steps[currentStepIndex];
   const isCentered = !step.target || !tourState.elementFound;
 
-  const tooltipStyle = isCentered
-    ? {
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: "min(300px, 90vw)",
-      }
-    : {
-        position: "fixed",
-        top: `${tourState.popTop}px`,
-        left: `${tourState.popLeft}px`,
-        width: `${tourState.popWidth}px`,
-      };
+  const renderCardContent = () => (
+    <>
+      {/* Step indicator header */}
+      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+        <span className="text-[10px] font-black text-cyan-400 tracking-wider uppercase">
+          <span className="inline sm:hidden">{tourType === "lab" ? "LAB" : "SYS"} BRIEF // {currentStepIndex + 1}/{steps.length}</span>
+          <span className="hidden sm:inline">{tourType === "lab" ? "LAB SESSION BRIEFING" : "SYSTEM BRIEFING"} // STEP {currentStepIndex + 1} OF {steps.length}</span>
+        </span>
+        <button
+          onClick={handleSkip}
+          className="text-slate-500 hover:text-white transition-colors p-1"
+          title="Skip Tour"
+        >
+          <X size={14} />
+        </button>
+      </div>
 
+      {/* Content */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] animate-pulse" />
+          {step.title}
+        </h3>
+        <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+          {step.content}
+        </p>
+      </div>
+
+      {/* Footer actions */}
+      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+        <button
+          onClick={handleSkip}
+          className="text-slate-500 hover:text-slate-300 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap"
+        >
+          Skip
+        </button>
+
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {currentStepIndex > 0 && (
+            <button
+              onClick={handlePrev}
+              className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 border border-white/10 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors font-bold uppercase text-[9px] tracking-wider whitespace-nowrap"
+            >
+              Prev
+            </button>
+          )}
+
+          <button
+            onClick={handleNext}
+            className="flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg transition-colors font-black uppercase text-[9px] tracking-wider whitespace-nowrap"
+          >
+            {currentStepIndex === steps.length - 1 ? "Finish" : "Next"}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+
+  if (isCentered) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+        {/* Dimmed backdrop blocking mouse clicks to page behind the tour */}
+        <div className="absolute inset-0 bg-black/45 pointer-events-auto z-[9990]" style={{ cursor: "default" }} />
+
+        {/* Centered Modal Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          style={{ width: "min(300px, 90vw)" }}
+          className="bg-[#080d1a]/95 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-4 sm:p-5 shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[9995] pointer-events-auto font-mono text-xs text-slate-300 flex flex-col gap-3 sm:gap-4 select-none"
+        >
+          {renderCardContent()}
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Otherwise, render absolute positioned target-relative tour tooltip
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
       {/* Dimmed backdrop blocking mouse clicks to page behind the tour */}
@@ -557,83 +621,33 @@ export default function ProductTour() {
 
       {/* Popover Card */}
       <motion.div
-        layout
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        style={tooltipStyle}
+        style={{
+          position: "fixed",
+          top: `${tourState.popTop}px`,
+          left: `${tourState.popLeft}px`,
+          width: `${tourState.popWidth}px`,
+        }}
         className="bg-[#080d1a]/95 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-4 sm:p-5 shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[9995] pointer-events-auto font-mono text-xs text-slate-300 flex flex-col gap-3 sm:gap-4 select-none"
       >
         {/* Dynamic pointing arrow pointer */}
-        {!isCentered && (
-          <div
-            className="absolute w-3 h-3 bg-[#080d1a] border-cyan-500/30 rotate-45 z-[9996] transition-all duration-150"
-            style={{
-              top: tourState.placement === "bottom" ? -6 : tourState.placement === "top" ? "auto" : tourState.arrowTop,
-              bottom: tourState.placement === "top" ? -6 : "auto",
-              left: (tourState.placement === "bottom" || tourState.placement === "top") ? tourState.arrowLeft : tourState.placement === "right" ? -6 : "auto",
-              right: tourState.placement === "left" ? -6 : "auto",
-              borderTopWidth: (tourState.placement === "bottom" || tourState.placement === "left") ? 1 : 0,
-              borderLeftWidth: (tourState.placement === "bottom" || tourState.placement === "right") ? 1 : 0,
-              borderBottomWidth: (tourState.placement === "top" || tourState.placement === "right") ? 1 : 0,
-              borderRightWidth: (tourState.placement === "top" || tourState.placement === "left") ? 1 : 0,
-            }}
-          />
-        )}
+        <div
+          className="absolute w-3 h-3 bg-[#080d1a] border-cyan-500/30 rotate-45 z-[9996] transition-all duration-150"
+          style={{
+            top: tourState.placement === "bottom" ? -6 : tourState.placement === "top" ? "auto" : tourState.arrowTop,
+            bottom: tourState.placement === "top" ? -6 : "auto",
+            left: (tourState.placement === "bottom" || tourState.placement === "top") ? tourState.arrowLeft : tourState.placement === "right" ? -6 : "auto",
+            right: tourState.placement === "left" ? -6 : "auto",
+            borderTopWidth: (tourState.placement === "bottom" || tourState.placement === "left") ? 1 : 0,
+            borderLeftWidth: (tourState.placement === "bottom" || tourState.placement === "right") ? 1 : 0,
+            borderBottomWidth: (tourState.placement === "top" || tourState.placement === "right") ? 1 : 0,
+            borderRightWidth: (tourState.placement === "top" || tourState.placement === "left") ? 1 : 0,
+          }}
+        />
 
-        {/* Step indicator header */}
-        <div className="flex items-center justify-between border-b border-white/5 pb-2">
-          <span className="text-[10px] font-black text-cyan-400 tracking-wider uppercase">
-            <span className="inline sm:hidden">{tourType === "lab" ? "LAB" : "SYS"} BRIEF // {currentStepIndex + 1}/{steps.length}</span>
-            <span className="hidden sm:inline">{tourType === "lab" ? "LAB SESSION BRIEFING" : "SYSTEM BRIEFING"} // STEP {currentStepIndex + 1} OF {steps.length}</span>
-          </span>
-          <button
-            onClick={handleSkip}
-            className="text-slate-500 hover:text-white transition-colors p-1"
-            title="Skip Tour"
-          >
-            <X size={14} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] animate-pulse" />
-            {step.title}
-          </h3>
-          <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
-            {step.content}
-          </p>
-        </div>
-
-        {/* Footer actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
-          <button
-            onClick={handleSkip}
-            className="text-slate-500 hover:text-slate-300 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap"
-          >
-            Skip
-          </button>
-
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {currentStepIndex > 0 && (
-              <button
-                onClick={handlePrev}
-                className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 border border-white/10 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors font-bold uppercase text-[9px] tracking-wider whitespace-nowrap"
-              >
-                Prev
-              </button>
-            )}
-
-            <button
-              onClick={handleNext}
-              className="flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg transition-colors font-black uppercase text-[9px] tracking-wider whitespace-nowrap"
-            >
-              {currentStepIndex === steps.length - 1 ? "Finish" : "Next"}
-            </button>
-          </div>
-        </div>
+        {renderCardContent()}
       </motion.div>
     </div>
   );
