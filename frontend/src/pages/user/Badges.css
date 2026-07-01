@@ -65,6 +65,13 @@
   background: rgba(11,18,32,0.8); border: 1px solid rgba(255,255,255,0.08);
   border-radius: 14px; backdrop-filter: blur(12px);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.bdg-tab-group::-webkit-scrollbar {
+  display: none;
 }
 
 .bdg-tab {
@@ -227,3 +234,32 @@
 }
 
 @keyframes bdg-spin { to { transform: rotate(360deg); } }
+
+/* Responsive styles for Mobile/Tablet Devices */
+@media (max-width: 768px) {
+  .bdg-stats-card {
+    width: 100%;
+    padding: 20px !important;
+  }
+
+  .bdg-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+    width: 100% !important;
+  }
+
+  /* Hide vertical dividers on mobile view */
+  .bdg-stats-grid .w-px.h-10 {
+    display: none !important;
+  }
+
+  /* Make level progress details span full width on a new line */
+  .bdg-stats-grid > div:last-child {
+    grid-column: span 3 !important;
+    margin-left: 0 !important;
+    max-width: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 16px;
+  }
+}

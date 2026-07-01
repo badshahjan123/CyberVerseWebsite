@@ -199,7 +199,7 @@ const Badges = () => {
 
               {/* Stats Strip */}
               <div id="tour-badges-stats" className="bdg-stats-card flex items-center p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
-                <div className="flex items-center gap-8 px-2">
+                <div className="bdg-stats-grid flex items-center gap-8 px-2">
                   <div className="text-center">
                     <p className="text-3xl font-black text-white">{earnedCount}<span className="text-xs text-slate-500 ml-1">/{totalCount}</span></p>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Earned</p>
