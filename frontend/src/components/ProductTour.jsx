@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../contexts/app-context";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, X, Play, Target, HelpCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, X, Play } from "lucide-react";
 
 const TOUR_STEPS = [
   {
@@ -77,23 +77,28 @@ export default function ProductTour() {
 
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [spotlightRect, setSpotlightRect] = useState(null);
-  const [elementFound, setElementFound] = useState(false);
+
+  const [tourState, setTourState] = useState({
+    placement: "bottom",
+    popTop: 0,
+    popLeft: 0,
+    popWidth: 320,
+    arrowLeft: 160,
+    arrowTop: 100,
+    spotlightRect: null,
+    elementFound: false,
+  });
 
   // Auto-start logic on first login
   useEffect(() => {
     if (loading || !isAuthenticated) return;
 
-    // Check if user has completed the tour before
     const isCompletedBefore = localStorage.getItem("cyberverse_tour_completed") === "true";
-    
-    // We auto-start when they land on dashboard and haven't completed the tour
     if (!isCompletedBefore && location.pathname === "/dashboard") {
-      // Delay slightly for render completion
       const timer = setTimeout(() => {
         setIsActive(true);
         setCurrentStepIndex(0);
-      }, 1000);
+      }, 1200);
       return () => clearTimeout(timer);
     }
   }, [isAuthenticated, loading, location.pathname]);
@@ -113,53 +118,230 @@ export default function ProductTour() {
     return () => window.removeEventListener("startProductTour", handleManualStart);
   }, [location.pathname, navigate]);
 
-  // Calculate spotlight position
-  const updateSpotlight = useCallback(() => {
+  // Positioning alignment engine
+  const alignTour = useCallback((forceScroll = false) => {
     if (!isActive) return;
     const step = TOUR_STEPS[currentStepIndex];
     if (!step || !step.target) {
-      setSpotlightRect(null);
-      setElementFound(false);
+      setTourState({
+        placement: "center",
+        popTop: 0,
+        popLeft: 0,
+        popWidth: 340,
+        arrowLeft: 170,
+        arrowTop: 100,
+        spotlightRect: null,
+        elementFound: false,
+      });
       return;
     }
 
     const el = document.querySelector(step.target);
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      
-      // Auto scroll to make sure it's nicely visible, especially on mobile
-      const isOffscreen = rect.top < 80 || rect.bottom > window.innerHeight - 80;
-      if (isOffscreen) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
+    if (!el) {
+      setTourState((prev) => ({ ...prev, elementFound: false, spotlightRect: null }));
+      return;
+    }
 
-      setSpotlightRect({
+    const rect = el.getBoundingClientRect();
+    const docTop = rect.top + window.scrollY;
+    const docLeft = rect.left + window.scrollX;
+    const docWidth = rect.width;
+    const docHeight = rect.height;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const popWidth = Math.min(320, viewportWidth - 32);
+    // Dynamic height estimate based on character count to assist initial placement bounds
+    const estimatedHeight = 160 + Math.ceil(step.content.length * 0.4);
+    const popHeight = estimatedHeight;
+
+    let placement = "bottom";
+
+    // Strategic positioning based on screen size and space availability
+    if (viewportWidth >= 1024) {
+      // Desktop / Large screen: choose top, bottom, left, or right
+      if (docHeight > viewportHeight - 200) {
+        // Very tall elements: prioritize side placements to prevent overlapping
+        const spaceRight = viewportWidth - rect.right;
+        const spaceLeft = rect.left;
+        if (spaceRight >= popWidth + 32) {
+          placement = "right";
+        } else if (spaceLeft >= popWidth + 32) {
+          placement = "left";
+        } else {
+          placement = "bottom";
+        }
+      } else {
+        // Prefer top/bottom spacing
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        if (spaceBelow >= popHeight + 32 || docTop < popHeight + 100) {
+          placement = "bottom";
+        } else {
+          placement = "top";
+        }
+      }
+    } else {
+      // Mobile / Tablet: always top or bottom to respect width constraints
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      if (spaceBelow >= popHeight + 16) {
+        placement = "bottom";
+      } else if (spaceAbove >= popHeight + 16) {
+        placement = "top";
+      } else {
+        placement = spaceBelow >= spaceAbove ? "bottom" : "top";
+      }
+    }
+
+    // Coordinate math (viewport-relative)
+    let popTop = 0;
+    let popLeft = 0;
+
+    if (placement === "bottom") {
+      popTop = rect.bottom + 16;
+      popLeft = rect.left + rect.width / 2 - popWidth / 2;
+    } else if (placement === "top") {
+      popTop = rect.top - popHeight - 16;
+      popLeft = rect.left + rect.width / 2 - popWidth / 2;
+    } else if (placement === "right") {
+      popTop = rect.top + rect.height / 2 - popHeight / 2;
+      popLeft = rect.right + 16;
+    } else if (placement === "left") {
+      popTop = rect.top + rect.height / 2 - popHeight / 2;
+      popLeft = rect.left - popWidth - 16;
+    }
+
+    // Keep popover inside safe horizontal margins
+    if (popLeft < 16) {
+      popLeft = 16;
+    } else if (popLeft + popWidth > viewportWidth - 16) {
+      popLeft = viewportWidth - popWidth - 16;
+    }
+
+    // Prevent clipping against top navbar (height 80px) or bottom screen boundary
+    if (popTop < 80 && (placement === "top" || placement === "left" || placement === "right")) {
+      popTop = Math.max(16, rect.bottom + 16);
+      placement = "bottom";
+    } else if (popTop + popHeight > viewportHeight - 16 && placement === "bottom") {
+      popTop = Math.max(16, rect.top - popHeight - 16);
+      placement = "top";
+    }
+
+    // Precise pointer arrow targeting offset calculation
+    let arrowLeft = popWidth / 2;
+    let arrowTop = popHeight / 2;
+
+    if (placement === "bottom" || placement === "top") {
+      const targetCenter = rect.left + rect.width / 2;
+      const popoverCenter = popLeft + popWidth / 2;
+      arrowLeft = popWidth / 2 + (targetCenter - popoverCenter);
+      arrowLeft = Math.max(16, Math.min(arrowLeft, popWidth - 16));
+    } else if (placement === "left" || placement === "right") {
+      const targetCenterY = rect.top + rect.height / 2;
+      const popoverCenterY = popTop + popHeight / 2;
+      arrowTop = popHeight / 2 + (targetCenterY - popoverCenterY);
+      arrowTop = Math.max(16, Math.min(arrowTop, popHeight - 16));
+    }
+
+    setTourState({
+      placement,
+      popTop,
+      popLeft,
+      popWidth,
+      arrowLeft,
+      arrowTop,
+      spotlightRect: {
         top: rect.top,
         left: rect.left,
         width: rect.width,
         height: rect.height,
+      },
+      elementFound: true,
+    });
+
+    // Auto-scroll centers the combined span (target + popover) perfectly in the viewport
+    if (forceScroll) {
+      const docPopTop = popTop + window.scrollY;
+      const docPopLeft = popLeft + window.scrollX;
+
+      const minY = Math.min(docTop, docPopTop);
+      const maxY = Math.max(docTop + docHeight, docPopTop + popHeight);
+      const minX = Math.min(docLeft, docPopLeft);
+      const maxX = Math.max(docLeft + docWidth, docPopLeft + popWidth);
+
+      const spanHeight = maxY - minY;
+      const spanWidth = maxX - minX;
+
+      let targetScrollY = minY - (viewportHeight - spanHeight) / 2;
+      let targetScrollX = minX - (viewportWidth - spanWidth) / 2;
+
+      // Ensure we don't scroll past document bounds
+      const maxScrollY = document.documentElement.scrollHeight - viewportHeight;
+      const maxScrollX = document.documentElement.scrollWidth - viewportWidth;
+
+      targetScrollY = Math.max(0, Math.min(targetScrollY, maxScrollY));
+      targetScrollX = Math.max(0, Math.min(targetScrollX, maxScrollX));
+
+      // Leave a top-padding clearance for sticky headers
+      if (targetScrollY > 10) {
+        targetScrollY = Math.max(0, targetScrollY - 20);
+      }
+
+      window.scrollTo({
+        top: targetScrollY,
+        left: targetScrollX,
+        behavior: "smooth",
       });
-      setElementFound(true);
-    } else {
-      setElementFound(false);
-      setSpotlightRect(null);
     }
   }, [isActive, currentStepIndex]);
 
-  // Polling position tracking
+  // Handle page transitions & lazy-loading retry loop
   useEffect(() => {
     if (!isActive) return;
 
-    const interval = setInterval(updateSpotlight, 150);
-    window.addEventListener("resize", updateSpotlight);
-    window.addEventListener("scroll", updateSpotlight, true);
+    // Trigger scroll immediately for fast renders
+    alignTour(true);
+
+    let retries = 0;
+    const retryInterval = setInterval(() => {
+      const step = TOUR_STEPS[currentStepIndex];
+      if (!step || !step.target) {
+        clearInterval(retryInterval);
+        return;
+      }
+      const el = document.querySelector(step.target);
+      if (el) {
+        alignTour(true);
+        clearInterval(retryInterval);
+      } else {
+        retries++;
+        if (retries > 30) { // Keep polling up to 4.5 seconds
+          clearInterval(retryInterval);
+        }
+      }
+    }, 150);
+
+    return () => clearInterval(retryInterval);
+  }, [isActive, currentStepIndex]);
+
+  // Window resize/scroll dynamic position recalculation
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleUpdate = () => {
+      alignTour(false);
+    };
+
+    window.addEventListener("resize", handleUpdate);
+    window.addEventListener("scroll", handleUpdate, true);
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener("resize", updateSpotlight);
-      window.removeEventListener("scroll", updateSpotlight, true);
+      window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("scroll", handleUpdate, true);
     };
-  }, [isActive, currentStepIndex, updateSpotlight]);
+  }, [isActive, alignTour]);
 
   const handleNext = () => {
     const nextIdx = currentStepIndex + 1;
@@ -192,8 +374,6 @@ export default function ProductTour() {
   const handleComplete = () => {
     setIsActive(false);
     localStorage.setItem("cyberverse_tour_completed", "true");
-    
-    // Go to dashboard on finish if desired
     if (location.pathname !== "/dashboard") {
       navigate("/dashboard");
     }
@@ -202,46 +382,7 @@ export default function ProductTour() {
   if (!isActive) return null;
 
   const step = TOUR_STEPS[currentStepIndex];
-  const isCentered = !step.target || !elementFound;
-
-  // Collision detection for tooltip placement
-  const getTooltipPosition = () => {
-    if (!spotlightRect) return {};
-
-    const { top, left, width, height } = spotlightRect;
-    const tooltipWidth = 320;
-    const tooltipHeight = 200; // estimate
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-
-    // Default: try placing it below the target
-    let tooltipTop = top + height + 16;
-    let tooltipLeft = left + width / 2 - tooltipWidth / 2;
-
-    // Switch to above if it overflows the bottom
-    if (tooltipTop + tooltipHeight > viewportHeight - 16) {
-      tooltipTop = top - tooltipHeight - 16;
-    }
-
-    // Keep within horizontal margins
-    if (tooltipLeft < 16) {
-      tooltipLeft = 16;
-    } else if (tooltipLeft + tooltipWidth > viewportWidth - 16) {
-      tooltipLeft = viewportWidth - tooltipWidth - 16;
-    }
-
-    // Edge case safety
-    if (tooltipTop < 80) {
-      tooltipTop = Math.max(16, top + height + 16);
-    }
-
-    return {
-      position: "fixed",
-      top: `${tooltipTop}px`,
-      left: `${tooltipLeft}px`,
-      width: `${Math.min(tooltipWidth, viewportWidth - 32)}px`,
-    };
-  };
+  const isCentered = !step.target || !tourState.elementFound;
 
   const tooltipStyle = isCentered
     ? {
@@ -251,16 +392,21 @@ export default function ProductTour() {
         transform: "translate(-50%, -50%)",
         width: "min(340px, 90vw)",
       }
-    : getTooltipPosition();
+    : {
+        position: "fixed",
+        top: `${tourState.popTop}px`,
+        left: `${tourState.popLeft}px`,
+        width: `${tourState.popWidth}px`,
+      };
 
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
       {/* Dimmed backdrop blocking mouse clicks to page behind the tour */}
       <div className="absolute inset-0 bg-black/45 pointer-events-auto z-[9990]" style={{ cursor: "default" }} />
 
-      {/* Glow Spotlight */}
+      {/* Spotlight box */}
       <AnimatePresence>
-        {spotlightRect && (
+        {tourState.spotlightRect && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -268,16 +414,16 @@ export default function ProductTour() {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed pointer-events-none rounded-xl border border-cyan-400/80 shadow-[0_0_0_9999px_rgba(3,7,18,0.75),0_0_15px_rgba(0,209,255,0.3)] z-[9992]"
             style={{
-              top: spotlightRect.top - 8,
-              left: spotlightRect.left - 8,
-              width: spotlightRect.width + 16,
-              height: spotlightRect.height + 16,
+              top: tourState.spotlightRect.top - 8,
+              left: tourState.spotlightRect.left - 8,
+              width: tourState.spotlightRect.width + 16,
+              height: tourState.spotlightRect.height + 16,
             }}
           />
         )}
       </AnimatePresence>
 
-      {/* Tooltip Card */}
+      {/* Popover Card */}
       <motion.div
         layout
         initial={{ opacity: 0, scale: 0.9 }}
@@ -286,13 +432,30 @@ export default function ProductTour() {
         style={tooltipStyle}
         className="bg-[#080d1a]/95 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-5 shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[9995] pointer-events-auto font-mono text-xs text-slate-300 flex flex-col gap-4 select-none"
       >
+        {/* Dynamic pointing arrow pointer */}
+        {!isCentered && (
+          <div
+            className="absolute w-3 h-3 bg-[#080d1a] border-cyan-500/30 rotate-45 z-[9996] transition-all duration-150"
+            style={{
+              top: tourState.placement === "bottom" ? -6 : tourState.placement === "top" ? "auto" : tourState.arrowTop,
+              bottom: tourState.placement === "top" ? -6 : "auto",
+              left: (tourState.placement === "bottom" || tourState.placement === "top") ? tourState.arrowLeft : tourState.placement === "right" ? -6 : "auto",
+              right: tourState.placement === "left" ? -6 : "auto",
+              borderTopWidth: (tourState.placement === "bottom" || tourState.placement === "left") ? 1 : 0,
+              borderLeftWidth: (tourState.placement === "bottom" || tourState.placement === "right") ? 1 : 0,
+              borderBottomWidth: (tourState.placement === "top" || tourState.placement === "right") ? 1 : 0,
+              borderRightWidth: (tourState.placement === "top" || tourState.placement === "left") ? 1 : 0,
+            }}
+          />
+        )}
+
         {/* Step indicator header */}
         <div className="flex items-center justify-between border-b border-white/5 pb-2">
           <span className="text-[10px] font-black text-cyan-400 tracking-wider">
             SYSTEM BRIEFING // STEP {currentStepIndex + 1} OF {TOUR_STEPS.length}
           </span>
-          <button 
-            onClick={handleSkip} 
+          <button
+            onClick={handleSkip}
             className="text-slate-500 hover:text-white transition-colors"
             title="Skip Tour"
           >
@@ -335,7 +498,6 @@ export default function ProductTour() {
               className="flex items-center gap-1 px-4 py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg transition-colors font-black uppercase text-[9px] tracking-wider"
             >
               {currentStepIndex === TOUR_STEPS.length - 1 ? "Finish" : "Next"}
-              <ArrowRight size={10} />
             </button>
           </div>
         </div>
