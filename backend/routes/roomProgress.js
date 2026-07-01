@@ -8,6 +8,114 @@ const { getRoomXP, getTaskXP } = require('../utils/xpConfig');
 const { auth } = require('../middleware/auth');
 const router = express.Router();
 
+const ROOM_REGISTRY_FALLBACK = {
+  'networking-fundamentals': 5,
+  'web-app-pentesting': 5,
+  'rest-api-mastery': 5,
+  'sql-injection-fundamentals': 4,
+  'linux-fundamentals': 5,
+  'authentication-session-attacks': 5,
+  'osint-investigation': 5,
+  'python-pickle-deserialization': 5,
+  'cryptography-basics': 5,
+  'reverse-engineering-basics': 5
+};
+
+const ROOM_TASK_DEPENDENCIES = {
+  'networking-fundamentals': {
+    1: [0], // Task index 1 (IP addressing) depends on Task index 0 (OSI Model)
+    4: [1]  // Task index 4 (Routing) depends on Task index 1 (IP addressing)
+  },
+  'web-app-pentesting': {
+    1: [0], // Scanning depends on Recon
+    2: [1]  // Exploitation depends on Scanning
+  },
+  'linux-fundamentals': {
+    1: [0], // Navigation depends on Intro
+    2: [1]  // File permissions depends on Navigation
+  },
+  'sql-injection-fundamentals': {
+    1: [0]  // Union injection depends on Intro
+  }
+};
+
+function shuffleTasksWithDependencies(roomId, tasks, taskCountFallback = 5) {
+  const N = tasks && tasks.length > 0 ? tasks.length : taskCountFallback;
+  const inDegree = new Array(N).fill(0);
+  const adj = Array.from({ length: N }, () => []);
+
+  // Map task ID to index if tasks array exists
+  const idToIndex = {};
+  if (tasks && tasks.length > 0) {
+    tasks.forEach((task, idx) => {
+      const id = task.id !== undefined ? task.id : idx;
+      idToIndex[id] = idx;
+    });
+  }
+
+  // Get dependencies for each task
+  for (let idx = 0; idx < N; idx++) {
+    const task = (tasks && tasks[idx]) ? tasks[idx] : {};
+    
+    // 1. Check static dependencies map
+    let deps = [];
+    if (ROOM_TASK_DEPENDENCIES[roomId] && ROOM_TASK_DEPENDENCIES[roomId][idx]) {
+      deps = [...ROOM_TASK_DEPENDENCIES[roomId][idx]];
+    }
+
+    // 2. Check dynamic dependencies from task object
+    const dynamicDeps = task.prerequisiteTasks || task.prerequisites || task.dependsOn || [];
+    const dynamicDepArray = Array.isArray(dynamicDeps) ? dynamicDeps : [dynamicDeps];
+    
+    dynamicDepArray.forEach(dep => {
+      if (idToIndex[dep] !== undefined) {
+        deps.push(idToIndex[dep]);
+      } else if (typeof dep === 'number' && dep >= 0 && dep < N) {
+        deps.push(dep);
+      }
+    });
+
+    // Remove duplicates
+    const uniqueDeps = [...new Set(deps)];
+
+    uniqueDeps.forEach(depIdx => {
+      if (depIdx !== -1 && depIdx !== idx && depIdx < N) {
+        adj[depIdx].push(idx);
+        inDegree[idx]++;
+      }
+    });
+  }
+
+  // Kahn's algorithm with randomized selection from available nodes
+  const available = [];
+  for (let i = 0; i < N; i++) {
+    if (inDegree[i] === 0) {
+      available.push(i);
+    }
+  }
+
+  const result = [];
+  while (available.length > 0) {
+    const randIdx = Math.floor(Math.random() * available.length);
+    const curr = available.splice(randIdx, 1)[0];
+    result.push(curr);
+
+    adj[curr].forEach(neighbor => {
+      inDegree[neighbor]--;
+      if (inDegree[neighbor] === 0) {
+        available.push(neighbor);
+      }
+    });
+  }
+
+  if (result.length !== N) {
+    // If there is any loop/error, return natural order
+    return Array.from({ length: N }, (_, i) => i);
+  }
+
+  return result;
+}
+
 // @route   GET /api/room-progress/active
 // @desc    Get user's active (in-progress) rooms with real progress %
 // @access  Private
@@ -124,7 +232,15 @@ router.get('/:roomId', auth, async (req, res) => {
     const { roomId } = req.params;
     const user = await User.findById(req.user.id);
 
-    const existing = user.roomProgress.find(p => p.roomId === roomId);
+    let existing = user.roomProgress.find(p => p.roomId === roomId);
+
+    if (existing && existing.joined && (!existing.shuffledTaskOrder || existing.shuffledTaskOrder.length === 0)) {
+      const room = await Room.findOne({ slug: roomId });
+      const tasks = room ? (room.topics || room.exercises || []) : [];
+      const taskCountFallback = ROOM_REGISTRY_FALLBACK[roomId] || 5;
+      existing.shuffledTaskOrder = shuffleTasksWithDependencies(roomId, tasks, taskCountFallback);
+      await user.save();
+    }
 
     // Always return success:true so the frontend can reliably branch on it
     const roomProgress = existing || {
@@ -132,6 +248,7 @@ router.get('/:roomId', auth, async (req, res) => {
       joined: false,
       currentLecture: 0,
       completedLectures: [],
+      shuffledTaskOrder: [],
       exerciseAnswers: {},
       quizCompleted: false,
       finalScore: null,
@@ -157,12 +274,18 @@ router.post('/:roomId/join', auth, async (req, res) => {
 
     let roomProgress = user.roomProgress.find(p => p.roomId === roomId);
 
+    const room = await Room.findOne({ slug: roomId });
+    const tasks = room ? (room.topics || room.exercises || []) : [];
+    const taskCountFallback = ROOM_REGISTRY_FALLBACK[roomId] || 5;
+    const shuffledOrder = shuffleTasksWithDependencies(roomId, tasks, taskCountFallback);
+
     if (!roomProgress) {
       user.roomProgress.push({
         roomId,
         joined: true,
         currentLecture: 0,
         completedLectures: [],
+        shuffledTaskOrder: shuffledOrder,
         exerciseAnswers: {},
         quizCompleted: false,
         finalScore: null,
@@ -170,6 +293,9 @@ router.post('/:roomId/join', auth, async (req, res) => {
       });
     } else {
       roomProgress.joined = true;
+      if (!roomProgress.shuffledTaskOrder || roomProgress.shuffledTaskOrder.length === 0) {
+        roomProgress.shuffledTaskOrder = shuffledOrder;
+      }
       // Ensure all required fields exist
       if (!roomProgress.completedLectures) roomProgress.completedLectures = [];
       if (!roomProgress.exerciseAnswers) roomProgress.exerciseAnswers = {};
@@ -213,15 +339,31 @@ router.post('/:roomId/exercise', auth, async (req, res) => {
     if (!roomProgress.taskScores) roomProgress.taskScores = [];
     if (!roomProgress.totalPointsEarned) roomProgress.totalPointsEarned = 0;
 
-    // TASK SEQUENCE ENFORCEMENT
-    if (lectureIndex > 0) {
-      const previousTaskCompleted = roomProgress.completedLectures.includes(lectureIndex - 1);
-      if (!previousTaskCompleted) {
-        return res.status(400).json({ 
-          message: 'Please complete the previous task first',
-          requiredTask: lectureIndex,
-          currentTask: lectureIndex + 1
-        });
+    // TASK SEQUENCE ENFORCEMENT based on user's shuffled task order
+    if (roomProgress.shuffledTaskOrder && roomProgress.shuffledTaskOrder.length > 0) {
+      const shuffledPos = roomProgress.shuffledTaskOrder.indexOf(lectureIndex);
+      if (shuffledPos > 0) {
+        const requiredTaskIndex = roomProgress.shuffledTaskOrder[shuffledPos - 1];
+        const previousTaskCompleted = roomProgress.completedLectures.includes(requiredTaskIndex);
+        if (!previousTaskCompleted) {
+          return res.status(400).json({ 
+            message: 'Please complete the previous task first',
+            requiredTask: requiredTaskIndex,
+            currentTask: lectureIndex + 1
+          });
+        }
+      }
+    } else {
+      // Fallback: natural order sequence enforcement
+      if (lectureIndex > 0) {
+        const previousTaskCompleted = roomProgress.completedLectures.includes(lectureIndex - 1);
+        if (!previousTaskCompleted) {
+          return res.status(400).json({ 
+            message: 'Please complete the previous task first',
+            requiredTask: lectureIndex,
+            currentTask: lectureIndex + 1
+          });
+        }
       }
     }
 
@@ -772,12 +914,18 @@ router.post('/:roomId/reset', auth, async (req, res) => {
 
     let roomProgress = user.roomProgress.find(p => p.roomId === roomId);
 
+    const room = await Room.findOne({ slug: roomId });
+    const tasks = room ? (room.topics || room.exercises || []) : [];
+    const taskCountFallback = ROOM_REGISTRY_FALLBACK[roomId] || 5;
+    const shuffledOrder = shuffleTasksWithDependencies(roomId, tasks, taskCountFallback);
+
     if (!roomProgress) {
       // Nothing to reset — treat as a fresh join
       user.roomProgress.push({
         roomId,
         joined: true,
         completedLectures: [],
+        shuffledTaskOrder: shuffledOrder,
         exerciseAnswers: {},
         quizCompleted: false,
         finalScore: null,
@@ -808,6 +956,7 @@ router.post('/:roomId/reset', auth, async (req, res) => {
 
     // Reset progress state — keep joined:true, preserve best scores
     roomProgress.completedLectures  = [];
+    roomProgress.shuffledTaskOrder  = shuffledOrder;
     roomProgress.exerciseAnswers     = tqAnswers;  // keep tq_ answers, clear task progress
     roomProgress.quizCompleted       = false;
     roomProgress.finalScore          = bestFinalScore;  // keep best

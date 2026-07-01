@@ -315,7 +315,18 @@ const RoomDetail = () => {
     taskAnswers: {},
     roomCompleted: false,
     totalXP: 0,
+    shuffledTaskOrder: [],
   });
+
+  const shuffledTasks = useMemo(() => {
+    if (!room?.tasks) return [];
+    const tasksWithIdx = room.tasks.map((t, idx) => ({ ...t, originalIndex: idx }));
+    if (userProgress.shuffledTaskOrder && userProgress.shuffledTaskOrder.length === room.tasks.length) {
+      return userProgress.shuffledTaskOrder.map(idx => tasksWithIdx[idx]).filter(Boolean);
+    }
+    return tasksWithIdx;
+  }, [room?.tasks, userProgress.shuffledTaskOrder]);
+
   const [expandedTasks, setExpandedTasks] = useState([]); // Array of expanded task IDs
   const [taskAnswers, setTaskAnswers] = useState({}); // Current input values
   const [quizAnswers, setQuizAnswers] = useState({}); // Quiz answer values
@@ -515,6 +526,7 @@ const RoomDetail = () => {
               taskAnswers: progressData.progress?.exerciseAnswers || {},
               roomCompleted: isRoomActuallyComplete,
               totalXP: progressData.progress?.totalPointsEarned || 0,
+              shuffledTaskOrder: progressData.progress?.shuffledTaskOrder || [],
             });
 
             console.log(
@@ -618,8 +630,21 @@ const RoomDetail = () => {
   const handleJoinRoom = async () => {
     try {
       await joinRoom(roomId);
-      setUserProgress((prev) => ({ ...prev, joined: true }));
-      setExpandedTasks([1]); // Expand first task
+      const progressData = await getRoomProgress(roomId);
+      const completedTasks = progressData.progress?.completedLectures || [];
+      const shuffledOrder = progressData.progress?.shuffledTaskOrder || [];
+
+      setUserProgress({
+        joined: true,
+        completedTasks: completedTasks,
+        taskAnswers: progressData.progress?.exerciseAnswers || {},
+        roomCompleted: false,
+        totalXP: progressData.progress?.totalPointsEarned || 0,
+        shuffledTaskOrder: shuffledOrder,
+      });
+
+      const firstTaskId = shuffledOrder.length > 0 && room.tasks ? room.tasks[shuffledOrder[0]]?.id : (room.tasks?.[0]?.id || 1);
+      setExpandedTasks([firstTaskId]);
 
       // Add room to recent activity so it shows in dashboard
       markRoomAccessed(roomId, {
@@ -707,8 +732,8 @@ const RoomDetail = () => {
           setTaskAnswers((prev) => ({ ...prev, [taskId]: "" }));
 
           // Auto-expand next task (stay user friendly)
-          if (taskIndex < room.tasks.length - 1) {
-            const nextTaskId = room.tasks[taskIndex + 1].id;
+          if (activeTaskIndex < shuffledTasks.length - 1) {
+            const nextTaskId = shuffledTasks[activeTaskIndex + 1].id;
             setExpandedTasks([nextTaskId]);
           } else {
             // Last task completed
@@ -992,9 +1017,9 @@ const RoomDetail = () => {
     );
   }
 
-  const activeTaskId = expandedTasks[0] || 1;
-  const activeTask = room.tasks?.find((t) => t.id === activeTaskId) || room.tasks?.[0];
-  const activeTaskIndex = room.tasks?.findIndex((t) => t.id === activeTaskId) ?? 0;
+  const activeTaskId = expandedTasks[0] || (room.tasks?.[0]?.id || 1);
+  const activeTask = shuffledTasks?.find((t) => t.id === activeTaskId) || shuffledTasks?.[0];
+  const activeTaskIndex = shuffledTasks?.findIndex((t) => t.id === activeTaskId) ?? 0;
 
   // For admin rooms using taskQuestions, a task is "done" when all its questions are answered correctly
   const isTaskDone = (task, taskIndex) => {
@@ -1185,9 +1210,9 @@ const RoomDetail = () => {
                   }
                 }}
               >
-                {room.tasks?.map((t, idx) => (
+                {shuffledTasks?.map((t, idx) => (
                   <option key={t.id} value={t.id}>
-                    {userProgress.completedTasks.includes(idx) ? "✓" : `${idx + 1}.`} {t.title}
+                    {userProgress.completedTasks.includes(t.originalIndex) ? "✓" : `${idx + 1}.`} {t.title}
                   </option>
                 ))}
                 {room.quizzes?.length > 0 && (
@@ -1199,15 +1224,15 @@ const RoomDetail = () => {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => activeTaskIndex > 0 && toggleTask(room.tasks[activeTaskIndex - 1].id)}
+                onClick={() => activeTaskIndex > 0 && toggleTask(shuffledTasks[activeTaskIndex - 1].id)}
                 disabled={showQuiz || activeTaskIndex === 0}
                 className="rdp-nav-arrow"
               >
                 <ArrowLeft size={16} />
               </button>
               <button
-                onClick={() => activeTaskIndex < room.tasks.length - 1 && toggleTask(room.tasks[activeTaskIndex + 1].id)}
-                disabled={showQuiz || activeTaskIndex === room.tasks.length - 1}
+                onClick={() => activeTaskIndex < shuffledTasks.length - 1 && toggleTask(shuffledTasks[activeTaskIndex + 1].id)}
+                disabled={showQuiz || activeTaskIndex === shuffledTasks.length - 1}
                 className="rdp-nav-arrow"
               >
                 <ArrowRight size={16} />
@@ -1436,7 +1461,7 @@ const RoomDetail = () => {
                       </div>
                     ) : (
                       /* fallback: old single-answer exercise */
-                      !userProgress.completedTasks.includes(activeTaskIndex) && (
+                      !userProgress.completedTasks.includes(activeTask.originalIndex) && (
                         <div className="rdp-ans-section">
                           <label className="rdp-ans-lbl">Mission Objective</label>
                           <p className="text-sm font-bold text-white mb-6 leading-relaxed">{activeTask.question}</p>
@@ -1447,9 +1472,9 @@ const RoomDetail = () => {
                               placeholder="Decrypt flag..."
                               value={taskAnswers[activeTask.id] || ""}
                               onChange={(e) => setTaskAnswers((p) => ({ ...p, [activeTask.id]: e.target.value }))}
-                              onKeyPress={(e) => e.key === "Enter" && handleTaskSubmit(activeTask.id, activeTaskIndex)}
+                              onKeyPress={(e) => e.key === "Enter" && handleTaskSubmit(activeTask.id, activeTask.originalIndex)}
                             />
-                            <button onClick={() => handleTaskSubmit(activeTask.id, activeTaskIndex)} className="rdp-submit">Submit</button>
+                            <button onClick={() => handleTaskSubmit(activeTask.id, activeTask.originalIndex)} className="rdp-submit">Submit</button>
                           </div>
                         </div>
                       )
@@ -1462,7 +1487,7 @@ const RoomDetail = () => {
                   <button
                     onClick={() =>
                       activeTaskIndex > 0 &&
-                      toggleTask(room.tasks[activeTaskIndex - 1].id)
+                      toggleTask(shuffledTasks[activeTaskIndex - 1].id)
                     }
                     disabled={activeTaskIndex === 0}
                     className="text-[10px] font-black text-slate-500 hover:text-white disabled:opacity-0 transition-colors tracking-widest"
@@ -1471,19 +1496,19 @@ const RoomDetail = () => {
                   </button>
                   <button
                     onClick={() => {
-                      if (activeTaskIndex < room.tasks.length - 1) {
-                        toggleTask(room.tasks[activeTaskIndex + 1].id);
+                      if (activeTaskIndex < shuffledTasks.length - 1) {
+                        toggleTask(shuffledTasks[activeTaskIndex + 1].id);
                       } else if (room.quizzes?.length > 0 && allTasksDone) {
                         setShowQuiz(true);
                       }
                     }}
                     disabled={
-                      activeTaskIndex === room.tasks.length - 1 &&
+                      activeTaskIndex === shuffledTasks.length - 1 &&
                       !(room.quizzes?.length > 0 && allTasksDone)
                     }
                     className="text-[10px] font-black text-slate-500 hover:text-white disabled:opacity-0 transition-colors tracking-widest"
                   >
-                    {activeTaskIndex === room.tasks.length - 1 && room.quizzes?.length > 0
+                    {activeTaskIndex === shuffledTasks.length - 1 && room.quizzes?.length > 0
                       ? "GO TO EVALUATION →"
                       : "NEXT →"}
                   </button>

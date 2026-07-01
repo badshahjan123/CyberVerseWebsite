@@ -48,6 +48,7 @@ const InteractiveRoomBase = ({
   const { user, refreshUser } = useApp();
   const { refreshUserStats, applyUpdate } = useRealtime();
   const [activeTask, setActiveTask] = useState(null);
+  const [shuffledTaskOrder, setShuffledTaskOrder] = useState([]);
   const [taskProgress, setTaskProgress] = useState({});
   const [questionAnswers, setQuestionAnswers] = useState({});
   const [questionStatus, setQuestionStatus] = useState({});
@@ -55,6 +56,15 @@ const InteractiveRoomBase = ({
   const [showAnswer, setShowAnswer] = useState({});
   const [earnedXP, setEarnedXP] = useState(0);
   const [earnedBadges, setEarnedBadges] = useState([]);
+
+  const shuffledTasks = useMemo(() => {
+    if (!data.tasks) return [];
+    const tasksWithIdx = data.tasks.map((t, idx) => ({ ...t, originalIndex: idx }));
+    if (shuffledTaskOrder && shuffledTaskOrder.length === data.tasks.length) {
+      return shuffledTaskOrder.map(idx => tasksWithIdx[idx]).filter(Boolean);
+    }
+    return tasksWithIdx;
+  }, [data.tasks, shuffledTaskOrder]);
   const [showBadgeToast, setShowBadgeToast] = useState(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState({});
@@ -123,8 +133,18 @@ const InteractiveRoomBase = ({
             // Not joined yet, or stale record — join fresh
             await joinRoom(roomId);
             console.log(`📡 Joined room: ${roomId}${isStaleRecord ? ' (cleared stale record)' : ''}`);
+            const freshProgRes = await getRoomProgress(roomId);
+            if (freshProgRes.success && freshProgRes.progress) {
+              if (freshProgRes.progress.shuffledTaskOrder) {
+                setShuffledTaskOrder(freshProgRes.progress.shuffledTaskOrder);
+              }
+            }
             setLoading(false);
             return;
+          }
+
+          if (prog.shuffledTaskOrder) {
+            setShuffledTaskOrder(prog.shuffledTaskOrder);
           }
 
           // Detect replay mode: joined but nothing completed yet after a previous completion
@@ -157,6 +177,12 @@ const InteractiveRoomBase = ({
           // No progress record at all — join fresh
           await joinRoom(roomId);
           console.log(`📡 Joined room: ${roomId}`);
+          const freshProgRes = await getRoomProgress(roomId);
+          if (freshProgRes.success && freshProgRes.progress) {
+            if (freshProgRes.progress.shuffledTaskOrder) {
+              setShuffledTaskOrder(freshProgRes.progress.shuffledTaskOrder);
+            }
+          }
         }
       } catch (err) {
         console.error("Failed to sync room progress:", err);
@@ -177,7 +203,7 @@ const InteractiveRoomBase = ({
     initRoom();
   }, [roomId, data.tasks, badges, data.totalXP]);
 
-  const task = activeTask !== null ? data.tasks[activeTask] : null;
+  const task = activeTask !== null ? shuffledTasks[activeTask] : null;
   const completedCount = useMemo(() => 
     Object.keys(taskProgress).filter(k => taskProgress[k] === 'completed').length,
     [taskProgress]
@@ -206,7 +232,7 @@ const InteractiveRoomBase = ({
 
         if (allAnswered) {
           const taskId  = currentTask.id;
-          const taskIdx = activeTask;
+          const taskIdx = currentTask.originalIndex;
 
           setTaskProgress(prev => ({ ...prev, [taskId]: 'completed' }));
           setEarnedXP(prev => prev + currentTask.xp);
@@ -451,7 +477,7 @@ const InteractiveRoomBase = ({
           </div>
         ) : (
           <div className="irb-accordion-container">
-            {data.tasks.map((t, i) => {
+            {shuffledTasks.map((t, i) => {
               const isActive = activeTask === i;
               const isCompleted = taskProgress[t.id] === 'completed';
               
@@ -522,9 +548,9 @@ const InteractiveRoomBase = ({
                       </div>
 
                       {/* Inline Next Navigation */}
-                      {i < data.tasks.length - 1 && (
+                      {i < shuffledTasks.length - 1 && (
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
-                          <button onClick={() => switchTask(i + 1)} className="irb-nav-bottom-btn irb-nav-bottom-btn--next">Next Task: {data.tasks[i+1].title} →</button>
+                          <button onClick={() => switchTask(i + 1)} className="irb-nav-bottom-btn irb-nav-bottom-btn--next">Next Task: {shuffledTasks[i+1].title} →</button>
                         </div>
                       )}
                     </div>

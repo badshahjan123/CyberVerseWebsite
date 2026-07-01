@@ -114,6 +114,7 @@ const userSchema = new mongoose.Schema({
     joined: { type: Boolean, default: false },
     currentLecture: { type: Number, default: 0 },
     completedLectures: [Number],
+    shuffledTaskOrder: [Number],
     exerciseAnswers: {
       type: Object,
       default: {}
