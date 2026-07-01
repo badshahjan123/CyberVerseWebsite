@@ -36,7 +36,7 @@ const ProfileDropdown = ({ user, onLogout }) => {
     }
 
     return (
-        <div className="sm:relative" ref={dropdownRef}>
+        <div className="sm:relative shrink-0" ref={dropdownRef}>
             {/* Avatar Trigger */}
             <button
                 onClick={() => setIsOpen(!isOpen)}

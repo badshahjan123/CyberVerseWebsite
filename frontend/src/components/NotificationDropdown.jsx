@@ -282,7 +282,7 @@ const NotificationDropdown = () => {
   }
 
   return (
-    <div className="sm:relative font-mono" ref={dropdownRef}>
+    <div className="sm:relative font-mono shrink-0" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/5 rounded-xl border border-white/[0.04] bg-[#0a1220]/60 transition-all shadow-lg"
