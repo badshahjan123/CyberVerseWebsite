@@ -237,28 +237,35 @@ const InteractiveRoomBase = ({
           setTaskProgress(prev => ({ ...prev, [taskId]: 'completed' }));
           setEarnedXP(prev => prev + currentTask.xp);
 
-        // Persist task completion to backend
-        submitExercise(roomId, taskIdx, 'COMPLETED', task.xp).then((res) => {
-          if (res?.userStats) {
-            if (typeof applyUpdate === 'function') applyUpdate(res.userStats);
+          // Persist task completion to backend
+          submitExercise(roomId, taskIdx, 'COMPLETED', task.xp).then((res) => {
+            if (res?.userStats) {
+              if (typeof applyUpdate === 'function') applyUpdate(res.userStats);
+            }
+            if (typeof refreshUser === 'function') refreshUser();
+          }).catch(err => {
+            console.error('Backend sync failed for task:', err);
+          });
+
+          refreshUserStats();
+
+          // Local sidebar badge unlock
+          if (task.id <= badges.length) {
+            const badge = badges[task.id - 1];
+            if (badge && !earnedBadges.includes(badge.id)) {
+              setEarnedBadges(prev => [...prev, badge.id]);
+              setShowBadgeToast(badge);
+              setTimeout(() => setShowBadgeToast(null), 3000);
+            }
           }
-          if (typeof refreshUser === 'function') refreshUser();
-        }).catch(err => {
-          console.error('Backend sync failed for task:', err);
-        });
 
-        refreshUserStats();
-
-        // Local sidebar badge unlock
-        if (task.id <= badges.length) {
-          const badge = badges[task.id - 1];
-          if (badge && !earnedBadges.includes(badge.id)) {
-            setEarnedBadges(prev => [...prev, badge.id]);
-            setShowBadgeToast(badge);
-            setTimeout(() => setShowBadgeToast(null), 3000);
+          // Auto-navigate to the next task after a short delay (so user sees success checkmark)
+          if (activeTask !== null && activeTask < shuffledTasks.length - 1) {
+            setTimeout(() => {
+              setActiveTask(activeTask + 1);
+            }, 1500);
           }
         }
-      }
     }
   };
 
@@ -547,12 +554,7 @@ const InteractiveRoomBase = ({
                         </div>
                       </div>
 
-                      {/* Inline Next Navigation */}
-                      {i < shuffledTasks.length - 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
-                          <button onClick={() => switchTask(i + 1)} className="irb-nav-bottom-btn irb-nav-bottom-btn--next">Next Task: {shuffledTasks[i+1].title} →</button>
-                        </div>
-                      )}
+                      {/* Inline Next Navigation Removed */}
                     </div>
                   </div>
                 </div>
