@@ -5,7 +5,7 @@ import { apiCall } from "../config/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, X, Play } from "lucide-react";
 
-const TOUR_STEPS = [
+const MAIN_TOUR_STEPS = [
   {
     id: "welcome",
     title: "Welcome to CyberVerse!",
@@ -71,6 +71,63 @@ const TOUR_STEPS = [
   }
 ];
 
+const LAB_TOUR_STEPS = [
+  {
+    id: "lab-welcome",
+    title: "Tactical Lab Briefing",
+    content: "Welcome to the Lab Sandbox interface. Let's walk you through how to deploy your virtual environment, access the terminal, and submit your flag payloads to solve this lab.",
+    target: null,
+  },
+  {
+    id: "lab-briefing",
+    title: "Step 01 // Academic Foundation",
+    content: "Start by reading the conceptual foundation. This explains what you'll learn, why it matters in real-world scenarios, and the underlying cybersecurity concepts involved.",
+    target: "#tour-lab-briefing",
+  },
+  {
+    id: "lab-video",
+    title: "Step 02 // Preparatory Video",
+    content: "Watch the video tutorial to see a live demonstration of relevant scanning, scripting, or exploitation techniques before spinning up the target VM.",
+    target: "#tour-lab-video",
+  },
+  {
+    id: "lab-commands",
+    title: "Step 03 // Cheatsheet Handbooks",
+    content: "Use these copyable command cheatsheets as tactical templates showing standard syntax for tools like Nmap, Netstat, or Grep.",
+    target: "#tour-lab-commands",
+  },
+  {
+    id: "lab-sandbox",
+    title: "Step 04 // Deploy Sandbox VM",
+    content: "Click 'Initialize Sandbox VM' or 'Start Mission' to boot up your dedicated container instance. Once booted, you can access the live, fully interactive command shell directly inside the embedded web terminal.",
+    target: "#tour-lab-sandbox",
+  },
+  {
+    id: "lab-tasks",
+    title: "Step 05 // Submit Payloads",
+    content: "Each lab has specific operational objectives. Expand a task card to see copyable commands, custom hints, and submit the flags or decryption keys found in the sandbox to verify completion.",
+    target: "#tour-lab-tasks",
+  },
+  {
+    id: "lab-progress",
+    title: "Operation Status HUD",
+    content: "Track your real-time sync level and progress percentage. Achieving 100% grants clearance and issues immediate XP rewards.",
+    target: "#tour-lab-progress",
+  },
+  {
+    id: "lab-ai",
+    title: "CyberVerse Intel AI",
+    content: "If you get stuck, use the built-in Intel AI assistant. Ask questions about error messages, request custom hints, or clarify command structures without leaving the page.",
+    target: "#tour-lab-ai",
+  },
+  {
+    id: "lab-finish",
+    title: "Briefing Complete!",
+    content: "You are now ready to commence your mission, Operator. Initialize your virtual sandbox, open the shell, and capture the flags!",
+    target: null,
+  }
+];
+
 export default function ProductTour() {
   const { isAuthenticated, loading, user, updateUserProfile } = useApp();
   const navigate = useNavigate();
@@ -78,7 +135,10 @@ export default function ProductTour() {
 
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const hasAttemptedAutoStart = useRef(false);
+  const [tourType, setTourType] = useState("main"); // "main" or "lab"
+  
+  const hasAttemptedMainAutoStart = useRef(false);
+  const hasAttemptedLabAutoStart = useRef(false);
 
   const [tourState, setTourState] = useState({
     placement: "bottom",
@@ -91,29 +151,25 @@ export default function ProductTour() {
     elementFound: false,
   });
 
-  // Auto-start logic check: Runs exactly once per app load session
+  const steps = tourType === "lab" ? LAB_TOUR_STEPS : MAIN_TOUR_STEPS;
+
+  // Auto-start logic for Main Tour
   useEffect(() => {
-    if (loading) return;
+    if (loading || !isAuthenticated) return;
+    if (hasAttemptedMainAutoStart.current) return;
 
-    // Check if the user is authenticated
-    if (!isAuthenticated) return;
-
-    // If we already attempted auto-start in this session, do not run again
-    if (hasAttemptedAutoStart.current) return;
-
-    // Check both remote database flag and local storage flag
     const isCompletedBefore = 
       user?.tourCompleted === true || 
       localStorage.getItem("cyberverse_tour_completed") === "true";
 
     if (isCompletedBefore) {
-      hasAttemptedAutoStart.current = true;
+      hasAttemptedMainAutoStart.current = true;
       return;
     }
 
-    // Auto-start only when the user is on the main dashboard
     if (location.pathname === "/dashboard") {
-      hasAttemptedAutoStart.current = true;
+      hasAttemptedMainAutoStart.current = true;
+      setTourType("main");
       const timer = setTimeout(() => {
         setIsActive(true);
         setCurrentStepIndex(0);
@@ -122,25 +178,64 @@ export default function ProductTour() {
     }
   }, [isAuthenticated, loading, location.pathname, user]);
 
+  // Auto-start logic for Lab Tour
+  useEffect(() => {
+    if (loading || !isAuthenticated) return;
+    
+    const isLabDetailPage = /^\/labs\/[a-zA-Z0-9_-]+$/.test(location.pathname);
+    if (!isLabDetailPage) return;
+
+    if (hasAttemptedLabAutoStart.current) return;
+
+    const isCompletedBefore = 
+      user?.labTourCompleted === true || 
+      localStorage.getItem("cyberverse_lab_tour_completed") === "true";
+
+    if (isCompletedBefore) {
+      hasAttemptedLabAutoStart.current = true;
+      return;
+    }
+
+    hasAttemptedLabAutoStart.current = true;
+    setTourType("lab");
+    const timer = setTimeout(() => {
+      setIsActive(true);
+      setCurrentStepIndex(0);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, loading, location.pathname, user]);
+
   // Listen to manual start request
   useEffect(() => {
     const handleManualStart = () => {
+      setTourType("main");
       setIsActive(true);
       setCurrentStepIndex(0);
-      const firstStep = TOUR_STEPS[0];
+      const firstStep = MAIN_TOUR_STEPS[0];
       if (firstStep.route && location.pathname !== firstStep.route) {
         navigate(firstStep.route);
       }
     };
 
+    const handleLabManualStart = () => {
+      setTourType("lab");
+      setIsActive(true);
+      setCurrentStepIndex(0);
+    };
+
     window.addEventListener("startProductTour", handleManualStart);
-    return () => window.removeEventListener("startProductTour", handleManualStart);
+    window.addEventListener("startLabTour", handleLabManualStart);
+    return () => {
+      window.removeEventListener("startProductTour", handleManualStart);
+      window.removeEventListener("startLabTour", handleLabManualStart);
+    };
   }, [location.pathname, navigate]);
 
   // Positioning alignment engine
   const alignTour = useCallback((forceScroll = false) => {
     if (!isActive) return;
-    const step = TOUR_STEPS[currentStepIndex];
+    const currentSteps = tourType === "lab" ? LAB_TOUR_STEPS : MAIN_TOUR_STEPS;
+    const step = currentSteps[currentStepIndex];
     if (!step || !step.target) {
       setTourState({
         placement: "center",
@@ -177,7 +272,6 @@ export default function ProductTour() {
     let placement = "bottom";
 
     if (viewportWidth >= 1024) {
-      // Desktop / Large screen placement decisions
       if (docHeight > viewportHeight - 200) {
         const spaceRight = viewportWidth - rect.right;
         const spaceLeft = rect.left;
@@ -198,7 +292,6 @@ export default function ProductTour() {
         }
       }
     } else {
-      // Mobile / Tablet placement decisions
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
       if (spaceBelow >= popHeight + 16) {
@@ -303,7 +396,7 @@ export default function ProductTour() {
         behavior: "smooth",
       });
     }
-  }, [isActive, currentStepIndex]);
+  }, [isActive, currentStepIndex, tourType]);
 
   // Handle page transitions & retry loops
   useEffect(() => {
@@ -313,7 +406,8 @@ export default function ProductTour() {
 
     let retries = 0;
     const retryInterval = setInterval(() => {
-      const step = TOUR_STEPS[currentStepIndex];
+      const currentSteps = tourType === "lab" ? LAB_TOUR_STEPS : MAIN_TOUR_STEPS;
+      const step = currentSteps[currentStepIndex];
       if (!step || !step.target) {
         clearInterval(retryInterval);
         return;
@@ -331,7 +425,7 @@ export default function ProductTour() {
     }, 150);
 
     return () => clearInterval(retryInterval);
-  }, [isActive, currentStepIndex]);
+  }, [isActive, currentStepIndex, tourType]);
 
   // Event listener configuration for updates on scroll/resize
   useEffect(() => {
@@ -352,8 +446,8 @@ export default function ProductTour() {
 
   const handleNext = () => {
     const nextIdx = currentStepIndex + 1;
-    if (nextIdx < TOUR_STEPS.length) {
-      const nextStep = TOUR_STEPS[nextIdx];
+    if (nextIdx < steps.length) {
+      const nextStep = steps[nextIdx];
       if (nextStep.route && location.pathname !== nextStep.route) {
         navigate(nextStep.route);
       }
@@ -366,7 +460,7 @@ export default function ProductTour() {
   const handlePrev = () => {
     const prevIdx = currentStepIndex - 1;
     if (prevIdx >= 0) {
-      const prevStep = TOUR_STEPS[prevIdx];
+      const prevStep = steps[prevIdx];
       if (prevStep.route && location.pathname !== prevStep.route) {
         navigate(prevStep.route);
       }
@@ -381,32 +475,45 @@ export default function ProductTour() {
   const handleComplete = async () => {
     setIsActive(false);
     
-    // Save completion state locally
-    localStorage.setItem("cyberverse_tour_completed", "true");
-
-    // Save completion state in the database for registered users
-    if (isAuthenticated && user) {
-      try {
-        const response = await apiCall("/users/profile", {
-          method: "PUT",
-          body: JSON.stringify({ tourCompleted: true }),
-        });
-        if (response?.user) {
-          updateUserProfile(response.user);
+    if (tourType === "lab") {
+      localStorage.setItem("cyberverse_lab_tour_completed", "true");
+      if (isAuthenticated && user) {
+        try {
+          const response = await apiCall("/users/profile", {
+            method: "PUT",
+            body: JSON.stringify({ labTourCompleted: true }),
+          });
+          if (response?.user) {
+            updateUserProfile(response.user);
+          }
+        } catch (err) {
+          console.error("Failed to save lab tour completion state:", err);
         }
-      } catch (err) {
-        console.error("Failed to save product tour completion state:", err);
       }
-    }
-
-    if (location.pathname !== "/dashboard") {
-      navigate("/dashboard");
+    } else {
+      localStorage.setItem("cyberverse_tour_completed", "true");
+      if (isAuthenticated && user) {
+        try {
+          const response = await apiCall("/users/profile", {
+            method: "PUT",
+            body: JSON.stringify({ tourCompleted: true }),
+          });
+          if (response?.user) {
+            updateUserProfile(response.user);
+          }
+        } catch (err) {
+          console.error("Failed to save product tour completion state:", err);
+        }
+      }
+      if (location.pathname !== "/dashboard") {
+        navigate("/dashboard");
+      }
     }
   };
 
   if (!isActive) return null;
 
-  const step = TOUR_STEPS[currentStepIndex];
+  const step = steps[currentStepIndex];
   const isCentered = !step.target || !tourState.elementFound;
 
   const tooltipStyle = isCentered
@@ -477,7 +584,7 @@ export default function ProductTour() {
         {/* Step indicator header */}
         <div className="flex items-center justify-between border-b border-white/5 pb-2">
           <span className="text-[10px] font-black text-cyan-400 tracking-wider">
-            SYSTEM BRIEFING // STEP {currentStepIndex + 1} OF {TOUR_STEPS.length}
+            {tourType === "lab" ? "LAB SESSION BRIEFING" : "SYSTEM BRIEFING"} // STEP {currentStepIndex + 1} OF {steps.length}
           </span>
           <button
             onClick={handleSkip}
@@ -522,7 +629,7 @@ export default function ProductTour() {
               onClick={handleNext}
               className="flex items-center gap-1 px-4 py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg transition-colors font-black uppercase text-[9px] tracking-wider"
             >
-              {currentStepIndex === TOUR_STEPS.length - 1 ? "Finish" : "Next"}
+              {currentStepIndex === steps.length - 1 ? "Finish" : "Next"}
             </button>
           </div>
         </div>

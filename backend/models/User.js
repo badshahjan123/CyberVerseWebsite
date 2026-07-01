@@ -248,6 +248,10 @@ const userSchema = new mongoose.Schema({
   tourCompleted: {
     type: Boolean,
     default: false
+  },
+  labTourCompleted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

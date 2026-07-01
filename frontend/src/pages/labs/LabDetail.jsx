@@ -661,6 +661,16 @@ const LabDetail = memo(() => {
                 </button>
               </div>
 
+              {/* Lab Tour Button */}
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("startLabTour"));
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
+              >
+                <HelpCircle size={12} /> Tour
+              </button>
+
               {/* Start Mission Button */}
               {machineStatus === "stopped" ? (
                 <button 
@@ -693,7 +703,7 @@ const LabDetail = memo(() => {
             <div className="lg:col-span-8 space-y-10">
               
               {/* 🌟 STEP 01: WHAT YOU'LL LEARN & MISSION OVERVIEW */}
-              <div className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
+              <div id="tour-lab-briefing" className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
                 <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-600 to-blue-400" />
                 <div className="p-6 sm:p-8">
                   <div className="flex items-center gap-4 mb-6">
@@ -749,7 +759,7 @@ const LabDetail = memo(() => {
               </div>
 
               {/* 🌟 STEP 02: PREPARATORY VIDEO TUTORIAL */}
-              <div className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
+              <div id="tour-lab-video" className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
                 <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-purple-600 to-purple-400" />
                 <div className="p-6 sm:p-8">
                   <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
@@ -793,7 +803,7 @@ const LabDetail = memo(() => {
               </div>
 
               {/* 🌟 STEP 03: INTERACTIVE HANDBOOK & CHEATSHEETS */}
-              <div className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
+              <div id="tour-lab-commands" className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
                 <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-teal-600 to-teal-400" />
                 <div className="p-6 sm:p-8">
                   <div className="flex items-center gap-4 mb-6">
@@ -830,7 +840,7 @@ const LabDetail = memo(() => {
               </div>
 
               {/* 🌟 STEP 04: TARGET ENVIRONMENT DEPLOYMENT */}
-              <div className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
+              <div id="tour-lab-sandbox" className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
                 <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-orange-600 to-orange-400" />
                 <div className="p-6 sm:p-8">
                   <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
@@ -911,7 +921,7 @@ const LabDetail = memo(() => {
               </div>
 
               {/* 🌟 STEP 05: GUIDED PRACTICAL CHALLENGES */}
-              <div className="space-y-6">
+              <div id="tour-lab-tasks" className="space-y-6">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-black text-sm">
                     05
@@ -972,7 +982,7 @@ const LabDetail = memo(() => {
               </div>
 
               {/* Circular Operations Progress HUD */}
-              <div className="bg-[#0f172a] p-6 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden">
+              <div id="tour-lab-progress" className="bg-[#0f172a] p-6 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden">
                 <div className="flex items-center gap-6">
                    <div className="relative w-20 h-20">
                     <svg className="w-full h-full transform -rotate-90">
@@ -1006,7 +1016,7 @@ const LabDetail = memo(() => {
               </div>
 
               {/* Naturally Integrated CyberVerse AI Assistant */}
-              <div className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
+              <div id="tour-lab-ai" className="bg-[#0f172a] rounded-3xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
                 <div className="p-5 px-6 border-b border-white/5 bg-black/10 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <Zap size={14} className="text-blue-500 animate-pulse" />

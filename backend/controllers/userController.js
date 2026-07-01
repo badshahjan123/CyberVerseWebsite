@@ -93,12 +93,13 @@ exports.getStats = async (req, res) => {
 // @route   PUT /api/users/profile
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, email, avatar, tourCompleted } = req.body;
+    const { name, email, avatar, tourCompleted, labTourCompleted } = req.body;
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (email !== undefined) updateData.email = email;
     if (avatar !== undefined) updateData.avatar = avatar;
     if (tourCompleted !== undefined) updateData.tourCompleted = tourCompleted;
+    if (labTourCompleted !== undefined) updateData.labTourCompleted = labTourCompleted;
 
     const user = await User.findByIdAndUpdate(req.user.id, updateData, { new: true });
     res.json({ message: 'Profile updated', user });
