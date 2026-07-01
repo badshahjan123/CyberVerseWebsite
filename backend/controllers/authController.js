@@ -78,7 +78,9 @@ exports.register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        twoFactorEnabled: false
+        twoFactorEnabled: false,
+        tourCompleted: false,
+        labTourCompleted: false
       }
     });
   } catch (error) {
@@ -125,7 +127,9 @@ exports.login = async (req, res) => {
           id: user._id,
           email: user.email,
           name: user.name,
-          twoFactorEnabled: true
+          twoFactorEnabled: true,
+          tourCompleted: user.tourCompleted,
+          labTourCompleted: user.labTourCompleted
         }
       });
     }
@@ -138,7 +142,9 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        twoFactorEnabled: false
+        twoFactorEnabled: false,
+        tourCompleted: user.tourCompleted,
+        labTourCompleted: user.labTourCompleted
       }
     });
   } catch (error) {
@@ -177,7 +183,9 @@ exports.verify2FA = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        twoFactorEnabled: true
+        twoFactorEnabled: true,
+        tourCompleted: user.tourCompleted,
+        labTourCompleted: user.labTourCompleted
       }
     });
   } catch (error) {
@@ -234,7 +242,9 @@ exports.googleAuth = async (req, res) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        twoFactorEnabled: user.twoFactorEnabled
+        twoFactorEnabled: user.twoFactorEnabled,
+        tourCompleted: user.tourCompleted,
+        labTourCompleted: user.labTourCompleted
       }
     });
   } catch (error) {
