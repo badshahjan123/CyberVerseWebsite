@@ -117,7 +117,7 @@ const LAB_TOUR_STEPS = [
   {
     id: "lab-ai",
     title: "CyberVerse Intel AI",
-    content: "If you get stuck, use the built-in Intel AI assistant. Ask questions about error messages, request custom hints, or clarify command structures without leaving the page.",
+    content: "If you get stuck, use the built-in Intel AI assistant. Ask questions about error messages, request hints, or clarify command structures without leaving the page.",
     target: "#tour-lab-ai",
   },
   {
@@ -144,8 +144,8 @@ export default function ProductTour() {
     placement: "bottom",
     popTop: 0,
     popLeft: 0,
-    popWidth: 320,
-    arrowLeft: 160,
+    popWidth: 300,
+    arrowLeft: 150,
     arrowTop: 100,
     spotlightRect: null,
     elementFound: false,
@@ -241,8 +241,8 @@ export default function ProductTour() {
         placement: "center",
         popTop: 0,
         popLeft: 0,
-        popWidth: 340,
-        arrowLeft: 170,
+        popWidth: 300,
+        arrowLeft: 150,
         arrowTop: 100,
         spotlightRect: null,
         elementFound: false,
@@ -265,7 +265,7 @@ export default function ProductTour() {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    const popWidth = Math.min(320, viewportWidth - 32);
+    const popWidth = Math.min(300, viewportWidth - 32);
     const estimatedHeight = 160 + Math.ceil(step.content.length * 0.4);
     const popHeight = estimatedHeight;
 
@@ -522,7 +522,7 @@ export default function ProductTour() {
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: "min(340px, 90vw)",
+        width: "min(300px, 90vw)",
       }
     : {
         position: "fixed",
@@ -562,7 +562,7 @@ export default function ProductTour() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         style={tooltipStyle}
-        className="bg-[#080d1a]/95 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-5 shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[9995] pointer-events-auto font-mono text-xs text-slate-300 flex flex-col gap-4 select-none"
+        className="bg-[#080d1a]/95 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-4 sm:p-5 shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[9995] pointer-events-auto font-mono text-xs text-slate-300 flex flex-col gap-3 sm:gap-4 select-none"
       >
         {/* Dynamic pointing arrow pointer */}
         {!isCentered && (
@@ -583,12 +583,13 @@ export default function ProductTour() {
 
         {/* Step indicator header */}
         <div className="flex items-center justify-between border-b border-white/5 pb-2">
-          <span className="text-[10px] font-black text-cyan-400 tracking-wider">
-            {tourType === "lab" ? "LAB SESSION BRIEFING" : "SYSTEM BRIEFING"} // STEP {currentStepIndex + 1} OF {steps.length}
+          <span className="text-[10px] font-black text-cyan-400 tracking-wider uppercase">
+            <span className="inline sm:hidden">{tourType === "lab" ? "LAB" : "SYS"} BRIEF // {currentStepIndex + 1}/{steps.length}</span>
+            <span className="hidden sm:inline">{tourType === "lab" ? "LAB SESSION BRIEFING" : "SYSTEM BRIEFING"} // STEP {currentStepIndex + 1} OF {steps.length}</span>
           </span>
           <button
             onClick={handleSkip}
-            className="text-slate-500 hover:text-white transition-colors"
+            className="text-slate-500 hover:text-white transition-colors p-1"
             title="Skip Tour"
           >
             <X size={14} />
@@ -610,16 +611,16 @@ export default function ProductTour() {
         <div className="flex items-center justify-between pt-2 border-t border-white/5">
           <button
             onClick={handleSkip}
-            className="text-slate-500 hover:text-slate-300 text-[10px] font-bold uppercase tracking-wider transition-colors"
+            className="text-slate-500 hover:text-slate-300 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap"
           >
             Skip
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {currentStepIndex > 0 && (
               <button
                 onClick={handlePrev}
-                className="flex items-center gap-1 px-3 py-1.5 border border-white/10 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors font-bold uppercase text-[9px] tracking-wider"
+                className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 border border-white/10 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors font-bold uppercase text-[9px] tracking-wider whitespace-nowrap"
               >
                 Prev
               </button>
@@ -627,7 +628,7 @@ export default function ProductTour() {
 
             <button
               onClick={handleNext}
-              className="flex items-center gap-1 px-4 py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg transition-colors font-black uppercase text-[9px] tracking-wider"
+              className="flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-1.5 bg-cyan-400 hover:bg-cyan-300 text-black rounded-lg transition-colors font-black uppercase text-[9px] tracking-wider whitespace-nowrap"
             >
               {currentStepIndex === steps.length - 1 ? "Finish" : "Next"}
             </button>
