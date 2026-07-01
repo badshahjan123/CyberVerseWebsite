@@ -10,6 +10,7 @@ import { useApp } from "../contexts/app-context";
 import { useRealtime } from "../contexts/realtime-context";
 import SearchModal from "./SearchModal";
 import ProfileDropdown from "./ProfileDropdown";
+import { getAvatarUrl } from "../config/api";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -139,13 +140,7 @@ const Navbar = () => {
                   trigger={
                     <div className="cv-nav-avatar-btn">
                       <img
-                        src={
-                          user?.avatar
-                            ? user.avatar.startsWith("http")
-                              ? user.avatar
-                              : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`
-                            : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`
-                        }
+                        src={getAvatarUrl(user?.avatar, user?.name, user?.avatarTimestamp)}
                         alt="avatar"
                       />
                     </div>

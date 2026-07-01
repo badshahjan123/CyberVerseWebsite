@@ -1,6 +1,22 @@
 // Use localhost for development (PC only)
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+// Server base URL (without /api) — used for serving static files like avatars
+export const SERVER_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+
+/**
+ * Build a fully-qualified avatar image URL.
+ * - External URLs (http/https) are returned as-is.
+ * - Relative server paths like /uploads/avatars/... are prefixed with SERVER_BASE_URL.
+ * - If no avatar is set, returns a DiceBear fallback.
+ */
+export const getAvatarUrl = (avatar, fallbackSeed = 'user', timestamp) => {
+  if (!avatar) return `https://api.dicebear.com/7.x/bottts/svg?seed=${fallbackSeed}`;
+  if (avatar.startsWith('http')) return avatar;
+  const ts = timestamp ? `?t=${timestamp}` : '';
+  return `${SERVER_BASE_URL}${avatar}${ts}`;
+};
+
 // API helper function
 export const apiCall = async (endpoint, options = {}) => {
   // Skip API calls for admin routes

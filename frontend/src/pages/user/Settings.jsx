@@ -8,7 +8,7 @@ import {
    ShieldAlert, Eye, EyeOff, ShieldCheck, Cpu, Flame, Info, Sparkles, AlertCircle
 } from 'lucide-react'
 import { useApp } from '../../contexts/app-context'
-import { apiCall } from '../../config/api'
+import { apiCall, getAvatarUrl } from '../../config/api'
 import { useNavigate } from 'react-router-dom'
 import TwoFactorSettings from '../../components/two-factor/TwoFactorSettings'
 import './Settings.css'
@@ -259,7 +259,7 @@ const Settings = memo(() => {
                     <div className="relative group">
                       <div className="set-avatar-wrap">
                         <img 
-                          src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
+                          src={getAvatarUrl(user.avatar, user.name, user.avatarTimestamp || Date.now())}
                           className="set-avatar-img"
                           alt="Biometric ID"
                         />

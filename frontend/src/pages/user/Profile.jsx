@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../contexts/app-context";
 import { useRealtime } from "../../contexts/realtime-context";
-import { apiCall } from "../../config/api";
+import { apiCall, getAvatarUrl } from "../../config/api";
 import { getLevelProgressInfo } from "../../utils/xpConfig";
 import "./Profile.css";
 
@@ -167,7 +167,7 @@ const Profile = memo(() => {
                 <div className="relative flex-shrink-0">
                   <div className="prof-avatar-wrap" style={{ padding: "4px", background: "linear-gradient(135deg, #00D1FF, #FF6B00)" }}>
                     <img 
-                      src={user.avatar?.startsWith("http") ? user.avatar : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`}
+                      src={getAvatarUrl(user.avatar, user.name, user.avatarTimestamp)}
                       alt={user.name} 
                       className="prof-avatar-img"
                     />

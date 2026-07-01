@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, Trash2, Ban, CheckCircle, Search, RefreshCw, Shield, UserCheck, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getAvatarUrl } from '../../config/api';
 
 /**
  * Professional Role Management Page
@@ -287,13 +288,7 @@ const SimpleUserManagement = () => {
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-3">
                                                 <img
-                                                    src={
-                                                        user.avatar
-                                                            ? user.avatar.startsWith('http')
-                                                                ? user.avatar
-                                                                : `http://localhost:5000${user.avatar}`
-                                                            : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name)}`
-                                                    }
+                                                    src={getAvatarUrl(user.avatar, encodeURIComponent(user.name))}
                                                     alt={user.name}
                                                     className="w-10 h-10 rounded-full border-2 border-cyan-500/50 object-cover"
                                                     onError={e => { e.target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name)}` }}

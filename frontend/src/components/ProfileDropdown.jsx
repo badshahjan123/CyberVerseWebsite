@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { User, Settings, Moon, Sun, Award, Bookmark, LogOut, ChevronDown, Crown, Zap, Shield, Target, HelpCircle, ArrowLeft, Play } from 'lucide-react'
 import { useTheme } from '../contexts/theme-context'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getAvatarUrl } from '../config/api'
 
 const ProfileDropdown = ({ user, onLogout }) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -52,7 +53,7 @@ const ProfileDropdown = ({ user, onLogout }) => {
             >
                 <div className="relative">
                     <img
-                        src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
+                        src={getAvatarUrl(user?.avatar, user?.name, user?.avatarTimestamp)}
                         alt={user?.name}
                         className={`w-9 h-9 rounded-xl group-hover:scale-105 transition-transform object-cover ${user?.isPremium ? 'border border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border border-cyan-500/30'}`}
                     />
@@ -83,7 +84,7 @@ const ProfileDropdown = ({ user, onLogout }) => {
                             <div className="relative flex items-center gap-4">
                                 <div className="relative">
                                     <img
-                                        src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}?t=${user?.avatarTimestamp || Date.now()}`) : `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.name}`}
+                                        src={getAvatarUrl(user?.avatar, user?.name, user?.avatarTimestamp)}
                                         alt={user?.name}
                                         className="w-16 h-16 rounded-xl border-2 border-white/10 object-cover"
                                     />

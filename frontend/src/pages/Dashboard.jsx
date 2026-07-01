@@ -11,7 +11,7 @@ import {
   Terminal, Crown, Sword, Cpu, BarChart3, Users, Server, Globe, Key, AlertTriangle
 } from "lucide-react"
 import { memo, useMemo, useState, useEffect, useCallback, useRef } from "react"
-import { apiCall } from "../config/api"
+import { apiCall, getAvatarUrl } from "../config/api"
 import "./Dashboard.css"
 import BadgeIcon from "../components/achievements/BadgeIcon"
 
@@ -342,13 +342,7 @@ const Dashboard = memo(() => {
                 <div className="relative w-16 h-16 rounded-xl border border-cyan-400/30 overflow-hidden shrink-0 flex items-center justify-center bg-[#070b16] shadow-[0_0_15px_rgba(0,209,255,0.15)]">
                   <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/20 to-transparent pointer-events-none" />
                   <img
-                    src={
-                      ud.avatar
-                        ? ud.avatar.startsWith('http')
-                          ? ud.avatar
-                          : `http://localhost:5000${ud.avatar}?t=${Date.now()}`
-                        : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ud.name)}`
-                    }
+                    src={getAvatarUrl(ud.avatar, encodeURIComponent(ud.name))}
                     alt={ud.name}
                     className="w-full h-full object-cover"
                     onError={e => { e.target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(ud.name)}` }}
